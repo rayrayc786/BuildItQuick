@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useMemo } from 'react';
 
 interface Product {
   _id: string;
+  vendorId?: string;
   name: string;
   sku: string;
   unitType: 'individual' | 'weight-based' | 'pack' | 'bundle';
@@ -9,6 +10,7 @@ interface Product {
   csiMasterFormat: string;
   weightPerUnit: number;
   volumePerUnit: number;
+  imageUrl?: string;
   price: number;
   variants?: {
     name: string;

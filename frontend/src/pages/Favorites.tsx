@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Heart, Package, ArrowRight, ShoppingCart, Trash2 } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Heart, ShoppingCart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const Favorites: React.FC = () => {

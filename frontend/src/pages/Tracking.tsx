@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Phone, User, Clock, MapPin, Truck, CheckCircle2, Package, Loader2 } from 'lucide-react';
+import { Phone, User, MapPin, Truck, CheckCircle2, Package, Loader2 } from 'lucide-react';
 import { customerSocket, connectSocket } from '../socket';
 import L from 'leaflet';
 import toast from 'react-hot-toast';
@@ -32,7 +32,7 @@ const StatusStep = ({ icon, label, isActive, isCompleted }: { icon: any, label: 
 const Tracking: React.FC = () => {
   const { id } = useParams();
   const [order, setOrder] = useState<any>(null);
-  const [vehiclePos, setVehiclePos] = useState<any>([12.9716, 77.5946]);
+  const [vehiclePos] = useState<any>([12.9716, 77.5946]);
   const [loading, setLoading] = useState(true);
 
   const fetchOrder = async () => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Package, Truck, CheckCircle2, Clock, ChevronRight, MapPin, AlertCircle, XCircle, Loader2 } from 'lucide-react';
+import { Package, CheckCircle2, Clock, ChevronRight, MapPin, XCircle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Orders: React.FC = () => {

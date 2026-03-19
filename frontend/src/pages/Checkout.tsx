@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, CreditCard, Landmark, Truck, Banknote, CheckCircle2, ArrowRight, ClipboardList, Edit3, Search, Loader2, Navigation } from 'lucide-react';
+import { MapPin,  Truck, Banknote, CheckCircle2, ClipboardList, Search, Loader2, Navigation } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -34,7 +34,7 @@ const Checkout: React.FC = () => {
   const [orderSuccess, setOrderSuccess] = useState<any>(null);
   
   // Search states
-  const [searchTerm, setSearchTerm] = useState('');
+  const [,setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
