@@ -11,6 +11,9 @@ async function reseedData() {
 
     const workbook = xlsx.readFile(path.join(__dirname, '..', 'Data new.xlsx'));
     const data = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+    const fs = require('fs');
+    const imageDirPath = path.join(__dirname, 'public', 'images');
+    const files = fs.existsSync(imageDirPath) ? fs.readdirSync(imageDirPath) : [];
 
     console.log(`Processing ${data.length} rows from Excel...`);
 
@@ -24,7 +27,29 @@ async function reseedData() {
       if (sku) {
         const updateData = {};
         if (imageValue) {
-          updateData.imageNames = imageValue.split(',').map(s => s.trim()).filter(Boolean);
+          const rawImageNames = imageValue.split(',').map(s => s.trim()).filter(Boolean);
+          updateData.imageNames = rawImageNames;
+          
+          let matchedImages = rawImageNames.map(name => {
+            const found = files.find(f => {
+              const parts = f.split('.');
+              const baseName = parts.length > 1 ? parts.slice(0, -1).join('.') : f;
+              const fullName = f.toLowerCase();
+              const searchName = name.toLowerCase();
+              return baseName.toLowerCase() === searchName || fullName === searchName;
+            });
+            return found ? `/images/${found}` : null;
+          }).filter(Boolean);
+
+          if (matchedImages.length === 0) {
+             const foundBySku = files.find(f => f.split('.')[0].toLowerCase() === sku.toLowerCase());
+             if (foundBySku) matchedImages.push(`/images/${foundBySku}`);
+          }
+
+          updateData.images = matchedImages;
+          if (matchedImages.length > 0) {
+            updateData.imageUrl = matchedImages[0];
+          }
         }
         if (!isNaN(mrp)) {
           updateData.mrp = mrp;

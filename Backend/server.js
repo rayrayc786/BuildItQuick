@@ -56,8 +56,8 @@ app.use(cors({
 
 app.use(express.json());
 
-// Serve images from the "Image Master" directory at the project root
-const imagePath = path.resolve(__dirname, '..', 'Image Master');
+// Serve images from the "public/images" directory
+const imagePath = path.join(__dirname, 'public', 'images');
 console.log('Static images directory:', imagePath);
 app.use('/images', express.static(imagePath));
 // Fallback for /api/images if VITE_API_BASE_URL includes /api

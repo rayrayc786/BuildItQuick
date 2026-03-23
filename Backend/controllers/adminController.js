@@ -49,7 +49,8 @@ exports.bulkUploadProducts = async (req, res) => {
     if (!req.file) return res.status(400).send('No file uploaded.');
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
     const data = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-    const files = fs.existsSync(path.join(__dirname, '..', '..', 'Image Master')) ? fs.readdirSync(path.join(__dirname, '..', '..', 'Image Master')) : [];
+    const imageDirPath = path.join(__dirname, '..', 'public', 'images');
+    const files = fs.existsSync(imageDirPath) ? fs.readdirSync(imageDirPath) : [];
 
     const extracted = [], skipped = [], seenSkus = new Set();
     const masterData = { categories: new Set(), subCategories: new Map(), brands: new Set(), variantTitles: new Set(), deliveryTimes: new Set() };
