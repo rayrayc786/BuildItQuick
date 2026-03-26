@@ -1,13 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Home as HomeIcon,
-  RotateCcw,
-  ShoppingCart,
-  Headphones,
   ChevronRight
 } from 'lucide-react';
-import { useCart } from '../contexts/CartContext';
 import './home.css';
 import axios from 'axios';
 import ProductCard from '../components/ProductCard';
@@ -27,7 +22,7 @@ const BRANDS = [
   { name: 'Polycab', logo: 'https://polycab.com/wp-content/uploads/2023/09/polycab-logo.png' },
   { name: 'Havells', logo: 'https://www.havells.com/content/dam/havells/havells-logo.png' },
   { name: 'Asian Paints', logo: 'https://www.asianpaints.com/content/dam/asian_paints/logo/ap-logo-new.png' },
-  { name: 'Astral', logo: 'https://www.astralpipes.com/wp-content/themes/astral/images/logo.png' },
+  { name: 'Astral', logo: 'https://www.astralpipes.com/wp-content/themes/astral/images/logo.pipe.png' },
   { name: 'Jaquar', logo: 'https://www.jaquar.com/images/logo.png' },
   { name: 'UltraTech', logo: 'https://www.ultratechcement.com/content/dam/ultratechcement/logo/ultratech-logo.png' },
 ];
@@ -39,9 +34,7 @@ const OFFERS = [
 ];
 
 const Home: React.FC = () => {
-  const { cart } = useCart();
   const [popularProducts, setPopularProducts] = useState<any[]>([]);
-  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   const isMounted = useRef(true);
 
   useEffect(() => {
@@ -146,29 +139,6 @@ const Home: React.FC = () => {
           </div>
         </section>
       </div>
-
-      {/* Fixed Footer */}
-      <footer className="landing-footer">
-        <Link to="/" className="footer-item active">
-          <HomeIcon size={24} />
-          <span>Home</span>
-        </Link>
-        <Link to="/orders" className="footer-item">
-          <RotateCcw size={24} />
-          <span>Repeat</span>
-        </Link>
-        <Link to="/cart" className="footer-item">
-          <div className="footer-cart-icon">
-            <ShoppingCart size={24} />
-            {cartCount > 0 && <span className="cart-dot">{cartCount}</span>}
-          </div>
-          <span>Cart</span>
-        </Link>
-        <Link to="/support" className="footer-item">
-          <Headphones size={24} />
-          <span>Support</span>
-        </Link>
-      </footer>
     </main>
   );
 };
