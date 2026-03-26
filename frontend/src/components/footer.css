@@ -1,25 +1,18 @@
-/* Fixed Footer */
+/* Fixed Footer Navigation (Blinkit Style) */
 .landing-footer {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 70px;
+  height: 65px;
   background: white;
   display: flex;
   justify-content: space-around;
   align-items: center;
   border-top: 1px solid #f1f5f9;
-  z-index: 1000;
-  transition: all 0.3s ease;
-}
-
-.landing-footer.footer-transparent {
-  background: transparent;
-  border-top-color: transparent;
-  box-shadow: none;
-  pointer-events: none;
-  opacity: 0;
+  z-index: 2000;
+  padding: 0 10px;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.03);
 }
 
 .footer-item {
@@ -29,32 +22,48 @@
   gap: 4px;
   text-decoration: none;
   color: #94a3b8;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex: 1;
+  max-width: 80px;
 }
 
 .footer-item.active {
   color: #000;
 }
 
+.footer-item:hover {
+  color: #1e293b;
+}
+
 .footer-item span {
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .footer-cart-icon {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cart-dot {
   position: absolute;
-  top: -5px;
+  top: -6px;
   right: -8px;
   background: #ef4444;
   color: white;
-  font-size: 0.65rem;
-  padding: 2px 5px;
+  font-size: 0.6rem;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
-  font-weight: 800;
+  font-weight: 900;
+  border: 2px solid white;
 }
 
 /* Desktop Responsiveness */
@@ -63,7 +72,23 @@
     max-width: 1200px;
     left: 50%;
     transform: translateX(-50%);
-    border-radius: 20px 20px 0 0;
-    box-shadow: 0 -10px 25px rgba(0,0,0,0.05);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.08);
+    height: 70px;
+    padding: 0 40px;
   }
+
+  .footer-item {
+    max-width: 100px;
+    gap: 6px;
+  }
+
+  .footer-item span {
+    font-size: 0.75rem;
+  }
+}
+
+/* Ensure main content doesn't get hidden behind footer */
+.app-container-responsive {
+  padding-bottom: 70px;
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { CartProvider } from './contexts/CartContext';
 import { Toaster } from 'react-hot-toast';
@@ -114,36 +114,15 @@ const SocketManager = () => {
 import Footer from './components/Footer';
 
 const AppContent = () => {
-  const [isFooterVisible, setIsFooterVisible] = useState(false);
-  const footerRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const isAdminPath = location.pathname.startsWith('/admin');
   const isDriverPath = location.pathname.startsWith('/driver');
   const isVendorPath = location.pathname.startsWith('/vendor');
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsFooterVisible(entry.isIntersecting);
-      },
-      { threshold: 0.1 }
-    );
-
-    if (footerRef.current) {
-      observer.observe(footerRef.current);
-    }
-
-    return () => {
-      if (footerRef.current) {
-        observer.unobserve(footerRef.current);
-      }
-    };
-  }, [location.pathname]);
-
   const showGlobalFooter = !isAdminPath && !isDriverPath && !isVendorPath;
 
   return (
-    <div className={`app-container app-container-responsive ${isFooterVisible ? 'footer-is-visible' : ''}`}>
+    <div className="app-container app-container-responsive">
       <Toaster position="top-right" reverseOrder={false} />
       <SocketManager />
       <Navbar />
@@ -193,11 +172,7 @@ const AppContent = () => {
         <Route path="/vendor" element={<VendorDashboard />} />
       </Routes>
 
-      {showGlobalFooter && (
-        <div ref={footerRef}>
-          <Footer />
-        </div>
-      )}
+      {showGlobalFooter && <Footer />}
     </div>
   );
 };
