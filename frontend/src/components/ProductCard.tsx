@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Plus, Minus, ChevronDown, Heart, Star } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import toast from 'react-hot-toast';
+import './product-card.css';
 
 interface ProductCardProps {
   product: any;

@@ -98,11 +98,6 @@ const Navbar: React.FC = () => {
                   value={searchTerm}
                   onChange={onInputChange}
                 />
-                <div className="search-bar-actions">
-                  <Mic size={18} color="#666" />
-                  <div className="icon-divider"></div>
-                  <Camera size={18} color="#666" />
-                </div>
                 <AISearch />
               </form>
             </div>
@@ -118,7 +113,7 @@ const Navbar: React.FC = () => {
               </Link>
             </div>
           </div>
-          {!hasCustomHeader && (
+          {/* {!hasCustomHeader && (
             <div className="navbar-sub-header">
               <div className="main-content-responsive sub-header-content">
                 <span className="quick-links-label">Shop by Category</span>
@@ -131,7 +126,7 @@ const Navbar: React.FC = () => {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
         </>
       ) : (
         <div className="standard-navbar main-content-responsive">

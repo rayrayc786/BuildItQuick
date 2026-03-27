@@ -13,6 +13,13 @@
   z-index: 2000;
   padding: 0 10px;
   box-shadow: 0 -4px 12px rgba(0,0,0,0.03);
+  transition: all 0.3s ease;
+}
+
+.landing-footer.is-transparent {
+  background: transparent;
+  box-shadow: none;
+  border-top-color: transparent;
 }
 
 .footer-item {

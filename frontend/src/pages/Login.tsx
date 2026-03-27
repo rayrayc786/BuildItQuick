@@ -192,96 +192,98 @@ const Login: React.FC = () => {
         </div>
       </div>
 
-      {/* Brand Section */}
-      <div className="login-branding">
-        <div className="matall-logo">LOGO</div>
-        <div className="tagline">Delivering all things construction</div>
-      </div>
+      <div className="login-content-wrapper">
+        {/* Brand Section */}
+        <div className="login-branding">
+          <div className="matall-logo">Mat<span>All</span></div>
+          <div className="tagline">Building Materials, Delivered in Minutes.</div>
+        </div>
 
-      <div className="login-form-container">
-        {step === 1 ? (
-          <>
-            <h2 className="login-title">Log in or Sign up</h2>
-            <form onSubmit={handleSendOTP} style={{ width: '100%' }}>
-              <div className="mobile-input-wrapper">
-                <span className="prefix">+91</span>
-                <input 
-                  type="tel" 
-                  placeholder="Enter mobile number" 
-                  value={phoneNumber}
-                  onChange={handlePhoneChange}
-                  autoFocus
-                />
-              </div>
+        <div className="login-form-container">
+          {step === 1 ? (
+            <>
+              <h2 className="login-title">India's Quickest Construction App</h2>
+              <form onSubmit={handleSendOTP} style={{ width: '100%' }}>
+                <div className="mobile-input-wrapper">
+                  <span className="prefix">+91</span>
+                  <input 
+                    type="tel" 
+                    placeholder="Enter mobile number" 
+                    value={phoneNumber}
+                    onChange={handlePhoneChange}
+                    autoFocus
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  className="login-btn btn-continue" 
+                  disabled={phoneNumber.length !== 10}
+                >
+                  Continue
+                </button>
+              </form>
               <button 
-                type="submit" 
-                className="login-btn btn-continue" 
-                disabled={phoneNumber.length !== 10}
+                type="button" 
+                className="login-btn btn-guest" 
+                onClick={() => navigate('/')}
               >
-                Continue
+                Continue as guest
               </button>
-            </form>
-            <button 
-              type="button" 
-              className="login-btn btn-guest" 
-              onClick={() => navigate('/')}
-            >
-              Continue as guest
-            </button>
-            
-            {phoneNumber === '' && (
-              <p className="auto-redirect-hint">Redirecting to landing page in {countdown}s...</p>
-            )}
-          </>
-        ) : (
-          <>
-            <h2 className="login-title">OTP</h2>
-            <p className="otp-subtitle">
-              Please input the 4 digit code has been sent to your mobile <strong>XXXXXX{phoneNumber.slice(-4)}</strong>
-            </p>
-            <div className="otp-container">
-              {otp.map((val, idx) => (
-                <input
-                  key={idx}
-                  ref={otpRefs[idx]}
-                  type="text"
-                  maxLength={1}
-                  className="otp-box"
-                  value={val}
-                  onChange={(e) => handleOtpChange(idx, e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Backspace' && !val && idx > 0) {
-                      otpRefs[idx - 1].current?.focus();
-                    }
-                  }}
-                />
-              ))}
-            </div>
-            
-            <div className="otp-actions">
-              {showCallButton ? (
-                <p className="resend-text">Did not get OTP? <button className="call-link" onClick={handleCallVerify}>Call me to verify</button></p>
-              ) : (
-                <p className="resend-text">Did not get code? <button className="resend-link" disabled={timer > 0} onClick={handleSendOTP}>Resend {timer > 0 ? `(${timer}s)` : ''}</button></p>
+              
+              {phoneNumber === '' && (
+                <p className="auto-redirect-hint">Auto-redirecting in {countdown}s...</p>
               )}
-            </div>
+            </>
+          ) : (
+            <>
+              <h2 className="login-title">OTP</h2>
+              <p className="otp-subtitle">
+                Please input the 4 digit code has been sent to your mobile <strong>XXXXXX{phoneNumber.slice(-4)}</strong>
+              </p>
+              <div className="otp-container">
+                {otp.map((val, idx) => (
+                  <input
+                    key={idx}
+                    ref={otpRefs[idx]}
+                    type="text"
+                    maxLength={1}
+                    className="otp-box"
+                    value={val}
+                    onChange={(e) => handleOtpChange(idx, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace' && !val && idx > 0) {
+                        otpRefs[idx - 1].current?.focus();
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+              
+              <div className="otp-actions">
+                {showCallButton ? (
+                  <p className="resend-text">Did not get OTP? <button className="call-link" onClick={handleCallVerify}>Call me to verify</button></p>
+                ) : (
+                  <p className="resend-text">Did not get code? <button className="resend-link" disabled={timer > 0} onClick={handleSendOTP}>Resend {timer > 0 ? `(${timer}s)` : ''}</button></p>
+                )}
+              </div>
 
-            <button 
-              type="button" 
-              className="login-btn btn-guest" 
-              onClick={() => navigate('/')}
-            >
-              Continue as guest
-            </button>
-          </>
-        )}
-      </div>
+              <button 
+                type="button" 
+                className="login-btn btn-guest" 
+                onClick={() => navigate('/')}
+              >
+                Continue as guest
+              </button>
+            </>
+          )}
+        </div>
 
-      <div className="login-footer">
-        <p className="legal-text">
-          By continuing, you are agreeing to app's <br/>
-          <span className="legal-link" onClick={() => setShowLegalModal({ show: true, type: 'Terms' })}>Terms of Service</span> & <span className="legal-link" onClick={() => setShowLegalModal({ show: true, type: 'Privacy' })}>Privacy Policy</span>
-        </p>
+        <div className="login-footer">
+          <p className="legal-text">
+            By continuing, you are agreeing to app's <br/>
+            <span className="legal-link" onClick={() => setShowLegalModal({ show: true, type: 'Terms' })}>Terms of Service</span> & <span className="legal-link" onClick={() => setShowLegalModal({ show: true, type: 'Privacy' })}>Privacy Policy</span>
+          </p>
+        </div>
       </div>
 
       {showLegalModal.show && (

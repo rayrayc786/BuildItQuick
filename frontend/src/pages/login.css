@@ -4,25 +4,28 @@
   flex-direction: column;
   background-color: #ffffff;
   font-family: 'Inter', sans-serif;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
+  color: #000;
 }
 
-/* Dynamic Banner */
+/* Dynamic Banner - Top of the screen */
 .login-banner {
-  height: 120px;
-  background-color: #f8fafc;
+  height: 140px;
+  background: #f8fafc;
   display: flex;
   align-items: center;
   overflow: hidden;
   position: relative;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #eee;
+  z-index: 10;
 }
 
 .banner-track {
   display: flex;
-  gap: 2rem;
-  animation: scroll 20s linear infinite;
+  gap: 3rem;
+  animation: scroll 30s linear infinite;
   white-space: nowrap;
 }
 
@@ -37,157 +40,88 @@
   align-items: center;
   gap: 0.5rem;
   color: #64748b;
-  min-width: 80px;
+  min-width: 100px;
 }
 
 .banner-img-item {
-  width: 60px;
-  height: 60px;
-  background: #ffffff;
-  border: 1px solid #f1f5f9;
+  width: 70px;
+  height: 70px;
+  background: #fff;
+  border: 1px solid #eee;
   border-radius: 12px;
   padding: 8px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .banner-img-item img {
-  width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
 }
 
-/* Logo and Tagline */
-.login-branding {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 3rem;
-  margin-bottom: 2rem;
-}
-
-.matall-logo {
-  background-color: #000000;
-  color: #FFEA00;
-  padding: 1rem 2rem;
-  font-size: 2.5rem;
-  font-weight: 900;
-  border-radius: 12px;
-  letter-spacing: -0.02em;
-  margin-bottom: 1rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.tagline {
-  font-size: 1.1rem;
-  color: #475569;
-  font-weight: 500;
-}
-
-.auto-redirect-hint {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  margin-top: 1rem;
-}
-
-.otp-subtitle {
-  text-align: center; 
-  margin-bottom: 2rem; 
-  color: #64748b;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.otp-actions {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1rem;
-}
-
-.call-link {
-  color: #FFEA00;
-  font-weight: 800;
-  cursor: pointer;
-  background: #000;
-  border: none;
-  padding: 4px 12px;
-  border-radius: 6px;
-  margin-left: 4px;
-}
-
-/* Legal Modal */
-.legal-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.7);
-  display: flex;
-  align-items: flex-end;
-  z-index: 2000;
-}
-
-.legal-modal-content {
-  width: 100%;
-  background: white;
-  border-radius: 24px 24px 0 0;
-  padding: 2rem;
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-.legal-modal-content h3 {
-  font-size: 1.5rem;
-  font-weight: 900;
-  margin-bottom: 1.5rem;
-}
-
-.legal-modal-body {
-  margin-bottom: 2rem;
-}
-
-.legal-modal-body ul {
-  padding-left: 1.25rem;
-  margin: 1rem 0;
-}
-
-.legal-modal-body li {
-  margin-bottom: 0.5rem;
-  color: #475569;
-}
-
-.btn-close-modal {
-  width: 100%;
-  padding: 1rem;
-  background: #FFEA00;
-  border: none;
-  border-radius: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-/* Login Form */
-.login-form-container {
-  padding: 0 2rem;
+/* Central Column Layout for both Desktop and Mobile */
+.login-content-wrapper {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 450px;
+  padding: 2rem;
+  max-width: 500px;
   margin: 0 auto;
   width: 100%;
 }
 
+.login-branding {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.matall-logo {
+  background-color: #000;
+  color: #FFEA00;
+  padding: 1rem 2rem;
+  font-size: 2.2rem;
+  font-weight: 900;
+  border-radius: 12px;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.matall-logo span {
+  color: #fff; /* White for 'All' part as per standard logo in nav but here it's black/yellow focused */
+}
+
+/* Wireframe style tagline */
+.tagline {
+  font-size: 1.1rem;
+  color: #475569;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.login-form-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .login-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #1e293b;
   margin-bottom: 2rem;
+  text-align: center;
 }
 
 .mobile-input-wrapper {
@@ -195,17 +129,10 @@
   display: flex;
   align-items: center;
   background: #f8fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   padding: 0.75rem 1rem;
-  margin-bottom: 1.5rem;
-  transition: all 0.2s;
-}
-
-.mobile-input-wrapper:focus-within {
-  border-color: #FFEA00;
-  background: white;
-  box-shadow: 0 0 0 4px rgba(255, 234, 0, 0.1);
+  margin-bottom: 1rem;
 }
 
 .prefix {
@@ -223,48 +150,48 @@
   font-size: 1.1rem;
   font-weight: 600;
   outline: none;
-  color: #1e293b;
+  color: #000;
 }
 
-/* Buttons */
+/* Buttons matching Wireframe */
 .login-btn {
   width: 100%;
-  padding: 1rem;
+  padding: 1.1rem;
   border-radius: 12px;
   font-size: 1.1rem;
   font-weight: 800;
   cursor: pointer;
   border: none;
-  transition: all 0.2s;
   margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .btn-continue {
-  background-color: #FFEA00;
-  color: #000000;
-  box-shadow: 0 4px 6px -1px rgba(255, 234, 0, 0.2);
+  background-color: #FFEA00; /* Yellow */
+  color: #000; /* Black text */
 }
 
 .btn-continue:disabled {
   background-color: #f1f5f9;
   color: #94a3b8;
-  cursor: not-allowed;
   box-shadow: none;
 }
 
 .btn-guest {
-  background-color: #000000;
-  color: #ffffff;
+  background-color: #000; /* Black */
+  color: #FFEA00; /* Yellow text */
 }
 
-.btn-guest:hover {
-  background-color: #1e293b;
-}
-
-/* Legal Links */
+/* Legal Footer */
 .login-footer {
   padding: 2rem;
   text-align: center;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
 .legal-text {
@@ -274,13 +201,25 @@
 }
 
 .legal-link {
-  color: #1e293b;
-  font-weight: 600;
+  color: #000;
+  font-weight: 700;
   text-decoration: underline;
   cursor: pointer;
 }
 
-/* OTP Step Specifics */
+.auto-redirect-hint {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-top: 1rem;
+}
+
+/* OTP Step specifics */
+.otp-subtitle {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #64748b;
+}
+
 .otp-container {
   display: flex;
   gap: 0.75rem;
@@ -302,85 +241,24 @@
   border-color: #FFEA00;
 }
 
-.resend-text {
-  margin-top: 1rem;
-  font-size: 0.9rem;
-  color: #64748b;
-}
-
-.resend-link {
-  color: #FFEA00;
-  font-weight: 700;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-}
-
-/* Responsive adjustments */
-@media (max-width: 480px) {
-  .matall-logo {
-    font-size: 2rem;
-  }
-}
-
+/* RESPONSIVE: Center everything nicely for Desktop */
 @media (min-width: 851px) {
   .login-screen {
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    background: #f8fafc;
+    background: #f1f5f9; /* Subtle grey background for desktop outer area */
+    justify-content: flex-start;
+  }
+
+  .login-content-wrapper {
+    background: white;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    margin-top: 50px;
+    margin-bottom: 50px;
+    padding: 3rem;
+    flex: none; /* Don't grow to fill screen on desktop */
   }
 
   .login-banner {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 80px;
-  }
-
-  .login-form-container {
-    background: white;
-    padding: 3rem;
-    border-radius: 24px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
-    max-width: 500px;
-    height: auto;
-    flex: none;
-  }
-
-  .login-branding {
-    margin-top: 0;
-    margin-right: 4rem;
-    align-items: flex-start;
-  }
-
-  .matall-logo {
-    font-size: 4rem;
-    padding: 1.5rem 3rem;
-  }
-
-  .tagline {
-    font-size: 1.5rem;
-    max-width: 300px;
-    line-height: 1.3;
-  }
-
-  .login-footer {
-    position: fixed;
-    bottom: 2rem;
-    left: 0;
-    right: 0;
-  }
-
-  .legal-modal-overlay {
-    align-items: center;
-    justify-content: center;
-  }
-
-  .legal-modal-content {
-    max-width: 600px;
-    border-radius: 24px;
+    position: static; /* Let it be part of the flow or stay top */
   }
 }

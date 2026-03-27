@@ -53,15 +53,25 @@ import './responsive.css';
 
 const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
+  const isDashboard = location.pathname === '/admin';
+
+  useEffect(() => {
+    const handleToggle = () => setIsSidebarOpen(prev => !prev);
+    window.addEventListener('toggle-admin-sidebar', handleToggle);
+    return () => window.removeEventListener('toggle-admin-sidebar', handleToggle);
+  }, []);
 
   return (
-    <div className={`admin-layout ${isSidebarOpen ? 'sidebar-open' : ''}`}>
-      <button 
-        className="admin-sidebar-toggle" 
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        <Menu size={20} />
-      </button>
+    <div className={`admin-layout ${isSidebarOpen ? 'sidebar-open' : ''} ${isDashboard ? 'on-dashboard' : ''}`}>
+      {!isDashboard && (
+        <button 
+          className="admin-sidebar-toggle" 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        >
+          <Menu size={20} />
+        </button>
+      )}
       <AdminSidebar onClose={() => setIsSidebarOpen(false)} />
       {isSidebarOpen && <div className="admin-sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
       <div className="admin-content-area">
@@ -112,6 +122,7 @@ const SocketManager = () => {
 };
 
 import Footer from './components/Footer';
+import SiteFooter from './components/SiteFooter';
 
 const AppContent = () => {
   const location = useLocation();
@@ -125,7 +136,7 @@ const AppContent = () => {
     <div className="app-container app-container-responsive">
       <Toaster position="top-right" reverseOrder={false} />
       <SocketManager />
-      <Navbar />
+      {!isAdminPath && !isDriverPath && !isVendorPath && <Navbar />}
       <Routes>
         {/* Prioritize specific routes */}
         <Route path="/search" element={<SearchFilter />} />
@@ -172,7 +183,12 @@ const AppContent = () => {
         <Route path="/vendor" element={<VendorDashboard />} />
       </Routes>
 
-      {showGlobalFooter && <Footer />}
+      {showGlobalFooter && (
+        <>
+          <SiteFooter />
+          <Footer />
+        </>
+      )}
     </div>
   );
 };
