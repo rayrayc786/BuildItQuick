@@ -5,7 +5,7 @@ import './site-footer.css';
 const SiteFooter: React.FC = () => {
   const usefulLinks = [
     ['Blog', 'Privacy', 'Terms', 'FAQs', 'Security', 'Contact'],
-    ['Partner', 'Franchise', 'Seller', 'Warehouse', 'Deliver', 'Resources'],
+    ['Partner', 'Franchise', 'Seller', 'Deliver', 'Resources'],
     ['About Us', 'Support', 'Careers', 'Press', 'Mobile Apps']
   ];
 
@@ -19,6 +19,8 @@ const SiteFooter: React.FC = () => {
     'Glass & Glazing', 'Wall Cladding', 'Door & Window',
     'Bath Fittings', 'Locks & Security', 'Wires & Cables'
   ];
+
+
 
   return (
     <footer className="site-footer">

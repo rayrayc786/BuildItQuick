@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, ShoppingCart, User, LayoutDashboard, LogOut, ClipboardList, Menu, MapPin, X, ChevronDown, Mic, Camera } from 'lucide-react';
+import axios from 'axios';
 
 import { useCart } from '../contexts/CartContext';
 import AISearch from './AISearch';
@@ -225,8 +226,39 @@ const LocationSelectorInNav = ({ isBlinkitStyle }: { isBlinkitStyle?: boolean })
   useEffect(() => {
     if (isLoggedIn && user.jobsites && user.jobsites.length > 0) {
       setAddress(user.jobsites[0].addressText);
+    } else {
+      detectLocation();
     }
   }, [isLoggedIn]);
+
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      setAddress('Provide Location');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const { data } = await axios.get(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+          const addressData = data.address;
+          const conciseAddr = addressData.suburb || addressData.neighbourhood || addressData.city_district || addressData.town || addressData.city;
+          const fullAddress = conciseAddr ? `${conciseAddr}, ${addressData.city || addressData.state || ''}` : data.display_name;
+          setAddress(fullAddress);
+        } catch (err) {
+          console.error('Reverse geocoding failed:', err);
+          setAddress(`Location at ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        setAddress('Provide Location');
+      }
+    );
+  };
 
   if (isBlinkitStyle) {
     return (
