@@ -129,14 +129,17 @@ const AppContent = () => {
   const isAdminPath = location.pathname.startsWith('/admin');
   const isDriverPath = location.pathname.startsWith('/driver');
   const isVendorPath = location.pathname.startsWith('/vendor');
+  const isLoginPage = location.pathname === '/login';
 
-  const showGlobalFooter = !isAdminPath && !isDriverPath && !isVendorPath;
+  const showNavbar = !isAdminPath && !isDriverPath && !isVendorPath && !isLoginPage;
+  const showSiteFooter = !isAdminPath && !isDriverPath && !isVendorPath && !isLoginPage;
+  const showBottomNav = !isAdminPath && !isDriverPath && !isVendorPath;
 
   return (
     <div className="app-container app-container-responsive">
       <Toaster position="top-right" reverseOrder={false} />
       <SocketManager />
-      {!isAdminPath && !isDriverPath && !isVendorPath && <Navbar />}
+      {showNavbar && <Navbar />}
       <Routes>
         {/* Prioritize specific routes */}
         <Route path="/search" element={<SearchFilter />} />
@@ -183,12 +186,8 @@ const AppContent = () => {
         <Route path="/vendor" element={<VendorDashboard />} />
       </Routes>
 
-      {showGlobalFooter && (
-        <>
-          <SiteFooter />
-          <Footer />
-        </>
-      )}
+      {showSiteFooter && <SiteFooter />}
+      {showBottomNav && <Footer />}
     </div>
   );
 };

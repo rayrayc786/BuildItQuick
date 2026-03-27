@@ -217,6 +217,10 @@
 }
 
 @media (max-width: 850px) {
+  .standard-navbar, .navbar-sub-header {
+    display: none !important;
+  }
+
   .cart-badge-desktop {
     padding: 6px;
     background: transparent;

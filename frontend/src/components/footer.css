@@ -76,22 +76,7 @@
 /* Desktop Responsiveness */
 @media (min-width: 851px) {
   .landing-footer {
-    max-width: 1200px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -10px 30px rgba(0,0,0,0.08);
-    height: 70px;
-    padding: 0 40px;
-  }
-
-  .footer-item {
-    max-width: 100px;
-    gap: 6px;
-  }
-
-  .footer-item span {
-    font-size: 0.75rem;
+    display: none !important;
   }
 }
 
