@@ -10,8 +10,10 @@ import {
   Edit2,
   CheckCircle,
   ChevronRight,
-  User
+  User,
+  LogOut
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Reports from '../Reports';
 import { 
   ResponsiveContainer, 
@@ -44,6 +46,7 @@ const ORDERS_STATS_DATA = [
 ];
 
 const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   
@@ -92,6 +95,12 @@ const AdminDashboard: React.FC = () => {
       setActiveTab(tabParam as any);
     }
   }, [tabParam]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
   const handleTabChange = (tab: 'dashboard' | 'reports' | 'actions') => {
     setActiveTab(tab);
@@ -379,7 +388,12 @@ const AdminDashboard: React.FC = () => {
         <div className="header-left">
           <h1>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
         </div>
-        <div className="admin-profile-dot"></div>
+        <div className="header-right-actions">
+           <button className="mobile-logout-btn" onClick={handleLogout}>
+              <LogOut size={20} />
+           </button>
+           <div className="admin-profile-dot"></div>
+        </div>
       </header>
 
       {activeTab === 'dashboard' && renderDashboard()}

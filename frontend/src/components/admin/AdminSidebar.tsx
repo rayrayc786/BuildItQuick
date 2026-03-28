@@ -49,8 +49,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose }) => {
           </NavLink>
         ))}
       </nav>
-      <div className="sidebar-footer" style={{ marginTop: 'auto' }}>
-        <button className="nav-item logout" onClick={handleLogout} style={{ width: '100%', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer' }}>
+      {/* Sidebar Footer with Logout Button */}
+      <div className="sidebar-footer" style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <button className="nav-item logout" onClick={handleLogout} style={{ width: '100%', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', padding: '0.75rem 1rem',color: '#94a3b8' }}>
           <LogOut size={20} />
           <span>Exit Admin</span>
         </button>
