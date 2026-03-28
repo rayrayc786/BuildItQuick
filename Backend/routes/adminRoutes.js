@@ -4,6 +4,10 @@ const adminController = require('../controllers/adminController');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
+console.log('--- Admin Routes Initializing ---');
+
+router.get('/ping', (req, res) => res.json({ status: 'Admin routes active' }));
+
 router.get('/stats', adminController.getDashboardStats);
 router.get('/fleet', adminController.getFleetStatus);
 router.patch('/orders/:id/status', adminController.updateOrderStatus);
@@ -14,6 +18,12 @@ router.post('/products', adminController.createProduct);
 router.put('/products/:id', adminController.updateProduct);
 router.delete('/products/clear-all', adminController.clearAllProducts);
 router.delete('/products/:id', adminController.deleteProduct);
+
+// User management
+router.get('/users', adminController.getAllUsers);
+router.post('/users', adminController.createUser);
+router.put('/users/:id', adminController.updateUser);
+router.delete('/users/:id', adminController.deleteUser);
 
 // Vendor management
 router.get('/vendors', adminController.getAllVendors);

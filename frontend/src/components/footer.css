@@ -1,0 +1,81 @@
+/* Fixed Footer Navigation (Blinkit Style) */
+.landing-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 65px;
+  background: white;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid #f1f5f9;
+  z-index: 1000;
+  padding: 0 10px;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.03);
+  transition: all 0.3s ease;
+}
+
+.landing-footer.is-transparent {
+  background: transparent;
+  box-shadow: none;
+  border-top-color: transparent;
+}
+
+.footer-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: #94a3b8;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex: 1;
+  max-width: 80px;
+}
+
+.footer-item.active {
+  color: #000;
+}
+
+.footer-item:hover {
+  color: #1e293b;
+}
+
+.footer-item span {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.footer-cart-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cart-dot {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.6rem;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 900;
+  border: 2px solid white;
+}
+
+/* Desktop Responsiveness */
+@media (min-width: 851px) {
+  .landing-footer {
+    display: none !important;
+  }
+}

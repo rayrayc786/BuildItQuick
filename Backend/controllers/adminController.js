@@ -177,6 +177,12 @@ const createHandlers = (Model, name) => ({
 const vh = createHandlers(Vendor, 'Vendor');
 exports.getAllVendors = vh.getAll; exports.createVendor = vh.create; exports.updateVendor = vh.update; exports.deleteVendor = vh.delete;
 
+const uh = createHandlers(User, 'User');
+exports.getAllUsers = uh.getAll;
+exports.createUser = uh.create;
+exports.updateUser = uh.update;
+exports.deleteUser = uh.delete;
+
 const ch = createHandlers(Category, 'Category');
 exports.getAllCategories = ch.getAll; exports.createCategory = ch.create; exports.updateCategory = ch.update; exports.deleteCategory = ch.delete;
 
@@ -187,8 +193,8 @@ exports.createSubCategory = sch.create; exports.updateSubCategory = sch.update; 
 const bh = createHandlers(Brand, 'Brand');
 exports.getAllBrands = bh.getAll; exports.createBrand = bh.create; exports.updateBrand = bh.update; exports.deleteBrand = bh.delete;
 
-const uh = createHandlers(Unit, 'Unit');
-exports.getAllUnits = uh.getAll; exports.createUnit = uh.create; exports.updateUnit = uh.update; exports.deleteUnit = uh.delete;
+const uuh = createHandlers(Unit, 'Unit');
+exports.getAllUnits = uuh.getAll; exports.createUnit = uuh.create; exports.updateUnit = uuh.update; exports.deleteUnit = uuh.delete;
 
 const vth = createHandlers(SubVariantTitle, 'SubVariantTitle');
 exports.getAllVariantTitles = vth.getAll; exports.createVariantTitle = vth.create; exports.updateVariantTitle = vth.update; exports.deleteVariantTitle = vth.delete;

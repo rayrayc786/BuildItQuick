@@ -44,23 +44,35 @@ import DeliveryNavigation from './pages/driver/DeliveryNavigation';
 import ProofOfDelivery from './pages/driver/ProofOfDelivery';
 
 // Other
+import Reports from './pages/Reports';
 import VendorDashboard from './pages/VendorDashboard';
 import Navbar from './components/Navbar';
 import AdminSidebar from './components/admin/AdminSidebar';
 import { customerSocket, vendorSocket, connectSocket } from './socket';
 import './App.css';
+import './responsive.css';
 
 const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
+  const isDashboard = location.pathname === '/admin';
+
+  useEffect(() => {
+    const handleToggle = () => setIsSidebarOpen(prev => !prev);
+    window.addEventListener('toggle-admin-sidebar', handleToggle);
+    return () => window.removeEventListener('toggle-admin-sidebar', handleToggle);
+  }, []);
 
   return (
-    <div className={`admin-layout ${isSidebarOpen ? 'sidebar-open' : ''}`}>
-      <button 
-        className="admin-sidebar-toggle" 
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        <Menu size={20} />
-      </button>
+    <div className={`admin-layout ${isSidebarOpen ? 'sidebar-open' : ''} ${isDashboard ? 'on-dashboard' : ''}`}>
+      {!isDashboard && (
+        <button 
+          className="admin-sidebar-toggle" 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        >
+          <Menu size={20} />
+        </button>
+      )}
       <AdminSidebar onClose={() => setIsSidebarOpen(false)} />
       {isSidebarOpen && <div className="admin-sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
       <div className="admin-content-area">
@@ -79,20 +91,21 @@ const SocketManager = () => {
 
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     
-    // Connect Customer Socket
-    connectSocket(customerSocket);
-    
-    // Remove existing listeners to avoid duplicates
-    customerSocket.off('order-status-update');
-    customerSocket.on('order-status-update', (data: any) => {
-      toast.success(`Order Update: ${data.status.replace(/-/g, ' ').toUpperCase()}`, {
-        icon: '📋',
-        duration: 5000,
-        position: 'bottom-right'
+    // Role-based Socket Connection Management
+    if (!user.role || user.role === 'Buyer' || user.role === 'Driver') {
+      connectSocket(customerSocket);
+      
+      // Remove existing listeners to avoid duplicates
+      customerSocket.off('order-status-update');
+      customerSocket.on('order-status-update', (data: any) => {
+        toast.success(`Order Update: ${data.status.replace(/-/g, ' ').toUpperCase()}`, {
+          icon: '📋',
+          duration: 5000,
+          position: 'bottom-right'
+        });
       });
-    });
+    }
 
-    // Connect Vendor Socket if applicable
     if (user.role === 'Vendor') {
       connectSocket(vendorSocket);
       vendorSocket.off('new-order');
@@ -105,65 +118,94 @@ const SocketManager = () => {
         });
       });
     }
+    
+    // Admin socket is uniquely managed inside AdminDashboard.tsx to handle local component state refreshes.
   }, [location.pathname]);
 
   return null;
+};
+
+import Footer from './components/Footer';
+import SiteFooter from './components/SiteFooter';
+
+const AppContent = () => {
+  const location = useLocation();
+  const isAdminPath = location.pathname.startsWith('/admin');
+  const isDriverPath = location.pathname.startsWith('/driver');
+  const isVendorPath = location.pathname.startsWith('/vendor') || location.pathname === '/reports';
+  const isLoginPage = location.pathname === '/login';
+
+  const isCartPath = location.pathname === '/cart';
+  const isCheckoutPath = location.pathname === '/checkout';
+  const isPaymentPath = location.pathname === '/payment';
+
+  const showNavbar = !isAdminPath && !isDriverPath && !isVendorPath && !isLoginPage && !isPaymentPath;
+  const showSiteFooter = !isAdminPath && !isDriverPath && !isVendorPath && !isLoginPage && !isCartPath && !isCheckoutPath && !isPaymentPath;
+  const showBottomNav = !isAdminPath && !isDriverPath && !isVendorPath && !isPaymentPath;
+
+  return (
+    <div className={`app-container app-container-responsive ${showBottomNav ? 'with-footer-padding' : ''}`}>
+      <Toaster position="top-right" reverseOrder={false} />
+      <SocketManager />
+      {showNavbar && <Navbar />}
+      <Routes>
+        {/* Prioritize specific routes */}
+        <Route path="/search" element={<SearchFilter />} />
+        
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/products" element={<ProductList />} />
+        <Route path="/category/:categoryName" element={<SubCategoryPage />} />
+        <Route path="/brand/:brandName" element={<BrandStore />} />
+        <Route path="/products/:id" element={<ProductDetail />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/payment" element={<PaymentMethod />} />
+        <Route path="/tracking/:id" element={<Tracking />} />
+        <Route path="/vendor/:id" element={<VendorStore />} />
+        <Route path="/orders" element={<Orders />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/favorites" element={<Favorites />} />
+        <Route path="/support" element={<Support />} />
+        
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="inventory" element={<SKUManager />} />
+          <Route path="vendors" element={<VendorManager />} />
+          <Route path="categories" element={<CategoryManager />} />
+          <Route path="sub-categories" element={<SubCategoryManager />} />
+          <Route path="units" element={<UnitManager />} />
+          <Route path="brands" element={<BrandManager />} />
+          <Route path="variant-titles" element={<SubVariantTitleManager />} />
+          <Route path="delivery-times" element={<DeliveryTimeManager />} />
+          <Route path="queue" element={<PickingQueue />} />
+          <Route path="fleet" element={<FleetManager />} />
+          <Route path="invoices" element={<InvoicingReports />} />
+        </Route>
+
+        {/* Driver Routes */}
+        <Route path="/driver" element={<DriverDashboard />} />
+        <Route path="/driver/verify/:id" element={<TaskVerification />} />
+        <Route path="/driver/delivery/:id" element={<DeliveryNavigation />} />
+        <Route path="/driver/pod/:id" element={<ProofOfDelivery />} />
+
+        {/* Vendor Routes */}
+        <Route path="/vendor" element={<VendorDashboard />} />
+        <Route path="/reports" element={<Reports />} />
+      </Routes>
+
+      {showSiteFooter && <SiteFooter />}
+      {showBottomNav && <Footer />}
+    </div>
+  );
 };
 
 const App: React.FC = () => {
   return (
     <Router>
       <CartProvider>
-        <div className="app-container">
-          <Toaster position="top-right" reverseOrder={false} />
-          <SocketManager />
-          <Navbar />
-          <Routes>
-            {/* Prioritize specific routes */}
-            <Route path="/search" element={<SearchFilter />} />
-            
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/products" element={<ProductList />} />
-            <Route path="/category/:id" element={<SubCategoryPage />} />
-            <Route path="/brand/:brandName" element={<BrandStore />} />
-            <Route path="/products/:id" element={<ProductDetail />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/payment" element={<PaymentMethod />} />
-            <Route path="/tracking/:id" element={<Tracking />} />
-            <Route path="/vendor/:id" element={<VendorStore />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/favorites" element={<Favorites />} />
-            <Route path="/support" element={<Support />} />
-            
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="inventory" element={<SKUManager />} />
-              <Route path="vendors" element={<VendorManager />} />
-              <Route path="categories" element={<CategoryManager />} />
-              <Route path="sub-categories" element={<SubCategoryManager />} />
-              <Route path="units" element={<UnitManager />} />
-              <Route path="brands" element={<BrandManager />} />
-              <Route path="variant-titles" element={<SubVariantTitleManager />} />
-              <Route path="delivery-times" element={<DeliveryTimeManager />} />
-              <Route path="queue" element={<PickingQueue />} />
-              <Route path="fleet" element={<FleetManager />} />
-              <Route path="invoices" element={<InvoicingReports />} />
-            </Route>
-
-            {/* Driver Routes */}
-            <Route path="/driver" element={<DriverDashboard />} />
-            <Route path="/driver/verify/:id" element={<TaskVerification />} />
-            <Route path="/driver/delivery/:id" element={<DeliveryNavigation />} />
-            <Route path="/driver/pod/:id" element={<ProofOfDelivery />} />
-
-            {/* Vendor Routes */}
-            <Route path="/vendor" element={<VendorDashboard />} />
-          </Routes>
-        </div>
+        <AppContent />
       </CartProvider>
     </Router>
   );

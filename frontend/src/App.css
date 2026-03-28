@@ -54,6 +54,78 @@ a {
   z-index: 1000;
 }
 
+
+
+.admin-sidebar {
+  width: 260px;
+  background: #0f172a;
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  /* top: 64px;
+  height: calc(100vh - 64px); */
+  border-right: 1px solid #1e293b;
+}
+
+.admin-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 0.35rem 0.75rem;
+  background: rgba(245, 158, 11, 0.1);
+  border-radius: 6px;
+  color: var(--primary);
+  margin-bottom: 2.5rem;
+  display: inline-block;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  /* color: #94a3b8; */
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  transform: translateX(4px);
+}
+
+.nav-item.active {
+  background: var(--primary);
+  color: var(--black);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.admin-layout.on-dashboard .admin-content-area {
+  padding: 0;
+  background: white;
+}
+
+.admin-content-area {
+  flex: 1;
+  background: #f8fafc;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
 @media (max-width: 1024px) {
   .admin-sidebar {
     position: fixed;
@@ -64,6 +136,7 @@ a {
     transition: transform 0.3s ease;
     z-index: 1001;
     height: 100vh;
+    overflow-y: auto;
   }
 
   .admin-layout.sidebar-open .admin-sidebar {
@@ -100,75 +173,6 @@ a {
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
-  .admin-header h1 {
-    font-size: 1.5rem;
-  }
-}
-
-.admin-sidebar {
-  width: 260px;
-  background: #0f172a;
-  color: white;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: 64px;
-  height: calc(100vh - 64px);
-  border-right: 1px solid #1e293b;
-}
-
-.admin-badge {
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  padding: 0.35rem 0.75rem;
-  background: rgba(245, 158, 11, 0.1);
-  border-radius: 6px;
-  color: var(--primary);
-  margin-bottom: 2.5rem;
-  display: inline-block;
-  border: 1px solid rgba(245, 158, 11, 0.2);
-}
-
-.sidebar-nav {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  color: #94a3b8;
-  font-weight: 600;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.nav-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
-  transform: translateX(4px);
-}
-
-.nav-item.active {
-  background: var(--primary);
-  color: var(--black);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-.admin-content-area {
-  flex: 1;
-  background: #f8fafc;
-  padding: 2rem;
-  overflow-y: auto;
 }
 
 /* Polished Cards */
@@ -616,6 +620,16 @@ a {
 
 .nav-text-mobile {
   display: none;
+}
+
+.app-container-responsive.with-footer-padding {
+  padding-bottom: 90px;
+}
+
+@media (min-width: 851px) {
+  .app-container-responsive.with-footer-padding {
+    padding-bottom: 0;
+  }
 }
 
 @media (max-width: 768px) {

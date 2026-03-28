@@ -2,7 +2,41 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, Navigation, X, Home, Map as MapIcon, Loader2, ChevronRight, Mic, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import './locationModal.css';
+
+// Fix for default Leaflet icon paths in Vite/Webpack
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
+const MapUpdater = ({ coords }: { coords: [number, number] }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (coords && coords.length === 2 && coords[0] !== 0) {
+      map.setView(coords, map.getZoom());
+    }
+  }, [coords, map]);
+  return null;
+};
+
+const MapClickHandler = ({ onMapClick }: { onMapClick: (lat: number, lon: number) => void }) => {
+  useMapEvents({
+    click: (e) => {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+};
 
 interface LocationModalProps {
   isOpen: boolean;
@@ -18,6 +52,8 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, onSelect
   const [isLocating, setIsLocating] = useState(false);
   const [step, setStep] = useState<1 | 2>(1); // 1: Decision, 2: Search/Selection
   const [showAddForm, setShowAddForm] = useState(false);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([28.6139, 77.2090]);
+  const [selectedAddress, setSelectedAddress] = useState<string>('');
   
   // New address form states (Slide 40)
   const [newAddrName, setNewAddrName] = useState('');
@@ -30,6 +66,7 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, onSelect
   const [tower, setTower] = useState('');
   const [landmark, setLandmark] = useState('');
   const [directions, setDirections] = useState('');
+  const [orderingFor, setOrderingFor] = useState<'Yourself' | 'Someone else'>('Yourself');
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isLoggedIn = !!localStorage.getItem('token');
@@ -40,6 +77,13 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, onSelect
       document.body.style.overflow = 'hidden';
       setStep(1);
       setShowAddForm(false);
+      
+      // Auto-detect location for map
+      if (navigator.geolocation) {
+         navigator.geolocation.getCurrentPosition((pos) => {
+           setMapCenter([pos.coords.latitude, pos.coords.longitude]);
+         }, () => {}, { timeout: 10000 });
+      }
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -68,6 +112,21 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, onSelect
     }
   };
 
+  const handleMapClick = async (lat: number, lon: number) => {
+    setMapCenter([lat, lon]);
+    setIsSearching(true);
+    try {
+      const { data } = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+      setSelectedAddress(data.display_name);
+      setSearchTerm(data.display_name);
+    } catch (err) {
+      console.error('Reverse geocoding failed:', err);
+      setSelectedAddress(`Location at ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
       toast.error('Geolocation not supported');
@@ -92,15 +151,21 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, onSelect
   };
 
   const selectSuggestion = (item: any) => {
+    const coords: [number, number] = [parseFloat(item.lat), parseFloat(item.lon)];
+    setMapCenter(coords);
+    setSelectedAddress(item.display_name);
+    setSearchTerm(item.display_name);
+    setSuggestions([]);
+    
     if (showAddForm) {
         setNewAddrText(item.display_name);
         setNewAddrCoords([parseFloat(item.lon), parseFloat(item.lat)]);
-        setSuggestions([]);
-        setSearchTerm(item.display_name);
-    } else {
-        onSelectAddress(item.display_name, [parseFloat(item.lon), parseFloat(item.lat)]);
-        onClose();
     }
+  };
+
+  const confirmLocation = () => {
+    onSelectAddress(selectedAddress || searchTerm, [mapCenter[1], mapCenter[0]]);
+    onClose();
   };
 
   const handleAddAddress = async (e: React.FormEvent) => {
@@ -145,11 +210,11 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, onSelect
   if (!isOpen) return null;
 
   return (
-    <div className="location-modal-overlay">
-      <div className="location-modal-content">
+    <div className="location-modal-overlay" onClick={onClose}>
+      <div className="location-modal-content" onClick={e => e.stopPropagation()}>
         <div className="location-modal-header">
           <h2>Select delivery location</h2>
-          <button className="close-btn" onClick={onClose}><X size={24} /></button>
+          <button type="button" className="close-btn" onClick={(e) => { e.stopPropagation(); onClose(); }}><X size={24} /></button>
         </div>
 
         <div className="location-modal-body">
@@ -216,12 +281,35 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, onSelect
                     ))}
                   </div>
                 ) : (
-                  <div className="empty-search-state" onClick={handleUseCurrentLocation}>
-                     <Navigation size={20} />
-                     <span>Use current location</span>
+                  <div className="empty-search-state-wrapper">
+                    <div className="empty-search-state" onClick={handleUseCurrentLocation}>
+                       <Navigation size={20} />
+                       <span>Use current location</span>
+                    </div>
+                    
+                    <div className="map-display-container">
+                      <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }}>
+                          <TileLayer
+                              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                          />
+                          <Marker position={mapCenter} />
+                          <MapUpdater coords={mapCenter} />
+                          <MapClickHandler onMapClick={handleMapClick} />
+                      </MapContainer>
+                      <div className="map-overlay-hint">
+                        <MapPin size={14} /> Tap map to move pin
+                      </div>
+                    </div>
+
+                    {(selectedAddress || searchTerm) && (
+                      <button className="confirm-loc-btn" onClick={confirmLocation}>
+                        Confirm Location
+                      </button>
+                    )}
                   </div>
                 )}
-                <button className="back-link-btn" onClick={() => setStep(1)}>Back</button>
+                <button type="button" className="back-link-btn" onClick={() => setStep(1)}>Back</button>
               </div>
             )
           ) : (
@@ -233,35 +321,67 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, onSelect
                  <h3>Add more address details</h3>
               </div>
               
-              <div className="search-wrapper">
-                <Search size={20} className="search-icon" />
-                <input 
-                  type="text" 
-                  placeholder="Search city, area or street..." 
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                />
+              <div className="search-container-relative">
+                <div className="search-wrapper">
+                  <Search size={20} className="search-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="Search city, area or street..." 
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                  />
+                </div>
+
+                {suggestions.length > 0 && (
+                  <div className="search-suggestions mini">
+                    {suggestions.map((item, idx) => (
+                      <div key={idx} className="suggestion-row" onClick={() => selectSuggestion(item)}>
+                        <div className="suggestion-details">
+                          <p className="main-text">{item.display_name.split(',')[0]}</p>
+                          <p className="sub-text">{item.display_name}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {suggestions.length > 0 && (
-                <div className="search-suggestions mini">
-                  {suggestions.map((item, idx) => (
-                    <div key={idx} className="suggestion-row" onClick={() => selectSuggestion(item)}>
-                      <div className="suggestion-details">
-                        <p className="main-text">{item.display_name.split(',')[0]}</p>
-                        <p className="sub-text">{item.display_name}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
               <form onSubmit={handleAddAddress}>
+                {newAddrText && (
+                  <div className="selected-base-addr-display">
+                    <MapPin size={16} className="pin-icon" />
+                    <div className="addr-content">
+                      <span className="label">Selected Location</span>
+                      <p className="address">{newAddrText}</p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="form-group">
                   <label>Who are you ordering for?</label>
                   <div className="ordering-for-toggle">
-                     <button type="button" className="toggle-btn active">Yourself</button>
-                     <button type="button" className="toggle-btn">Someone else</button>
+                     <button 
+                        type="button" 
+                        className={`toggle-btn ${orderingFor === 'Yourself' ? 'active' : ''}`}
+                        onClick={() => {
+                           setOrderingFor('Yourself');
+                           setNewAddrName(user.name || '');
+                           setNewAddrPhone(user.phone || '');
+                        }}
+                     >
+                        Yourself
+                     </button>
+                     <button 
+                        type="button" 
+                        className={`toggle-btn ${orderingFor === 'Someone else' ? 'active' : ''}`}
+                        onClick={() => {
+                           setOrderingFor('Someone else');
+                           setNewAddrName('');
+                           setNewAddrPhone('');
+                        }}
+                     >
+                        Someone else
+                     </button>
                   </div>
                 </div>
 
