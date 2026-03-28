@@ -193,8 +193,8 @@ exports.createSubCategory = sch.create; exports.updateSubCategory = sch.update; 
 const bh = createHandlers(Brand, 'Brand');
 exports.getAllBrands = bh.getAll; exports.createBrand = bh.create; exports.updateBrand = bh.update; exports.deleteBrand = bh.delete;
 
-const uh = createHandlers(Unit, 'Unit');
-exports.getAllUnits = uh.getAll; exports.createUnit = uh.create; exports.updateUnit = uh.update; exports.deleteUnit = uh.delete;
+const uuh = createHandlers(Unit, 'Unit');
+exports.getAllUnits = uuh.getAll; exports.createUnit = uuh.create; exports.updateUnit = uuh.update; exports.deleteUnit = uuh.delete;
 
 const vth = createHandlers(SubVariantTitle, 'SubVariantTitle');
 exports.getAllVariantTitles = vth.getAll; exports.createVariantTitle = vth.create; exports.updateVariantTitle = vth.update; exports.deleteVariantTitle = vth.delete;

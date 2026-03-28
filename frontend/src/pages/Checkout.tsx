@@ -11,7 +11,8 @@ import {
   Clock,
   MapPin,
   ArrowRight,
-  Mic
+  Mic,
+  Navigation
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import axios from 'axios';
@@ -215,6 +216,27 @@ const Checkout: React.FC = () => {
     return null;
   };
 
+  const handleUseCurrentLocation = () => {
+    if (navigator.geolocation) {
+      toast.loading('Detecting location...', { id: 'geo-toast' });
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          handleMapMove(lat, lon);
+          toast.success('Location found!', { id: 'geo-toast' });
+        },
+        (error) => {
+          toast.error('Could not get your location', { id: 'geo-toast' });
+          console.error('Geo error', error);
+        },
+        { enableHighAccuracy: true }
+      );
+    } else {
+      toast.error('Geolocation is not supported by your browser');
+    }
+  };
+
   const renderMapConfirm = () => (
     <div className="map-confirm-screen">
       <header className="map-header">
@@ -232,6 +254,9 @@ const Checkout: React.FC = () => {
         <div className="center-marker-overlay">
            <MapPin size={40} color="#ef4444" fill="#ef4444" />
         </div>
+        <button className="locate-me-fab" onClick={handleUseCurrentLocation} aria-label="Use Current Location">
+           <Navigation size={22} color="#1e293b" fill="#1e293b" />
+        </button>
       </div>
       <div className="map-bottom-sheet">
         <div className="detected-addr-box">
