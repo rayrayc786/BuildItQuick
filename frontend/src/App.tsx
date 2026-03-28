@@ -131,9 +131,13 @@ const AppContent = () => {
   const isVendorPath = location.pathname.startsWith('/vendor');
   const isLoginPage = location.pathname === '/login';
 
-  const showNavbar = !isAdminPath && !isDriverPath && !isVendorPath && !isLoginPage;
-  const showSiteFooter = !isAdminPath && !isDriverPath && !isVendorPath && !isLoginPage;
-  const showBottomNav = !isAdminPath && !isDriverPath && !isVendorPath;
+  const isCartPath = location.pathname === '/cart';
+  const isCheckoutPath = location.pathname === '/checkout';
+  const isPaymentPath = location.pathname === '/payment';
+
+  const showNavbar = !isAdminPath && !isDriverPath && !isVendorPath && !isLoginPage && !isPaymentPath;
+  const showSiteFooter = !isAdminPath && !isDriverPath && !isVendorPath && !isLoginPage && !isCartPath && !isCheckoutPath && !isPaymentPath;
+  const showBottomNav = !isAdminPath && !isDriverPath && !isVendorPath && !isPaymentPath;
 
   return (
     <div className="app-container app-container-responsive">

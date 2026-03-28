@@ -3,38 +3,133 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: 120px;
+  padding-bottom: 200px; /* Increased to avoid overlap under two footers */
 }
 
+/* Global Navigation Control for Checkout Page specifically */
+@media (max-width: 850px) {
+  /* Set standard layout for mobile header */
+  .checkout-header-sticky {
+    padding-top: 1rem;
+  }
+
+  /* Force hide Top Navbar on mobile Checkout */
+  :has(.blinkit-checkout-page) .navbar-container {
+    display: none !important;
+  }
+
+  /* Push the Transactional Checkout Footer UP by the height of the bottom nav (65px) */
+  .checkout-footer-sticky-final {
+    bottom: 65px !important;
+  }
+}
+
+@media (min-width: 851px) {
+  /* Selectively hide the bottom navigation when on the checkout page on desktop */
+  :has(.blinkit-checkout-page) .landing-footer {
+    display: none !important;
+  }
+}
+
+/* Premium User Pods (Checkout) */
+.checkout-user-pod {
+  background: white;
+  margin: 0.75rem 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.01);
+  border: 1px solid #f8fafc;
+}
+
+.pod-icon-circle {
+  width: 42px;
+  height: 42px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1e293b;
+  flex-shrink: 0;
+}
+
+.pin-yellow {
+  background: #fefce8;
+  color: #854d0e;
+}
+
+.pod-info-stack {
+  flex: 1;
+  min-width: 0;
+}
+
+.pod-label-top {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.pod-main-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.pod-subtext-main {
+  font-size: 0.82rem;
+  color: #1e293b;
+  font-weight: 700;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.divider-dot {
+  color: #cbd5e1;
+}
+
+.pod-change-btn {
+  background: none;
+  border: none;
+  color: #16a34a;
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+/* Header Start of Screen */
 .checkout-header-sticky {
   position: sticky;
   top: 0;
   background: white;
   z-index: 1000;
-  display: flex;
-  align-items: center;
   padding: 1rem 1.25rem;
-  gap: 1rem;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
 }
 
-/* Owner Card */
-.checkout-owner-card {
-  margin: 1rem;
-  padding: 1rem;
-  background: white;
-  border-radius: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.header-title {
+  font-size: 1.2rem;
+  font-weight: 950;
+  color: #000;
 }
 
-/* Slot Card */
+/* Delivery Slot */
 .delivery-slot-card {
   margin: 0 1rem 1rem 1rem;
   background: white;
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 1.25rem;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.01);
 }
 
 .slot-header {
@@ -152,7 +247,7 @@
 .gstin-entry-row {
   margin: 0 1rem 1rem 1rem;
   background: white;
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 1rem;
   display: flex;
   align-items: center;
@@ -187,7 +282,7 @@
 .policy-expandable {
   margin: 0 1rem 1.5rem 1rem;
   background: #f8fafc;
-  border-radius: 12px;
+  border-radius: 20px;
   overflow: hidden;
 }
 
@@ -217,7 +312,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.6);
-  z-index: 2000;
+  z-index: 4000; /* Increased to stay above sticky footer */
   display: flex;
   align-items: flex-end;
 }
@@ -532,73 +627,48 @@
 }
 
 
-/* Address Card */
-.checkout-address-card {
-  margin: 0 1rem 1rem 1rem;
-  background: white;
-  border-radius: 16px;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
 
-.addr-details {
-  flex: 1;
-}
 
-.addr-label {
-  font-size: 0.85rem;
-  color: #1e293b;
-}
-
-.addr-text {
-  font-size: 0.75rem;
-  color: #64748b;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 200px;
-}
-
-/* Footer */
-.checkout-footer-fixed {
+/* Transactional Sticky Footer for Mobile */
+.checkout-footer-sticky-final {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   background: white;
-  padding: 1rem 1.25rem;
-  border-top: 1px solid #f1f5f9;
-  z-index: 1000;
+  z-index: 3000;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #f1f5f9;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.05);
 }
 
-.payment-preview {
+.checkout-pay-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-bottom: 0.75rem;
+  font-size: 0.8rem;
+  color: #64748b;
+  cursor: pointer;
 }
 
-.pay-method-pill {
+.pay-method-lux {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.8rem;
-  color: #64748b;
 }
 
-.pay-method-pill .dot {
+.dot-blinkit {
   width: 8px;
   height: 8px;
   background: #16a34a;
   border-radius: 50%;
+  box-shadow: 0 0 10px rgba(22, 163, 74, 0.4);
 }
 
-.final-place-btn {
+.checkout-place-btn {
   background: #16a34a;
   color: white;
   border: none;
@@ -608,36 +678,41 @@
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
+  transition: transform 0.2s;
 }
 
-.final-place-btn:disabled {
+.checkout-place-btn:active {
+  transform: scale(0.98);
+}
+
+.checkout-place-btn:disabled {
   background: #94a3b8;
   cursor: not-allowed;
 }
 
-.btn-price {
+.btn-p-info {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
 }
 
-.btn-price .val {
+.p-val {
   font-size: 1.1rem;
-  font-weight: 900;
+  font-weight: 950;
 }
 
-.btn-price .lbl {
-  font-size: 0.65rem;
-  font-weight: 700;
-  opacity: 0.9;
+.p-lbl {
+  font-size: 0.6rem;
+  font-weight: 800;
+  opacity: 0.8;
 }
 
-.btn-text {
+.btn-p-main {
+  font-size: 1.1rem;
+  font-weight: 800;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 800;
-  font-size: 1.1rem;
 }
 
 .bill-row-checkout {
@@ -680,7 +755,7 @@
     border-radius: 0 0 16px 16px;
   }
 
-  .checkout-footer-fixed {
+  .checkout-footer-sticky-final {
     display: none !important;
   }
 

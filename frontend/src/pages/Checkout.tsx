@@ -218,37 +218,39 @@ const Checkout: React.FC = () => {
   return (
     <div className="blinkit-checkout-page">
       <header className="checkout-header-sticky">
-        <div className="header-nav-container main-content-responsive" style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+        <div className="header-nav-container main-content-responsive">
           <button className="back-btn" onClick={() => navigate(-1)}>
             <ArrowLeft size={24} />
           </button>
           <div className="header-title">Checkout</div>
-          <Link to="/" className="home-btn-link">
-            <Home size={24} />
-          </Link>
         </div>
       </header>
 
       <main className="checkout-content main-content-responsive">
         <div className="checkout-grid-responsive">
           <div className="checkout-left-col">
-            {/* Top Bar - PRD Page 34 */}
-            <div className="checkout-owner-card">
-              <div className="owner-info">
-                <span>Order for <strong>{user.fullName || 'Guest'}</strong></span>
-                <span className="owner-phone">{user.phoneNumber}</span>
+            {/* Order Owner Details */}
+            <div className="checkout-user-pod">
+              <div className="pod-icon-circle"><Receipt size={20} /></div>
+              <div className="pod-info-stack">
+                <p className="pod-label-top">Order for</p>
+                <div className="pod-main-text">
+                  <strong>{user.fullName || 'Guest'}</strong>
+                  <span className="divider-dot">•</span>
+                  <span>{user.phoneNumber || '9999999999'}</span>
+                </div>
               </div>
-              <button className="change-btn" onClick={() => setStep('address-list')}>Change</button>
+              <button className="pod-change-btn" onClick={() => setStep('address-list')}>Change</button>
             </div>
 
-            {/* Order Delivery Address Tab - PRD Page 34 */}
-            <div className="checkout-address-card" onClick={() => setStep('address-list')}>
-               <div className="addr-icon"><MapPin size={20} /></div>
-               <div className="addr-details">
-                  <span className="addr-label">Delivering to <strong>{selectedAddress?.name || 'Select Address'}</strong></span>
-                  <p className="addr-text">{selectedAddress?.addressText || 'Click to select or add new address'}</p>
+            {/* Delivery Address Pod */}
+            <div className="checkout-user-pod" onClick={() => setStep('address-list')}>
+               <div className="pod-icon-circle pin-yellow"><MapPin size={20} /></div>
+               <div className="pod-info-stack">
+                  <p className="pod-label-top">Delivering to <strong>{selectedAddress?.name || 'Home'}</strong></p>
+                  <p className="pod-subtext-main">{selectedAddress?.addressText || 'Mattaur, Sector 70, SAS Nagar'}</p>
                </div>
-               <button className="change-btn">Change</button>
+               <button className="pod-change-btn">Change</button>
             </div>
 
             {/* Delivery Time & Shipment - PRD Page 34 */}
@@ -321,7 +323,7 @@ const Checkout: React.FC = () => {
               </div>
             )}
 
-            <div className="desktop-order-actions desktop-only-show mt-4">
+            <div className="desktop-order-actions hide-mobile mt-4">
                <button className="final-place-btn-desktop" onClick={handlePlaceOrder} disabled={loading}>
                   {loading ? 'Processing...' : `Place Order • ₹${grandTotal}`}
                </button>
@@ -330,20 +332,20 @@ const Checkout: React.FC = () => {
         </div>
       </main>
 
-      <footer className="checkout-footer-fixed">
-        <div className="payment-preview" onClick={() => navigate('/payment')}>
-           <div className="pay-method-pill">
-              <span className="dot"></span>
+      <footer className="checkout-footer-sticky-final">
+        <div className="checkout-pay-bar" onClick={() => navigate('/payment')}>
+           <div className="pay-method-lux">
+              <span className="dot-blinkit"></span>
               <span>PAY USING <strong>UPI</strong></span>
            </div>
            <ChevronDown size={16} />
         </div>
-        <button className="final-place-btn" onClick={handlePlaceOrder} disabled={loading}>
-           <div className="btn-price">
-              <span className="val">₹{grandTotal}</span>
-              <span className="lbl">TOTAL</span>
+        <button className="checkout-place-btn" onClick={handlePlaceOrder} disabled={loading}>
+           <div className="btn-p-info">
+              <span className="p-val">₹{grandTotal}</span>
+              <span className="p-lbl">TOTAL</span>
            </div>
-           <div className="btn-text">
+           <div className="btn-p-main">
               {loading ? 'Processing...' : 'Place Order'} <ArrowRight size={20} />
            </div>
         </button>
