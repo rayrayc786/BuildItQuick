@@ -48,7 +48,7 @@ const UserSchema = new mongoose.Schema({
   },
   isOnline: { type: Boolean, default: false },
 
-  // BuildItQuick Pay (Financing)
+  // MatAll Pay (Financing)
   creditLimit: { type: Number, default: 0 },
   availableCredit: { type: Number, default: 0 },
 

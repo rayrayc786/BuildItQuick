@@ -5,7 +5,7 @@ const Supplier = require('./models/Supplier');
 const DarkStore = require('./models/DarkStore');
 require('dotenv').config();
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/builditquick';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/matall';
 
 const seedDarkStore = {
   storeName: 'Main Hub - Punjab',

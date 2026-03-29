@@ -144,7 +144,7 @@ const Checkout: React.FC = () => {
           key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_mock12345',
           amount: orderData.amount,
           currency: orderData.currency,
-          name: 'BuildItQuick',
+          name: 'MatAll',
           description: 'Payment for your materials',
           order_id: orderData.id,
           handler: async function (response: any) {

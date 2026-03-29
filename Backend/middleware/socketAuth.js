@@ -11,7 +11,7 @@ const socketAuth = (allowedRoles) => {
     const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token;
 
     try {
-      const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET || 'supersecretkey_builditquick');
+      const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET || 'supersecretkey_matall');
       
       if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(decoded.role)) {
         return next(new Error('Authentication error: Unauthorized role'));

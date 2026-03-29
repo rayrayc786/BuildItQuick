@@ -81,7 +81,7 @@ const ProductDetail: React.FC = () => {
       try {
         await navigator.share({
           title: product?.name,
-          text: `Check out ${product?.brand} ${product?.name} on BuildItQuick`,
+          text: `Check out ${product?.brand} ${product?.name} on MatAll`,
           url: window.location.href,
         });
       } catch (err) { console.error(err); }

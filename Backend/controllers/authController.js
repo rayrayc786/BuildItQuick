@@ -47,7 +47,7 @@ exports.verifyOTP = async (req, res) => {
         phoneNumber: user.phoneNumber,
         supplierId: user.supplierId ? user.supplierId.toString() : undefined
       },
-      process.env.JWT_SECRET || 'supersecretkey_builditquick',
+      process.env.JWT_SECRET || 'supersecretkey_matall',
       { expiresIn: '7d' }
     );
 

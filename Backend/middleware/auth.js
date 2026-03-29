@@ -8,7 +8,7 @@ const auth = (allowedRoles = []) => {
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'builditquick_secret');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'matall_secret');
       req.user = decoded;
 
       if (allowedRoles.length > 0 && !allowedRoles.includes(decoded.role)) {
