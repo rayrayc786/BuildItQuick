@@ -72,7 +72,6 @@ const createOrder = async (orderData) => {
     totalVolume,
     vehicleClass,
     darkStoreId,
-    status: 'pending',
     deliveryAddress: {
       name: orderData.shippingAddress || 'Home',
       location: {

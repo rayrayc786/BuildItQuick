@@ -1,5 +1,14 @@
 const OrderService = require('../services/orderService');
 const Order = require('../models/Order');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+
+const getRazorpayInstance = () => {
+  return new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_mock12345',
+    key_secret: process.env.RAZORPAY_KEY_SECRET || 'secret12345'
+  });
+};
 
 exports.getAllOrders = async (req, res) => {
   try {
@@ -19,6 +28,46 @@ exports.getMyOrders = async (req, res) => {
       .populate('items.productId')
       .sort({ createdAt: -1 });
     res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.createRazorpayOrder = async (req, res) => {
+  try {
+    const { amount } = req.body; // Amount in INR
+    const rzp = getRazorpayInstance();
+
+    const options = {
+      amount: Math.round(amount * 100), // convert to paise
+      currency: "INR",
+      receipt: `rcpt_${Date.now()}_${req.user.id.substring(0, 5)}`,
+      payment_capture: 1
+    };
+
+    const order = await rzp.orders.create(options);
+    res.json(order);
+  } catch (err) {
+    console.error('Razorpay create order error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.verifyRazorpayPayment = async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    
+    const sign = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSign = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || 'secret12345')
+      .update(sign.toString())
+      .digest("hex");
+
+    if (razorpay_signature === expectedSign) {
+      return res.status(200).json({ message: "Payment verified successfully" });
+    } else {
+      return res.status(400).json({ message: "Invalid signature sent!" });
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

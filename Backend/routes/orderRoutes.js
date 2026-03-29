@@ -6,6 +6,11 @@ const auth = require('../middleware/auth');
 router.get('/', orderController.getAllOrders);
 router.get('/my', auth(), orderController.getMyOrders);
 router.get('/available', auth(['Rider']), orderController.getAvailableOrders);
+
+// Razorpay Payment Routes
+router.post('/razorpay/create-order', auth(), orderController.createRazorpayOrder);
+router.post('/razorpay/verify', auth(), orderController.verifyRazorpayPayment);
+
 router.post('/', auth(), orderController.checkout);
 router.post('/checkout', auth(), orderController.checkout); // Keep for compatibility if needed
 router.get('/:id', orderController.getOrderById);

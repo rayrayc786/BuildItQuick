@@ -102,7 +102,7 @@ app.use('/api/user-requests', userRequestRoutes);
 app.set('socketio', io);
 
 app.get('/', (req, res) => {
-  res.send('BuildItQuick API Server is running.');
+  res.send('MatAll API Server is running.');
 });
 
 // Socket Namespaces
@@ -134,5 +134,5 @@ customerNamespace.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`BuildItQuick server running on port ${PORT}`);
+  console.log(`MatAll server running on port ${PORT}`);
 });
