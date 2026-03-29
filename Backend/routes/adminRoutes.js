@@ -13,6 +13,7 @@ router.get('/riders', adminController.getFleetStatus);
 router.patch('/orders/:id/status', adminController.updateOrderStatus);
 
 // Product management
+router.get('/products', adminController.getAllProductsAdmin);
 router.post('/products/bulk-upload', upload.single('file'), adminController.bulkUploadProducts);
 router.post('/products/upload-image', upload.single('image'), adminController.uploadProductImage);
 router.post('/products', adminController.createProduct);

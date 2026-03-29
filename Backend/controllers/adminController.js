@@ -20,7 +20,7 @@ exports.getDashboardStats = async (req, res) => {
     const totalOrders = orders.length;
     const gmv = orders.reduce((sum, order) => sum + order.totalAmount, 0);
     const activeDeliveries = orders.filter(o => ['picking', 'dispatched', 'Order on way'].includes(o.status)).length;
-    const lateOrders = orders.filter(o => o.status === 'pending' && (new Date() - o.createdAt) > 3600000).length;
+    const lateOrders = orders.filter(o => o.status === 'Accepted' && (new Date() - o.createdAt) > 3600000).length;
 
     const hourlyGMV = [{ time: '10:00', amount: 450 }, { time: '15:00', amount: gmv }];
     
@@ -200,6 +200,15 @@ exports.bulkUploadProducts = async (req, res) => {
     const bulkOps = extracted.map(p => ({ insertOne: { document: p } }));
     const result = await Product.bulkWrite(bulkOps);
     res.json({ message: 'Upload complete', summary: { totalRows: data.length, extracted: extracted.length, skipped: skipped.length, matched: result.matchedCount, upserted: result.upsertedCount, inserted: result.insertedCount }, skippedDetails: skipped });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getAllProductsAdmin = async (req, res) => {
+  try {
+    const products = await Product.find({}).sort({ createdAt: -1 });
+    res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

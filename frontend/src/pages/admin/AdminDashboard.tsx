@@ -88,7 +88,7 @@ const AdminDashboard: React.FC = () => {
         axios.get(`${API_BASE}/admin/users`),
         axios.get(`${API_BASE}/orders`),
         axios.get(`${API_BASE}/admin/categories`),
-        axios.get(`${API_BASE}/products`),
+        axios.get(`${API_BASE}/admin/products`),
         axios.get(`${API_BASE}/user-requests`),
         axios.get(`${API_BASE}/admin/stats`)
       ]);
