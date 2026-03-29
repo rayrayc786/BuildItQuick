@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, ChevronDown, User, Loader2, Mic } from 'lucide-react';
+import { ChevronDown, User, Loader2, Mic } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import LocationModal from './LocationModal';
+import logoImg from '../assets/logo.jpeg';
 import './locationSelector.css';
 
 interface LocationSelectorProps {
@@ -99,15 +100,18 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ searchNode }) => {
     <>
       <div className="landing-header">
         <div className="header-top-row">
-          <div className="location-section-landing" onClick={() => setIsModalOpen(true)}>
-            <MapPin size={20} className="pin-icon-landing" />
-            <div className="location-text-landing">
-              <span className="addr-landing">{address}</span>
-              {isLocating ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <ChevronDown size={14} />
-              )}
+          <div className="header-left-group">
+            <img src={logoImg} alt="MatAll" className="logo-mobile" />
+            <div className="location-wrapper">
+              <span className="delivery-time-mobile">Delivery in 60 minutes</span>
+              <div className="location-section-landing" onClick={() => setIsModalOpen(true)}>
+                <span className="addr-landing">{address}</span>
+                {isLocating ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <ChevronDown size={14} />
+                )}
+              </div>
             </div>
           </div>
           
