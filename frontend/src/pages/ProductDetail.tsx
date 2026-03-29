@@ -158,6 +158,7 @@ const ProductDetail: React.FC = () => {
                    <span className="h-mini-label">TYPE</span>
                    <span className="h-mini-value">{product.category || 'Standard'}</span>
                 </div>
+                
              </div>
 
              {/* Variant Selector */}

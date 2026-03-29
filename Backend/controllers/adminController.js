@@ -16,14 +16,61 @@ const path = require('path');
 
 exports.getDashboardStats = async (req, res) => {
   try {
-    const orders = await Order.find({});
+    const orders = await Order.find({}).populate('userId', 'fullName').sort({ createdAt: -1 });
     const totalOrders = orders.length;
     const gmv = orders.reduce((sum, order) => sum + order.totalAmount, 0);
-    const activeDeliveries = orders.filter(o => ['picking', 'dispatched'].includes(o.status)).length;
+    const activeDeliveries = orders.filter(o => ['picking', 'dispatched', 'Order on way'].includes(o.status)).length;
     const lateOrders = orders.filter(o => o.status === 'pending' && (new Date() - o.createdAt) > 3600000).length;
 
     const hourlyGMV = [{ time: '10:00', amount: 450 }, { time: '15:00', amount: gmv }];
-    res.json({ gmv, activeDeliveries, lateOrders, totalOrders, hourlyGMV });
+    
+    // New stats
+    const activeOrders = orders.filter(o => !['Order Delivered', 'Cancelled'].includes(o.status)).length;
+    const activeSuppliers = await Supplier.countDocuments({ isActive: true });
+    const activeCategories = await Category.countDocuments({ isActive: true });
+    
+    // Mock delivery time for now, or calculate from delivered orders
+    const avgDeliveryTime = '25 mins';
+
+    // Group revenue by day for current week mock
+    const revenueData = [
+      { day: 'S', revenue: 10000 },
+      { day: 'M', revenue: 11000 },
+      { day: 'T', revenue: 12000 },
+      { day: 'W', revenue: 13000 },
+      { day: 'T', revenue: 16000 },
+      { day: 'F', revenue: gmv > 0 ? gmv : 14000 },
+      { day: 'S', revenue: 15000 },
+    ];
+
+    const ordersStatsData = [
+      { week: 'Mar\'25 W1', orders: 25, fulfilled: 25, delayed: 5 },
+      { week: 'Mar\'25 W2', orders: 32, fulfilled: 30, delayed: 2 },
+      { week: 'Mar\'25 W3', orders: 16, fulfilled: 16, delayed: 5 },
+      { week: 'Mar\'25 W4', orders: totalOrders > 0 ? totalOrders : 20, fulfilled: orders.filter(o=>o.status==='Order Delivered').length, delayed: lateOrders },
+    ];
+
+    // Format top 5 recent orders for the B2B Orders list
+    const recentOrders = orders.slice(0, 5).map(o => {
+      const name = o.userId && o.userId.fullName ? o.userId.fullName : 'Guest or Unknown';
+      const codeArr = name.split(' ');
+      const code = codeArr.length > 1 ? (codeArr[0][0] + codeArr[1][0]).toUpperCase() : name.substring(0, 2).toUpperCase();
+      
+      return {
+        id: o._id,
+        name: name,
+        date: new Date(o.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        amount: '+ ' + o.totalAmount.toLocaleString('en-IN'),
+        code: code,
+        status: o.status
+      };
+    });
+
+    res.json({ 
+      gmv, activeDeliveries, lateOrders, totalOrders, hourlyGMV,
+      activeOrders, activeSuppliers, activeCategories, avgDeliveryTime,
+      revenueData, ordersStatsData, recentOrders
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -51,11 +98,18 @@ exports.bulkUploadProducts = async (req, res) => {
     if (!req.file) return res.status(400).send('No file uploaded.');
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
     const data = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-    const imageDirPath = path.join(__dirname, '..', 'public', 'images');
-    const files = fs.existsSync(imageDirPath) ? fs.readdirSync(imageDirPath) : [];
-
     const extracted = [], skipped = [], seenSkus = new Set();
     const masterData = { categories: new Set(), subCategories: new Map(), brands: new Set(), variantTitles: new Set(), deliveryTimes: new Set() };
+
+    let availableImages = [];
+    try {
+      const imgDir = path.join(__dirname, '..', 'public', 'images');
+      if (fs.existsSync(imgDir)) {
+        availableImages = fs.readdirSync(imgDir);
+      }
+    } catch(err) {
+      console.error('Error reading images directory', err);
+    }
 
     data.forEach((item, index) => {
       const sku = String(item['Product Code'] || '').trim();
@@ -88,44 +142,28 @@ exports.bulkUploadProducts = async (req, res) => {
         }
       });
 
-      const imageValue = String(item['IMAGES 24 Images left'] || item['image'] || item['Image'] || item['Images'] || '').trim();
+      const imageKey = Object.keys(item).find(k => {
+        const lk = k.trim().toLowerCase();
+        return lk === 'images' || lk === 'image' || lk === 'product images' || lk.includes('images left');
+      });
+      const imageValue = imageKey && item[imageKey] ? String(item[imageKey]).trim() : '';
       const rawImageNames = imageValue.split(',').map(s => s.trim()).filter(Boolean);
       
-      let images = rawImageNames.map(name => {
-        // Try to find a file that matches the name (with or without extension)
-        const found = files.find(f => {
-          const parts = f.split('.');
-          const baseName = parts.length > 1 ? parts.slice(0, -1).join('.') : f;
-          const fullName = f.toLowerCase();
-          const searchName = name.toLowerCase();
-          return baseName.toLowerCase() === searchName || fullName === searchName;
-        });
-        return found ? `/images/${found}` : null;
-      }).filter(Boolean);
 
-      // Fallback 1: Match by SKU or Product Code
-      if (images.length === 0 && sku) {
-        const foundBySku = files.find(f => {
-          const parts = f.split('.');
-          const baseName = parts.length > 1 ? parts.slice(0, -1).join('.') : f;
-          return baseName.toLowerCase() === sku.toLowerCase();
+      const images = rawImageNames.map(name => {
+        if (name.indexOf('://') !== -1 || name.startsWith('data:')) return name;
+        if (name.startsWith('/')) return name;
+        
+        const matchedImage = availableImages.find(f => {
+          const fileNameWithoutExt = f.substring(0, f.lastIndexOf('.'));
+          return f.toLowerCase().includes(name.toLowerCase()) || (fileNameWithoutExt && fileNameWithoutExt.toLowerCase() === name.toLowerCase());
         });
-        if (foundBySku) images.push(`/images/${foundBySku}`);
-      }
-
-      // Fallback 2: Fuzzy match by Product Name or SKU substrings
-      if (images.length === 0) {
-        const name = String(item['Product Name'] || '').toLowerCase();
-        const foundFuzzy = files.find(f => {
-          const fLow = f.toLowerCase();
-          // Check if file name contains SKU or if SKU contains file name (min 4 chars)
-          if (sku && sku.length > 3 && (fLow.includes(sku.toLowerCase()) || sku.toLowerCase().includes(fLow.split('.')[0]))) return true;
-          // Check if file name contains product name or vice-versa
-          if (name && name.length > 5 && (fLow.includes(name) || name.includes(fLow.split('.')[0]))) return true;
-          return false;
-        });
-        if (foundFuzzy) images.push(`/images/${foundFuzzy}`);
-      }
+        
+        if (matchedImage) {
+          return `/images/${matchedImage}`;
+        }
+        return `/images/${name}`;
+      });
 
       const mrpRaw = item['MRP \n(Incl GST)'] || item['MRP \r\n(Incl GST)'] || item['MRP'] || 0;
       const mrp = typeof mrpRaw === 'string' ? parseFloat(mrpRaw.replace(/,/g, '')) : parseFloat(mrpRaw);

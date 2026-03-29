@@ -60,6 +60,7 @@ const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'reports' | 'actions'>((tabParam as any) || 'dashboard');
   const [activeActionTab, setActiveActionTab] = useState<'list' | 'users' | 'orders' | 'categories' | 'products' | 'tickets' | 'userRequests' | 'footer-links'>('list');
   const [loading, setLoading] = useState(false);
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
 
   const [users, setUsers] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
@@ -83,12 +84,13 @@ const AdminDashboard: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [uRes, oRes, cRes, pRes, urRes] = await Promise.all([
+      const [uRes, oRes, cRes, pRes, urRes, statsRes] = await Promise.all([
         axios.get(`${API_BASE}/admin/users`),
         axios.get(`${API_BASE}/orders`),
         axios.get(`${API_BASE}/admin/categories`),
         axios.get(`${API_BASE}/products`),
-        axios.get(`${API_BASE}/user-requests`)
+        axios.get(`${API_BASE}/user-requests`),
+        axios.get(`${API_BASE}/admin/stats`)
       ]);
       
       if (uRes.data) setUsers(uRes.data);
@@ -96,6 +98,7 @@ const AdminDashboard: React.FC = () => {
       if (cRes.data) setCategories(cRes.data);
       if (pRes.data) setProducts(pRes.data);
       if (urRes.data) setUserRequests(urRes.data);
+      if (statsRes.data) setDashboardStats(statsRes.data);
     } catch (err: any) {
       console.error('Fetch failed:', err);
     } finally {
@@ -243,10 +246,10 @@ const AdminDashboard: React.FC = () => {
   };
 
   const TILES = [
-    { label: 'Active Orders', val: '20', icon: <Package size={20} />, color: '#FFEA00' },
-    { label: 'Active Suppliers', val: '10', icon: <Users size={20} />, color: '#DEDEDE' },
-    { label: 'Active Categories', val: '3', icon: <Layers size={20} />, color: '#DEDEDE' },
-    { label: 'Avg Delivery Time', val: '25 mins', icon: <Clock size={20} />, color: '#DEDEDE' },
+    { label: 'Active Orders', val: dashboardStats?.activeOrders ?? '0', icon: <Package size={20} />, color: '#FFEA00' },
+    { label: 'Active Suppliers', val: dashboardStats?.activeSuppliers ?? '0', icon: <Users size={20} />, color: '#DEDEDE' },
+    { label: 'Active Categories', val: dashboardStats?.activeCategories ?? '0', icon: <Layers size={20} />, color: '#DEDEDE' },
+    { label: 'Avg Delivery Time', val: dashboardStats?.avgDeliveryTime ?? '0 mins', icon: <Clock size={20} />, color: '#DEDEDE' },
   ];
 
   const ACTION_ITEMS = [
@@ -335,7 +338,7 @@ const AdminDashboard: React.FC = () => {
          </div>
          <div className="chart-container">
             <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={REVENUE_DATA}>
+              <AreaChart data={dashboardStats?.revenueData || REVENUE_DATA}>
                 <defs>
                   <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#ff4d4d" stopOpacity={0.2}/>
@@ -369,7 +372,7 @@ const AdminDashboard: React.FC = () => {
          </div>
          <div className="chart-container">
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={ORDERS_STATS_DATA} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+              <BarChart data={dashboardStats?.ordersStatsData || ORDERS_STATS_DATA} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                 <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
                 <Tooltip />
@@ -393,11 +396,11 @@ const AdminDashboard: React.FC = () => {
          </div>
          
          <div className="b2b-orders-list">
-            {[
-              { name: 'Sierra Interior', date: 'Mar 22, 2025', amount: '+ 10,000', code: 'SI' },
-              { name: 'Benchmarks', date: 'Mar 26, 2025', amount: '+ 1,00,000', code: 'BM' },
-              { name: 'Sierra Interior', date: 'Mar 22, 2025', amount: '+ 2,00,000', code: 'SI' },
-            ].map((order, idx) => (
+            {(dashboardStats?.recentOrders || [
+              { name: 'Sierra Interior', date: 'Mar 22, 2025', amount: '+ 10,000', code: 'SI', status: 'New Order' },
+              { name: 'Benchmarks', date: 'Mar 26, 2025', amount: '+ 1,00,000', code: 'BM', status: 'Processing' },
+              { name: 'Sierra Interior', date: 'Mar 22, 2025', amount: '+ 2,00,000', code: 'SI', status: 'Delivered' },
+            ]).map((order: any, idx: number) => (
               <div key={idx} className="b2b-order-row">
                  <div className="b2b-avatar">{order.code}</div>
                  <div className="b2b-info">
@@ -406,7 +409,11 @@ const AdminDashboard: React.FC = () => {
                  </div>
                  <div className="b2b-amount-group">
                     <span className="amount-val">{order.amount}</span>
-                    <button className="new-order-badge">New Order</button>
+                    {order.status === 'pending' || order.status === 'Order Placed' || order.status === 'New Order' ? (
+                       <button className="new-order-badge">New Order</button>
+                    ) : (
+                       <button className="new-order-badge" style={{background: '#f1f5f9', color: '#64748b'}}>{order.status || 'Active'}</button>
+                    )}
                  </div>
               </div>
             ))}
