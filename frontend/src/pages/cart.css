@@ -130,8 +130,13 @@
   display: flex;
   gap: 16px;
   position: relative;
-  align-items: center;
-  padding: 4px 0;
+  align-items: flex-start;
+  padding: 1rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cart-item-row-blinkit:last-child {
+  border-bottom: none;
 }
 
 .c-item-img {
@@ -174,19 +179,24 @@
   overflow: hidden;
 }
 
+.c-item-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
 .c-item-unit {
   font-size: 0.75rem;
-  color: #94a3b8;
-  margin-top: 2px;
+  color: #64748b;
   font-weight: 600;
 }
 
 .c-item-wishlist {
-  font-size: 0.7rem;
-  color: #64748b;
-  text-decoration: underline;
-  font-weight: 800;
-  margin-top: 4px;
+  font-size: 0.72rem;
+  color: #16a34a;
+  text-decoration: none;
+  font-weight: 700;
   background: none;
   border: none;
   padding: 0;
@@ -194,29 +204,54 @@
   text-align: left;
 }
 
+.c-item-qty-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 12px;
+}
+
+.c-item-price {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #1e293b;
+}
+
 .c-item-actions {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 8px;
 }
 
 .c-qty-box {
-  background: #16a34a;
-  color: white;
+  background: #ffffff;
+  color: #1e293b;
   border-radius: 8px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 10px;
+  padding: 4px 8px;
+  border: 1.5px solid #e2e8f0;
+  width: fit-content;
 }
 
 .c-qty-box button {
   background: none;
   border: none;
-  color: white;
-  padding: 0;
+  color: #16a34a;
+  padding: 4px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.c-qty-box button:hover {
+  background: #f1f5f9;
+  border-radius: 4px;
 }
 
 .c-qty-val {
@@ -233,10 +268,11 @@
 /* 2. Bill Summary Pod (Mobile) */
 .bill-summary-pod {
   background: white;
-  margin: 0.75rem;
-  padding: 1.25rem 1rem;
-  border-radius: 20px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  margin: 1.25rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+  border: 1px solid #f1f5f9;
 }
 
 .bill-summary-pod h3 {
@@ -276,9 +312,10 @@
 }
 
 .upsell-full-section h3 {
-  /* font-size: 1.1rem; */
-  /* font-weight: 900; */
-  margin-bottom: 1.25rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  color: #1e293b;
 }
 
 /* 3. Sticky Dual Footer */
@@ -443,14 +480,14 @@
   }
 
   .bill-card {
-    background: white;
-    border-radius: 24px;
-    padding: 1.75rem;
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.03);
-    border: 1px solid #f1f5f9;
+    gap: 0.25rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    border: none;
   }
 
   .bill-row-checkout {
@@ -479,14 +516,14 @@
   }
 
   .total-label {
-    font-weight: 800;
+    font-weight: 700;
     font-size: 1.1rem;
     color: #000;
   }
 
   .total-val {
-    font-weight: 950;
-    font-size: 1.25rem;
+    font-weight: 900;
+    font-size: 1.2rem;
     color: #000;
   }
 
@@ -499,19 +536,22 @@
     background: #16a34a;
     color: #fff;
     border: none;
-    padding: 1.1rem;
-    border-radius: 16px;
-    font-weight: 900;
-    font-size: 1.15rem;
+    padding: 1rem;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 1.2rem;
     cursor: pointer;
-    box-shadow: 0 8px 24px rgba(22, 163, 74, 0.2);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 6px 15px rgba(22, 163, 74, 0.2);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .final-place-btn-desktop:hover {
     background: #15803d;
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(22, 163, 74, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(22, 163, 74, 0.3);
   }
 
   .final-place-btn-desktop:active {

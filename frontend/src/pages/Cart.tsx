@@ -13,6 +13,8 @@ import { useCart } from '../contexts/CartContext';
 import ProductCard from '../components/ProductCard';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import './cart.css';
+
 const Cart: React.FC = () => {
   const { cart, addToCart, removeFromCart, totalAmount } = useCart();
   const navigate = useNavigate();
@@ -105,21 +107,24 @@ const Cart: React.FC = () => {
                     </div>
                     <div className="c-item-info">
                       <h5>{item.product.brand} {item.product.name}</h5>
-                      <span className="c-item-unit">{item.selectedVariant || item.product.unitLabel || 'Standard'}</span>
-                      <button 
-                         className="c-item-wishlist"
-                         onClick={() => handleMoveToWishlist(item.product, item.selectedVariant)}
-                      >
-                        Move to wishlist
-                      </button>
-                    </div>
-                    <div className="c-item-actions">
-                      <div className="c-qty-box">
-                        <button onClick={() => addToCart(item.product, -1, item.selectedVariant)}><Minus size={16} /></button>
-                        <span className="c-qty-val">{item.quantity}</span>
-                        <button onClick={() => addToCart(item.product, 1, item.selectedVariant)}><Plus size={16} /></button>
+                      <div className="c-item-meta-row">
+                        <span className="c-item-unit">{item.selectedVariant || item.product.unitLabel || 'Standard'}</span>
+                        <button 
+                           className="c-item-wishlist"
+                           onClick={() => handleMoveToWishlist(item.product, item.selectedVariant)}
+                        >
+                          Move to wishlist
+                        </button>
                       </div>
-                      <span className="c-item-price">₹{(item.product.salePrice || item.product.price) * item.quantity}</span>
+                      
+                      <div className="c-item-qty-price-row">
+                        <div className="c-qty-box">
+                          <button onClick={() => addToCart(item.product, -1, item.selectedVariant)}><Minus size={14} /></button>
+                          <span className="c-qty-val">{item.quantity}</span>
+                          <button onClick={() => addToCart(item.product, 1, item.selectedVariant)}><Plus size={14} /></button>
+                        </div>
+                        <span className="c-item-price">₹{(item.product.salePrice || item.product.price) * item.quantity}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -134,11 +139,15 @@ const Cart: React.FC = () => {
               </div>
               <div className="bill-row-item">
                 <span>Delivery Charge</span>
-                <span style={{ color: '#16a34a' }}>FREE</span>
+                {deliveryCharge > 0 ? <span>₹{deliveryCharge}</span> : <span style={{ color: '#16a34a' }}>FREE</span>}
+              </div>
+              <div className="bill-row-item">
+                <span>Handling Charge</span>
+                <span>₹{handlingCharge}</span>
               </div>
               <div className="bill-row-total">
                 <span>Grand Total</span>
-                <span>₹{(totalAmount + 2).toFixed(2)}</span>
+                <span>₹{grandTotal.toFixed(2)}</span>
               </div>
             </div>
 
@@ -168,6 +177,10 @@ const Cart: React.FC = () => {
                   <span className="bill-val">
                     {deliveryCharge > 0 ? `₹${deliveryCharge}` : <span className="free">FREE</span>}
                   </span>
+                </div>
+                <div className="bill-row-checkout">
+                  <span>Handling Charge</span>
+                  <span className="bill-val">₹{handlingCharge}</span>
                 </div>
                 <div className="bill-row-checkout grand-total-row">
                   <span className="total-label">Grand Total</span>
