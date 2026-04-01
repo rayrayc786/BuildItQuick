@@ -109,7 +109,7 @@ const Checkout: React.FC = () => {
     });
   };
 
-  const handlePlaceOrder = async (isCod = false) => {
+  const handlePlaceOrder = async (mode: 'full' | 'partial') => {
     if (!selectedAddress) {
       toast.error('Please select a delivery address');
       setStep('address-list');
@@ -119,80 +119,81 @@ const Checkout: React.FC = () => {
     setLoading(true);
     const token = localStorage.getItem('token');
     
-    if (isCod) {
-      // Direct COD order
-      await finalizeOrder('COD', null);
-    } else {
-      // Step 1: Load Razorpay
-      const res = await loadRazorpayScript();
-      if (!res) {
-        toast.error('Razorpay SDK failed to load. Check connection.');
-        setLoading(false);
-        return;
-      }
+    // Step 1: Load Razorpay
+    const res = await loadRazorpayScript();
+    if (!res) {
+      toast.error('Razorpay SDK failed to load. Check connection.');
+      setLoading(false);
+      return;
+    }
 
-      // Step 2: Create Order from Backend
-      try {
-        const { data: orderData } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/orders/razorpay/create-order`, {
-          amount: grandTotal
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+    const payAmount = mode === 'partial' ? Math.round(grandTotal / 2) : grandTotal;
 
-        // Step 3: Initialize Razorpay Checkout
-        const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_mock12345',
-          amount: orderData.amount,
-          currency: orderData.currency,
-          name: 'MatAll',
-          description: 'Payment for your materials',
-          order_id: orderData.id,
-          handler: async function (response: any) {
-            try {
-               await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/orders/razorpay/verify`, {
-                 razorpay_order_id: response.razorpay_order_id,
-                 razorpay_payment_id: response.razorpay_payment_id,
-                 razorpay_signature: response.razorpay_signature
-               }, { headers: { Authorization: `Bearer ${token}` } });
-               
-               toast.success('Payment Verified!');
-               await finalizeOrder('Online Payment', response.razorpay_payment_id);
-            } catch (err) {
-               toast.error('Payment verification failed.');
-            }
-          },
-          prefill: {
-            name: user.fullName || 'Guest',
-            email: user.email || 'customer@example.com',
-            contact: user.phoneNumber || '9999999999'
-          },
-          theme: {
-            color: '#FFEA00'
+    // Step 2: Create Order from Backend
+    try {
+      const { data: orderData } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/orders/razorpay/create-order`, {
+        amount: payAmount
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Step 3: Initialize Razorpay Checkout
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_mock12345',
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'MatAll',
+        description: mode === 'partial' ? 'Advance Payment (50%)' : 'Full Payment',
+        order_id: orderData.id,
+        handler: async function (response: any) {
+          try {
+             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/orders/razorpay/verify`, {
+               razorpay_order_id: response.razorpay_order_id,
+               razorpay_payment_id: response.razorpay_payment_id,
+               razorpay_signature: response.razorpay_signature
+             }, { headers: { Authorization: `Bearer ${token}` } });
+             
+             toast.success('Payment Verified!');
+             await finalizeOrder(
+               mode === 'partial' ? 'Partial Payment (50%)' : 'Online Payment', 
+               response.razorpay_payment_id,
+               payAmount
+             );
+          } catch (err) {
+             toast.error('Payment verification failed.');
           }
-        };
-
-        const paymentObject = new (window as any).Razorpay(options);
-        paymentObject.on('payment.failed', function (response: any) {
-             toast.error(response.error.description);
-        });
-        paymentObject.open();
-
-      } catch (err: any) {
-        if (err.response && err.response.status === 401) {
-          toast.error('Session expired. Please login again.');
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          navigate('/login', { state: { from: '/cart' }, replace: true });
-        } else {
-          toast.error('Could not create payment session. Try COD.');
+        },
+        prefill: {
+          name: user.fullName || 'Guest',
+          email: user.email || 'customer@example.com',
+          contact: user.phoneNumber || '9999999999'
+        },
+        theme: {
+          color: '#FFEA00'
         }
-      } finally {
-        setLoading(false);
+      };
+
+      const paymentObject = new (window as any).Razorpay(options);
+      paymentObject.on('payment.failed', function (response: any) {
+           toast.error(response.error.description);
+      });
+      paymentObject.open();
+
+    } catch (err: any) {
+      if (err.response && err.response.status === 401) {
+        toast.error('Session expired. Please login again.');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login', { state: { from: '/cart' }, replace: true });
+      } else {
+        toast.error('Could not create payment session.');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
-  const finalizeOrder = async (paymentMethod: string, paymentRef: string | null) => {
+  const finalizeOrder = async (paymentMethod: string, paymentRef: string | null, paidAmount: number) => {
     try {
       const token = localStorage.getItem('token');
       const orderData = {
@@ -203,6 +204,7 @@ const Checkout: React.FC = () => {
           selectedVariant: item.selectedVariant
         })),
         totalAmount: grandTotal,
+        paidAmount: paidAmount,
         shippingAddress: selectedAddress?.addressText || 'Unknown',
         paymentMethod: paymentMethod,
         paymentReference: paymentRef
@@ -483,6 +485,13 @@ const Checkout: React.FC = () => {
         <div className="checkout-grid-responsive">
           <div className="checkout-left-col">
             {/* Order Owner Details */}
+            <div className="delivery-slot-card">
+               <div className="slot-header">
+                  <Clock size={18} />
+                  <span>Delivery in 60 Mins</span>
+               </div>
+               <p className="slot-sub">Shipment of {cart.length} Item{cart.length > 1 ? 's' : ''}</p>
+            </div>
             <div className="checkout-user-pod">
               <div className="pod-icon-circle"><Receipt size={20} /></div>
               <div className="pod-info-stack">
@@ -507,13 +516,7 @@ const Checkout: React.FC = () => {
             </div>
 
             {/* Delivery Time & Shipment - PRD Page 34 */}
-            <div className="delivery-slot-card">
-               <div className="slot-header">
-                  <Clock size={18} />
-                  <span>Delivery in 60 Mins</span>
-               </div>
-               <p className="slot-sub">Shipment of {cart.length} Item{cart.length > 1 ? 's' : ''}</p>
-            </div>
+            
 
             {/* GSTIN Entry - PRD Page 34 */}
             <div className="gstin-entry-row">
@@ -575,11 +578,11 @@ const Checkout: React.FC = () => {
             )}
 
             <div className="desktop-order-actions hide-mobile mt-4">
-               <button className="final-place-btn-desktop" onClick={() => handlePlaceOrder(false)} disabled={loading}>
+               <button className="final-place-btn-desktop" onClick={() => handlePlaceOrder('full')} disabled={loading}>
                   {loading ? 'Processing...' : `Pay Online • ₹${grandTotal}`}
                </button>
-               <button className="final-place-btn-desktop" onClick={() => handlePlaceOrder(true)} disabled={loading} style={{marginTop: '10px', background: '#DEDEDE', color: '#000'}}>
-                  {loading ? 'Processing...' : `Cash on Delivery`}
+               <button className="final-place-btn-desktop" onClick={() => handlePlaceOrder('partial')} disabled={loading} style={{marginTop: '10px', background: '#DEDEDE', color: '#000'}}>
+                  {loading ? 'Processing...' : `Pay 50% Now • ₹${Math.round(grandTotal / 2)}`}
                </button>
             </div>
           </div>
@@ -594,13 +597,13 @@ const Checkout: React.FC = () => {
            </div>
            <ChevronDown size={16} />
         </div>
-        <button className="checkout-place-btn" onClick={() => handlePlaceOrder(false)} disabled={loading}>
+        <button className="checkout-place-btn" onClick={() => handlePlaceOrder('partial')} disabled={loading}>
            <div className="btn-p-info">
-              <span className="p-val">₹{grandTotal}</span>
-              <span className="p-lbl">TOTAL</span>
+              <span className="p-val">₹{Math.round(grandTotal / 2)}</span>
+              <span className="p-lbl">50% ADVANCE</span>
            </div>
            <div className="btn-p-main">
-              {loading ? 'Processing...' : 'Pay Online'} <ArrowRight size={20} />
+              {loading ? 'Processing...' : 'Pay 50% Now'} <ArrowRight size={20} />
            </div>
         </button>
       </footer>

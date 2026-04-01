@@ -14,17 +14,31 @@ import ProductCard from '../components/ProductCard';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import './cart.css';
-import './checkout.css';
 
 const Cart: React.FC = () => {
-  const { cart, addToCart, totalAmount } = useCart();
+  const { cart, addToCart, removeFromCart, totalAmount } = useCart();
   const navigate = useNavigate();
   const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [maxDeliveryTime, setMaxDeliveryTime] = useState('15 mins');
 
   // Same fee logic as Checkout.tsx
   const deliveryCharge = totalAmount > 5000 ? 0 : 150;
   const handlingCharge = 25;
   const grandTotal = totalAmount + deliveryCharge + handlingCharge;
+
+  useEffect(() => {
+    if (cart.length > 0) {
+      // Find the slowest delivery time
+      const times = cart.map(item => item.product.deliveryTime || '15 mins');
+      let slowest = times[0];
+      times.forEach(t => {
+        if (t.toLowerCase().includes('day')) slowest = t;
+        else if (t.toLowerCase().includes('hour') && !slowest.toLowerCase().includes('day')) slowest = t;
+        else if (parseInt(t) > parseInt(slowest) && !slowest.toLowerCase().includes('hour') && !slowest.toLowerCase().includes('day')) slowest = t;
+      });
+      setMaxDeliveryTime(slowest);
+    }
+  }, [cart]);
 
   useEffect(() => {
     const fetchRecs = async () => {
@@ -37,6 +51,26 @@ const Cart: React.FC = () => {
     };
     fetchRecs();
   }, []);
+
+  const handleMoveToWishlist = async (product: any, variant?: string) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Please login to use wishlist');
+      navigate('/login', { state: { from: '/cart' } });
+      return;
+    }
+
+    try {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/favorites/toggle`, 
+        { productId: product._id }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      removeFromCart(product._id, variant);
+      toast.success('Moved to wishlist!', { icon: '❤️' });
+    } catch (err) {
+      toast.error('Failed to move to wishlist');
+    }
+  };
 
   if (cart.length === 0) {
     return (
@@ -53,20 +87,14 @@ const Cart: React.FC = () => {
 
   return (
     <div className="blinkit-cart-page">
-
-      {/* ── Same grid structure as Checkout ── */}
       <main className="checkout-content main-content-responsive">
         <div className="checkout-grid-responsive">
-
-          {/* LEFT COLUMN */}
           <div className="checkout-left-col">
-
-            {/* Shipment Pod */}
             <div className="shipment-container">
               <div className="ship-head-row">
                 <div className="ship-timer-icon"><Clock size={18} /></div>
                 <div className="ship-timer-text">
-                  <h4>Delivery in 15 minutes</h4>
+                  <h4>Delivery in {maxDeliveryTime}</h4>
                   <p>Shipment of {cart.length} item{cart.length > 1 ? 's' : ''}</p>
                 </div>
               </div>
@@ -79,23 +107,30 @@ const Cart: React.FC = () => {
                     </div>
                     <div className="c-item-info">
                       <h5>{item.product.brand} {item.product.name}</h5>
-                      <span className="c-item-unit">{item.selectedVariant || item.product.unitLabel || 'Standard'}</span>
-                      <button className="c-item-wishlist">Move to wishlist</button>
-                    </div>
-                    <div className="c-item-actions">
-                      <div className="c-qty-box">
-                        <button onClick={() => addToCart(item.product, -1, item.selectedVariant)}><Minus size={16} /></button>
-                        <span className="c-qty-val">{item.quantity}</span>
-                        <button onClick={() => addToCart(item.product, 1, item.selectedVariant)}><Plus size={16} /></button>
+                      <div className="c-item-meta-row">
+                        <span className="c-item-unit">{item.selectedVariant || item.product.unitLabel || 'Standard'}</span>
+                        <button 
+                           className="c-item-wishlist"
+                           onClick={() => handleMoveToWishlist(item.product, item.selectedVariant)}
+                        >
+                          Move to wishlist
+                        </button>
                       </div>
-                      <span className="c-item-price">₹{(item.product.salePrice || item.product.price) * item.quantity}</span>
+                      
+                      <div className="c-item-qty-price-row">
+                        <div className="c-qty-box">
+                          <button onClick={() => addToCart(item.product, -1, item.selectedVariant)}><Minus size={14} /></button>
+                          <span className="c-qty-val">{item.quantity}</span>
+                          <button onClick={() => addToCart(item.product, 1, item.selectedVariant)}><Plus size={14} /></button>
+                        </div>
+                        <span className="c-item-price">₹{(item.product.salePrice || item.product.price) * item.quantity}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Bill Summary – mobile only */}
             <div className="bill-summary-pod hide-desktop">
               <h3>Bill Summary</h3>
               <div className="bill-row-item">
@@ -104,19 +139,18 @@ const Cart: React.FC = () => {
               </div>
               <div className="bill-row-item">
                 <span>Delivery Charge</span>
-                <span style={{ color: '#16a34a' }}>FREE</span>
+                {deliveryCharge > 0 ? <span>₹{deliveryCharge}</span> : <span style={{ color: '#16a34a' }}>FREE</span>}
               </div>
               <div className="bill-row-item">
                 <span>Handling Charge</span>
-                <span>₹2</span>
+                <span>₹{handlingCharge}</span>
               </div>
               <div className="bill-row-total">
                 <span>Grand Total</span>
-                <span>₹{totalAmount + 2}</span>
+                <span>₹{grandTotal.toFixed(2)}</span>
               </div>
             </div>
 
-            {/* Upsells */}
             <section className="upsell-full-section">
               <h3>You might also like</h3>
               <div className="cat-grid-standard">
@@ -127,7 +161,6 @@ const Cart: React.FC = () => {
             </section>
           </div>
 
-          {/* RIGHT COLUMN – exact same JSX as Checkout */}
           <div className="checkout-right-col">
             <section className="checkout-section">
               <div className="section-title-row">
@@ -151,7 +184,7 @@ const Cart: React.FC = () => {
                 </div>
                 <div className="bill-row-checkout grand-total-row">
                   <span className="total-label">Grand Total</span>
-                  <span className="total-val">₹{grandTotal}</span>
+                  <span className="total-val">₹{grandTotal.toFixed(2)}</span>
                 </div>
               </div>
             </section>
@@ -165,15 +198,13 @@ const Cart: React.FC = () => {
                   navigate('/checkout');
                 }
               }}>
-                Place Order • ₹{grandTotal}
+                Place Order • ₹{grandTotal.toFixed(2)}
               </button>
             </div>
           </div>
-
         </div>
       </main>
 
-      {/* Sticky Dual Footer – Mobile only */}
       <div className="checkout-footer-stack">
         <div className="addr-summary-bar" onClick={() => navigate('/checkout')}>
           <div className="addr-icon-pill"><MapPin size={18} /></div>
@@ -194,7 +225,7 @@ const Cart: React.FC = () => {
         }}>
           <div className="pay-info-left">
             <div className="pay-total-row">
-              <span>₹{grandTotal}</span>
+              <span>₹{grandTotal.toFixed(2)}</span>
               <span style={{ fontSize: '0.6rem', opacity: 0.8 }}>NEXT STEP</span>
             </div>
           </div>
