@@ -341,7 +341,7 @@ async function seed() {
     
     await DarkStore.create(seedDarkStore);
     await Supplier.create(seedSupplier);
-    await Product.insertMany(seedProducts);
+    await Product.insertMany(seedProducts.map(p => ({ ...p, productName: p.name })));
     await User.insertMany(seedUsers);
     await ServiceableArea.insertMany(seedServiceableAreas);
 

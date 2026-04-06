@@ -1,6 +1,15 @@
+const dns = require('dns');
+// Priority for modern Node versions (v17+) to fix connection issues on some networks
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+// Set DNS servers to Google's to fix querySrv ECONNREFUSED issues on some networks
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
+const fs = require('fs');
 const path = require('path');
 const { Server } = require('socket.io');
 const { createClient } = require('redis');
@@ -15,7 +24,8 @@ const server = http.createServer(app);
 // Connect to MongoDB
 console.log('Attempting to connect to MongoDB...');
 mongoose.connect(process.env.MONGO_URI , {
-  serverSelectionTimeoutMS: 5000 // Timeout after 5s instead of 30s for faster debugging
+  serverSelectionTimeoutMS: 10000, // Timeout after 10s
+  family: 4 // Force IPv4
 })
   .then(() => console.log('✅ MongoDB connected successfully to:', mongoose.connection.name))
   .catch(err => {
@@ -57,12 +67,23 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Serve images from the "public/images" directory
+// Serve images from the "public/images" and "uploads/products" directories
 const imagePath = path.join(__dirname, 'public', 'images');
+const uploadPath = path.join(__dirname, 'uploads', 'products');
+
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+}
+
 console.log('Static images directory:', imagePath);
+console.log('Uploads directory:', uploadPath);
+
 app.use('/images', express.static(imagePath));
-// Fallback for /api/images if VITE_API_BASE_URL includes /api
+app.use('/uploads/products', express.static(uploadPath));
+
+// Fallback for /api/ prefix
 app.use('/api/images', express.static(imagePath));
+app.use('/api/uploads/products', express.static(uploadPath));
 
 // Initialize Socket.io
 const io = new Server(server, {

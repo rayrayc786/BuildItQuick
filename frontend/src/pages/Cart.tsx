@@ -17,7 +17,7 @@ import { getFullImageUrl } from '../utils/imageUrl';
 import './cart.css';
 
 const Cart: React.FC = () => {
-  const { cart, addToCart, removeFromCart, totalAmount } = useCart();
+  const { cart, addToCart, removeFromCart, totalAmount, totalGst } = useCart();
   const navigate = useNavigate();
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [maxDeliveryTime, setMaxDeliveryTime] = useState('15 mins');
@@ -141,8 +141,12 @@ const Cart: React.FC = () => {
             <div className="bill-summary-pod hide-desktop">
               <h3>Bill Summary</h3>
               <div className="bill-row-item">
-                <span>Item Total</span>
-                <span>₹{totalAmount}</span>
+                <span>Item Total (Excl. GST)</span>
+                <span>₹{(totalAmount - totalGst).toFixed(2)}</span>
+              </div>
+              <div className="bill-row-item" style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                <span>GST Amount</span>
+                <span>₹{totalGst.toFixed(2)}</span>
               </div>
               <div className="bill-row-item">
                 <span>Delivery Charge</span>
@@ -176,8 +180,12 @@ const Cart: React.FC = () => {
               </div>
               <div className="bill-card">
                 <div className="bill-row-checkout">
-                  <span>Item Total</span>
-                  <span className="bill-val">₹{totalAmount}</span>
+                  <span>Item Total (Excl. GST)</span>
+                  <span className="bill-val">₹{(totalAmount - totalGst).toFixed(2)}</span>
+                </div>
+                <div className="bill-row-checkout" style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '8px' }}>
+                  <span>GST Amount</span>
+                  <span className="bill-val">₹{totalGst.toFixed(2)}</span>
                 </div>
                 <div className="bill-row-checkout">
                   <span>Delivery Charge</span>

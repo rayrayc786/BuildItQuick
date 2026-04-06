@@ -31,7 +31,7 @@ const Checkout: React.FC = () => {
   const isLoaded = useApiIsLoaded();
   const geocodingLibrary = useMapsLibrary('geocoding');
   
-  const { cart, clearCart, totalAmount } = useCart();
+  const { cart, clearCart, totalAmount, totalGst } = useCart();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'checkout' | 'address-list' | 'location-ask' | 'map-confirm' | 'address-form'>('checkout');
@@ -203,10 +203,13 @@ const Checkout: React.FC = () => {
         items: cart.map(item => ({
           product: item.product._id,
           quantity: item.quantity,
-          price: item.product.salePrice || item.product.price,
+          price: item.product.variants?.find((v: any) => v.name === item.selectedVariant)?.pricing?.salePrice || item.product.salePrice || item.product.price || 0,
+          taxRate: item.product.variants?.find((v: any) => v.name === item.selectedVariant)?.pricing?.gst || (item.product as any).gst || (item.product.variants?.[0]?.pricing?.gst) || 18,
           selectedVariant: item.selectedVariant
         })),
         totalAmount: grandTotal,
+        totalTaxAmount: totalGst,
+        totalBaseAmount: totalAmount - totalGst,
         paidAmount: paidAmount,
         shippingAddress: selectedAddress?.addressText || 'Unknown',
         paymentMethod: paymentMethod,
@@ -646,8 +649,12 @@ const Checkout: React.FC = () => {
               </div>
               <div className="bill-card">
                 <div className="bill-row-checkout">
-                  <span>Item Total</span>
-                  <span className="bill-val">₹{itemsTotal}</span>
+                  <span>Item Total (Excl. GST)</span>
+                  <span className="bill-val">₹{(totalAmount - totalGst).toFixed(2)}</span>
+                </div>
+                <div className="bill-row-checkout" style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '8px' }}>
+                  <span>GST Amount</span>
+                  <span className="bill-val">₹{totalGst.toFixed(2)}</span>
                 </div>
                 <div className="bill-row-checkout">
                   <span>Delivery Charge</span>
@@ -659,7 +666,7 @@ const Checkout: React.FC = () => {
                 </div>
                 <div className="bill-row-checkout grand-total-row">
                   <span className="total-label">Grand Total</span>
-                  <span className="total-val">₹{grandTotal}</span>
+                  <span className="total-val">₹{grandTotal.toFixed(2)}</span>
                 </div>
               </div>
             </section>
@@ -673,10 +680,10 @@ const Checkout: React.FC = () => {
 
             <div className="desktop-order-actions mt-4">
                <button className="final-place-btn-desktop" onClick={() => handlePlaceOrder('full')} disabled={loading}>
-                  {loading ? 'Processing...' : `Pay online - Full 100% now • ₹${grandTotal}`}
+                  {loading ? 'Processing...' : `Pay online - Full 100% now • ₹${grandTotal.toFixed(2)}`}
                </button>
                <button className="final-place-btn-desktop" onClick={() => handlePlaceOrder('partial')} disabled={loading} style={{marginTop: '10px', background: '#DEDEDE', color: '#000'}}>
-                  {loading ? 'Processing...' : `Split Payment – 50% now and 50% on order delivery • ₹${Math.round(grandTotal / 2)}`}
+                  {loading ? 'Processing...' : `Split Payment – 50% now and 50% on order delivery • ₹${Math.round(grandTotal / 2).toFixed(2)}`}
                </button>
             </div>
           </div>
@@ -684,17 +691,10 @@ const Checkout: React.FC = () => {
       </main>
 
       <footer className="checkout-footer-sticky-final">
-        {/* <div className="checkout-pay-bar" onClick={() => navigate('/payment')}>
-           <div className="pay-method-lux">
-              <span className="dot-blinkit"></span>
-              <span>PAY USING <strong>UPI</strong></span>
-           </div>
-           <ChevronDown size={16} />
-        </div> */}
         <div className="footer-action-buttons-mobile">
           <button className="checkout-place-btn full-pay" onClick={() => handlePlaceOrder('full')} disabled={loading}>
              <div className="btn-p-info">
-                <span className="p-val">₹{grandTotal}</span>
+                <span className="p-val">₹{grandTotal.toFixed(2)}</span>
                 <span className="p-lbl">100% NOW</span>
              </div>
              <div className="btn-p-main">
@@ -704,7 +704,7 @@ const Checkout: React.FC = () => {
           
           <button className="checkout-place-btn partial-pay" onClick={() => handlePlaceOrder('partial')} disabled={loading}>
              <div className="btn-p-info">
-                <span className="p-val">₹{Math.round(grandTotal / 2)}</span>
+                <span className="p-val">₹{Math.round(grandTotal / 2).toFixed(2)}</span>
                 <span className="p-lbl">50% SPLIT</span>
              </div>
              <div className="btn-p-main">

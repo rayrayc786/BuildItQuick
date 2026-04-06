@@ -1021,11 +1021,13 @@ const AdminDashboard: React.FC = () => {
       <div className="admin-list-container">
         {users.filter(u => 
           (u.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-          (u.phoneNumber || '').includes(searchTerm)
+          (u.phoneNumber || '').includes(searchTerm) ||
+          (u.email || '').toLowerCase().includes(searchTerm.toLowerCase())
         ).length === 0 ? <p className="text-center py-4">No users found.</p> : 
         users.filter(u => 
           (u.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-          (u.phoneNumber || '').includes(searchTerm)
+          (u.phoneNumber || '').includes(searchTerm) ||
+          (u.email || '').toLowerCase().includes(searchTerm.toLowerCase())
         ).map((user, i) => (
           <div key={user._id || i} className="admin-list-row-item">
             <div className="row-user-avatar"><User size={20} /></div>
@@ -1063,11 +1065,15 @@ const AdminDashboard: React.FC = () => {
       <div className="admin-list-container">
         {orders.filter(o => 
           (o.userId?.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-          (o._id || '').toLowerCase().includes(searchTerm.toLowerCase())
+          (o._id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (o.userId?.phoneNumber || '').includes(searchTerm) ||
+          (o.status || '').toLowerCase().includes(searchTerm.toLowerCase())
         ).length === 0 ? <p className="text-center py-4">No orders found.</p> : 
         orders.filter(o => 
           (o.userId?.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-          (o._id || '').toLowerCase().includes(searchTerm.toLowerCase())
+          (o._id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (o.userId?.phoneNumber || '').includes(searchTerm) ||
+          (o.status || '').toLowerCase().includes(searchTerm.toLowerCase())
         ).map((order, i) => (
           <div key={order._id || i} className="admin-list-row-item order-variant">
             <div className="row-left-info" onClick={() => setViewingOrder(order)}>
@@ -1160,11 +1166,17 @@ const AdminDashboard: React.FC = () => {
       <div className="admin-list-container">
         {products.filter(p => 
           (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-          (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
+          (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (p.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (p.category || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (p.subCategory || '').toLowerCase().includes(searchTerm.toLowerCase())
         ).length === 0 ? <p className="text-center py-4">No products found.</p> : 
         products.filter(p => 
           (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-          (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
+          (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (p.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (p.category || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (p.subCategory || '').toLowerCase().includes(searchTerm.toLowerCase())
         ).map((prod, i) => (
           <div key={prod._id || i} className="admin-list-row-item">
             <div className="row-left-info">
@@ -1261,7 +1273,6 @@ const AdminDashboard: React.FC = () => {
     <div className="admin-scroll-content animate-fade-in">
       <div className="management-header-card grey">
         <div className="header-info">
-          <button className="back-btn" onClick={() => setActiveActionTab('list')}>←</button>
           <h2>GST & Classification</h2>
         </div>
         <div className="search-bar-admin">
