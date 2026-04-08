@@ -15,6 +15,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { getFullImageUrl } from '../utils/imageUrl';
 import './cart.css';
+import SEO from '../components/SEO';
 
 const Cart: React.FC = () => {
   const { cart, addToCart, removeFromCart, totalAmount, totalGst } = useCart();
@@ -76,6 +77,7 @@ const Cart: React.FC = () => {
   if (cart.length === 0) {
     return (
       <div className="blinkit-cart-page">
+        <SEO title="My Shopping Cart" description="Review your items in the cart and proceed to checkout for fast delivery." />
         <div className="cart-empty-lux main-content-responsive">
           <ShoppingCart size={80} strokeWidth={1.5} color="#e2e8f0" />
           <h2>Your cart is empty</h2>
@@ -88,6 +90,7 @@ const Cart: React.FC = () => {
 
   return (
     <div className="blinkit-cart-page">
+      <SEO title="My Shopping Cart" description="Review your items in the cart and proceed to checkout for fast delivery." />
       <main className="checkout-content main-content-responsive">
         <div className="checkout-grid-responsive">
           <div className="checkout-left-col">

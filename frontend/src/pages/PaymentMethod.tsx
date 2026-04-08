@@ -12,6 +12,7 @@ import {
   ThumbsUp
 } from 'lucide-react';
 import './payment-method.css';
+import SEO from '../components/SEO';
 
 const PaymentMethod: React.FC = () => {
   const navigate = useNavigate();
@@ -59,6 +60,7 @@ const PaymentMethod: React.FC = () => {
 
   return (
     <div className="payment-page">
+      <SEO title="Payment Method" description="Select your preferred payment method on MatAll. Secure and flexible payment options available." />
       <header className="payment-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
           <ArrowLeft size={24} />

@@ -7,6 +7,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import './support.css';
+import SEO from '../components/SEO';
 
 const Support: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const Support: React.FC = () => {
 
   return (
     <div className="blinkit-support-page">
+      <SEO title="Customer Support" description="Get help with your MatAll orders. Contact our support team via WhatsApp for quick assistance." />
       <header className="support-header-prd">
         <div className="header-nav-support">
           <button className="back-btn" onClick={() => navigate(-1)}>

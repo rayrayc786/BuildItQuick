@@ -18,6 +18,7 @@ import ProductCard from '../components/ProductCard';
 import './product-detail.css';
 import toast from 'react-hot-toast';
 import { getFullImageUrl } from '../utils/imageUrl';
+import SEO from '../components/SEO';
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams();
@@ -149,6 +150,11 @@ const ProductDetail: React.FC = () => {
 
   return (
     <div className="blinkit-detail-page">
+      <SEO 
+        title={`${product.brand} ${product.name}`}
+        description={product.description || `Buy ${product.brand} ${product.name} on MatAll. Get it delivered within 60 minutes.`}
+        ogImage={getFullImageUrl(images[0])}
+      />
       {/* Header */}
       <header className="detail-header-sticky">
         <button className="header-icon-btn" onClick={() => navigate(-1)}>

@@ -17,6 +17,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Map, AdvancedMarker, useApiIsLoaded, useMapsLibrary } from '@vis.gl/react-google-maps';
 import './checkout.css';
+import SEO from '../components/SEO';
 
 interface Address {
   _id?: string;
@@ -578,6 +579,7 @@ const Checkout: React.FC = () => {
 
   return (
     <div className="blinkit-checkout-page">
+      <SEO title="Secure Checkout" description="Finalize your order on MatAll. Secure payment and fast delivery for all your building material needs." />
       <header className="checkout-header-sticky">
         <div className="header-nav-container main-content-responsive">
           <button className="back-btn" onClick={() => navigate(-1)}>

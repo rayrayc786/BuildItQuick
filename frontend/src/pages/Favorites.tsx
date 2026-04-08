@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import SEO from '../components/SEO';
 
 const Favorites: React.FC = () => {
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -58,6 +59,7 @@ const Favorites: React.FC = () => {
 
   return (
     <main className="content favorites-page" style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem' }}>
+      <SEO title="My Favorites" description="Your saved building materials and tools for quick access and procurement on MatAll." />
       <header style={{ marginBottom: '2.5rem' }}>
         <h1 style={{ fontSize: '2.25rem', fontWeight: 900 }}>Favorite Materials</h1>
         <p style={{ color: '#64748b' }}>Quick access to your frequently ordered industrial products</p>

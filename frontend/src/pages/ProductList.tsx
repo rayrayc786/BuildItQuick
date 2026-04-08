@@ -12,6 +12,7 @@ import {
 import ProductCard from '../components/ProductCard';
 import { useCart } from '../contexts/CartContext';
 import './product-list.css';
+import SEO from '../components/SEO';
 
 const ProductList: React.FC = () => {
   const [products, setProducts] = useState<any[]>([]);
@@ -127,6 +128,10 @@ const ProductList: React.FC = () => {
 
   return (
     <div className="blinkit-list-page">
+      <SEO 
+        title={subCategoryName || categoryId || 'Products'}
+        description={`Explore our collection of ${subCategoryName || categoryId || 'products'} on MatAll. Quality supplies delivered fast.`}
+      />
       <header className="list-header-sticky">
         <div className="header-nav main-content-responsive">
           <button className="back-btn" onClick={() => navigate(-1)}>

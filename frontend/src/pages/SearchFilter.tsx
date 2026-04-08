@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './search-filter.css';
+import SEO from '../components/SEO';
 
 const SearchFilter: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -107,6 +108,7 @@ const SearchFilter: React.FC = () => {
 
   return (
     <div className="search-filter-page">
+      <SEO title="Search Products" description="Search for building materials, tools, and hardware on MatAll. Get everything you need delivered in 60 minutes." />
       <header className="search-filter-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
           <ArrowLeft size={24} />

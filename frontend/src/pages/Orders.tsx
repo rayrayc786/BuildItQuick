@@ -10,6 +10,7 @@ import {
 import { getFullImageUrl } from '../utils/imageUrl';
 import { customerSocket } from '../socket';
 import './orders.css';
+import SEO from '../components/SEO';
 
 const Orders: React.FC = () => {
   const [orders, setOrders] = useState<any[]>([]);
@@ -45,6 +46,7 @@ const Orders: React.FC = () => {
 
   return (
     <div className="blinkit-orders-page">
+      <SEO title="My Orders" description="View your past orders and track current deliveries on MatAll." />
       <header className="orders-header-sticky">
         <div className="header-left">
            <button className="back-btn" onClick={() => navigate(-1)}>

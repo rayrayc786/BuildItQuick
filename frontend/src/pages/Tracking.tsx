@@ -13,6 +13,7 @@ import {
 import { getFullImageUrl } from '../utils/imageUrl';
 import { customerSocket } from '../socket';
 import './tracking.css';
+import SEO from '../components/SEO';
 
 const Tracking: React.FC = () => {
   const { id } = useParams();
@@ -163,6 +164,7 @@ const Tracking: React.FC = () => {
 
   return (
     <div className="blinkit-tracking-page">
+      <SEO title={`Track Order #${id?.slice(-8).toUpperCase()}`} description="Track your MatAll order status in real-time. See delivery timeline and details." />
       <header className="tracking-header-sticky">
         <div className="header-left-group">
           <button className="back-btn" onClick={() => navigate(-1)}>

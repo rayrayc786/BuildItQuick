@@ -7,6 +7,7 @@ import './home.css';
 import axios from 'axios';
 import ProductCard from '../components/ProductCard';
 import { getFullImageUrl } from '../utils/imageUrl';
+import SEO from '../components/SEO';
 
 // Featured categories will be fetched from API
 
@@ -55,6 +56,10 @@ const Home: React.FC = () => {
 
   return (
     <main className="landing-container">
+      <SEO 
+        title="Home" 
+        description="Your one-stop shop for home repair supplies, delivered within 60 mins." 
+      />
       <div className="landing-content main-content-responsive">
 
         {/* Categories Section */}

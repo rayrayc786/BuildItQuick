@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './profile.css';
+import SEO from '../components/SEO';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -85,6 +86,7 @@ const Profile: React.FC = () => {
 
   return (
     <div className="blinkit-profile-page">
+      <SEO title="My Profile" description="Manage your account, view savings, and check your order history on MatAll." />
       <main className="profile-content">
         <div className="profile-inner-container">
           <header className="profile-header-new">

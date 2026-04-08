@@ -11,6 +11,7 @@ import {
 import ProductCard from '../components/ProductCard';
 import { useCart } from '../contexts/CartContext';
 import './sub-category.css'; // Reusing established layout styles
+import SEO from '../components/SEO';
 
 const BrandStore: React.FC = () => {
   const { brandName } = useParams();
@@ -68,6 +69,10 @@ const BrandStore: React.FC = () => {
 
   return (
     <div className="brand-store-page">
+      <SEO 
+        title={`${brandName} Store`} 
+        description={`Shop official ${brandName} products on MatAll. Wide range of building materials and tools available for quick delivery.`} 
+      />
       <header className="brand-header-sticky">
         <div className="header-nav">
           <button className="back-btn" onClick={() => navigate(-1)}>
