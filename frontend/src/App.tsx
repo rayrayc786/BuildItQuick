@@ -146,6 +146,7 @@ const SocketManager = () => {
 
 import Footer from './components/Footer';
 import SiteFooter from './components/SiteFooter';
+// import FloatingChat from './components/FloatingChat';
 
 const AppContent = () => {
   const location = useLocation();
@@ -230,6 +231,7 @@ const AppContent = () => {
 
       {showSiteFooter && <SiteFooter />}
       {showBottomNav && <Footer />}
+      {/* {showNavbar && <FloatingChat />} */}
     </div>
   );
 };

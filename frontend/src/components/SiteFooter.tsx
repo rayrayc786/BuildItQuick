@@ -28,7 +28,14 @@ const SiteFooter: React.FC = () => {
     { label: 'Support', path: '/support' },
     { label: 'Wishlist', path: '/wishlist' },
     { label: 'Orders', path: '/orders' },
-    { label: 'Profile', path: '/profile' }
+    { label: 'Profile', path: '/profile' },
+    // Pages to be enabled later
+    { label: 'About', path: '/about', hidden: true },
+    { label: 'Team', path: '/team', hidden: true },
+    { label: 'Careers', path: '/careers', hidden: true },
+    { label: 'Privacy Policy', path: '/privacy-policy', hidden: true },
+    { label: 'Terms of Service', path: '/terms-of-service', hidden: true },
+    { label: 'Refund Policy', path: '/refund-policy', hidden: true }
   ];
 
   return (
@@ -38,7 +45,7 @@ const SiteFooter: React.FC = () => {
         <div className="footer-links-column">
           <h3 className="footer-sub-title">Useful Links</h3>
           <ul className="footer-links-list">
-            {usefulLinks.map((link, idx) => (
+            {usefulLinks.filter(link => !link.hidden).map((link, idx) => (
               <li key={idx}>
                 <Link to={link.path}>{link.label}</Link>
               </li>
@@ -67,6 +74,13 @@ const SiteFooter: React.FC = () => {
             </div>
           );
         })}
+      </div>
+
+      
+      <div className="footer-copyright-bar">
+        <div className="footer-copyright-content">
+          © 2026 MatAll | Adventitous Solutions Private Limited
+        </div>
       </div>
     </footer>
   );
