@@ -20,6 +20,7 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import Reports from '../Reports';
 import FooterManager from './FooterManager';
+import ServiceSettings from './ServiceSettings';
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -594,7 +595,7 @@ const AdminDashboard: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState<'dashboard' | 'reports' | 'actions'>((tabParam as any) || 'dashboard');
   const subParam = searchParams.get('sub');
-  const [activeActionTab, setActiveActionTab] = useState<'list' | 'users' | 'orders' | 'categories' | 'products' | 'tickets' | 'userRequests' | 'footer-links' | 'gst'>((subParam as any) || 'list');
+  const [activeActionTab, setActiveActionTab] = useState<'list' | 'users' | 'orders' | 'categories' | 'products' | 'tickets' | 'userRequests' | 'footer-links' | 'gst' | 'settings'>((subParam as any) || 'list');
   const [loading, setLoading] = useState(false);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
 
@@ -873,6 +874,12 @@ const AdminDashboard: React.FC = () => {
       sub: 'Manage serviceable pincodes and areas for user orders',
       color: '#FFEA00',
       path: '/admin/locations'
+    },
+    {
+      id: 'settings',
+      name: 'Service Settings',
+      sub: 'Manage service availability, turn orders on/off and set offline messages',
+      color: '#DEDEDE'
     }
   ];
 
@@ -1322,6 +1329,7 @@ const AdminDashboard: React.FC = () => {
     if (activeActionTab === 'tickets') return renderTicketManagement();
     if (activeActionTab === 'userRequests') return renderUserRequestsManagement();
     if (activeActionTab === 'footer-links') return <FooterManager />;
+    if (activeActionTab === 'settings') return <ServiceSettings />;
 
     return (
       <div className="admin-scroll-content animate-fade-in">

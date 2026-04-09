@@ -13,6 +13,7 @@ import {
   Navigation
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { useSettings } from '../contexts/SettingsContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Map, AdvancedMarker, useApiIsLoaded, useMapsLibrary } from '@vis.gl/react-google-maps';
@@ -33,6 +34,7 @@ const Checkout: React.FC = () => {
   const geocodingLibrary = useMapsLibrary('geocoding');
   
   const { cart, clearCart, totalAmount, totalGst } = useCart();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'checkout' | 'address-list' | 'location-ask' | 'map-confirm' | 'address-form'>('checkout');
@@ -109,6 +111,10 @@ const Checkout: React.FC = () => {
   };
 
   const handlePlaceOrder = (mode: 'full' | 'partial') => {
+    if (!settings.isServiceEnabled) {
+      toast.error(settings.offlineMessage || "Service is currently offline.");
+      return;
+    }
     if (!selectedAddress) {
       toast.error('Please select a delivery address');
       setStep('address-list');
@@ -680,12 +686,17 @@ const Checkout: React.FC = () => {
               </div>
             )}
 
-            <div className="desktop-order-actions mt-4">
-               <button className="final-place-btn-desktop" onClick={() => handlePlaceOrder('full')} disabled={loading}>
-                  {loading ? 'Processing...' : `Pay online - Full 100% now • ₹${grandTotal.toFixed(2)}`}
+             <div className="desktop-order-actions mt-4">
+                {!settings.isServiceEnabled && (
+                  <div className="offline-warning-card" style={{ background: '#fef2f2', border: '1px solid #fee2e2', padding: '15px', borderRadius: '12px', marginBottom: '15px', color: '#991b1b', fontSize: '0.9rem', fontWeight: '600', textAlign: 'center' }}>
+                    ⚠️ {settings.offlineMessage}
+                  </div>
+                )}
+               <button className={`final-place-btn-desktop ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('full')} disabled={loading || !settings.isServiceEnabled}>
+                  {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Pay online - Full 100% now • ₹${grandTotal.toFixed(2)}`}
                </button>
-               <button className="final-place-btn-desktop" onClick={() => handlePlaceOrder('partial')} disabled={loading} style={{marginTop: '10px', background: '#DEDEDE', color: '#000'}}>
-                  {loading ? 'Processing...' : `Split Payment – 50% now and 50% on order delivery • ₹${Math.round(grandTotal / 2).toFixed(2)}`}
+               <button className={`final-place-btn-desktop ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('partial')} disabled={loading || !settings.isServiceEnabled} style={{marginTop: '10px', background: !settings.isServiceEnabled ? '#f1f5f9' : '#DEDEDE', color: '#000'}}>
+                  {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Split Payment – 50% now and 50% on order delivery • ₹${Math.round(grandTotal / 2).toFixed(2)}`}
                </button>
             </div>
           </div>
@@ -694,23 +705,23 @@ const Checkout: React.FC = () => {
 
       <footer className="checkout-footer-sticky-final">
         <div className="footer-action-buttons-mobile">
-          <button className="checkout-place-btn full-pay" onClick={() => handlePlaceOrder('full')} disabled={loading}>
+          <button className={`checkout-place-btn full-pay ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('full')} disabled={loading || !settings.isServiceEnabled}>
              <div className="btn-p-info">
                 <span className="p-val">₹{grandTotal.toFixed(2)}</span>
                 <span className="p-lbl">100% NOW</span>
              </div>
              <div className="btn-p-main">
-                {loading ? 'Processing...' : 'Pay Online'}
+                {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Offline' : 'Pay Online'}
              </div>
           </button>
           
-          <button className="checkout-place-btn partial-pay" onClick={() => handlePlaceOrder('partial')} disabled={loading}>
+          <button className={`checkout-place-btn partial-pay ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('partial')} disabled={loading || !settings.isServiceEnabled}>
              <div className="btn-p-info">
                 <span className="p-val">₹{Math.round(grandTotal / 2).toFixed(2)}</span>
                 <span className="p-lbl">50% SPLIT</span>
              </div>
              <div className="btn-p-main">
-                {loading ? 'Processing...' : 'Split Payment'}
+                {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Offline' : 'Split Payment'}
              </div>
           </button>
         </div>

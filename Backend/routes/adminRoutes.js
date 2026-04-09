@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const auth = require('../middleware/auth');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
 console.log('--- Admin Routes Initializing ---');
+
+router.use(auth(['Admin']));
 
 router.get('/ping', (req, res) => res.json({ status: 'Admin routes active' }));
 
@@ -94,6 +97,8 @@ router.post('/serviceable-areas', adminController.createServiceableArea);
 router.put('/serviceable-areas/:id', adminController.updateServiceableArea);
 router.delete('/serviceable-areas/:id', adminController.deleteServiceableArea);
 router.get('/check-serviceability/:pincode', adminController.checkServiceability);
+router.get('/settings', adminController.getSettings);
+router.put('/settings', adminController.updateSettings);
 
 module.exports = router;
 

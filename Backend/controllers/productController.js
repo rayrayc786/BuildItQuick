@@ -2,6 +2,7 @@ const Product = require('../models/Product');
 const fs = require('fs');
 const path = require('path');
 const Brand = require('../models/Brand');
+const Settings = require('../models/Settings');
 
 // Helper to resolve image names to actual file paths from Image Master
 const resolveProductImages = (product) => {
@@ -332,6 +333,19 @@ exports.getOffers = async (req, res) => {
   try {
     const Offer = require('../models/Offer');
     res.json(await Offer.find({ isActive: true }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getSettings = async (req, res) => {
+  try {
+    let settings = await Settings.findOne();
+    if (!settings) {
+      settings = new Settings({ isServiceEnabled: true });
+      await settings.save();
+    }
+    res.json(settings);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

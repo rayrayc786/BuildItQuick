@@ -36,27 +36,49 @@ const ProductDetail: React.FC = () => {
   
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Sync selections with URL query parameters for easy sharing
+  useEffect(() => {
+    if (Object.keys(selections).length === 0) return;
+    
+    const params = new URLSearchParams();
+    Object.entries(selections).forEach(([k, v]) => params.set(k, v));
+    
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(null, '', newUrl);
+  }, [selections]);
+
   useEffect(() => {
     const fetchProduct = async () => {
       setLoading(true);
       try {
         const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products/${id}`);
         setProduct(data);
+        
+        // Parse current URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlSelections: Record<string, string> = {};
+        urlParams.forEach((value, key) => {
+           urlSelections[key] = value;
+        });
+
         if (data.variants && data.variants.length > 0) {
-          const firstVariant = data.variants[0];
-          setSelectedVariant(firstVariant);
-          
-          // Initialize selections from the first variant (now an object/Map)
-          const initialSelections: Record<string, string> = {};
-          if (firstVariant.attributes instanceof Object) {
-            Object.entries(firstVariant.attributes).forEach(([name, value]) => {
-              initialSelections[name] = value as string;
-            });
+          // If we have URL selections, use them. Otherwise use first variant.
+          if (Object.keys(urlSelections).length > 0) {
+            setSelections(urlSelections);
+          } else {
+            const firstVariant = data.variants[0];
+            setSelectedVariant(firstVariant);
+            
+            const initialSelections: Record<string, string> = {};
+            if (firstVariant.attributes instanceof Object) {
+              Object.entries(firstVariant.attributes).forEach(([name, value]) => {
+                initialSelections[name] = value as string;
+              });
+            }
+            setSelections(initialSelections);
           }
-          setSelections(initialSelections);
         }
         
-        // Fetch similar products in same category
         const similarRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products?category=${data.category}`);
         setSimilarProducts(similarRes.data.filter((p: any) => p._id !== data._id).slice(0, 8));
       } catch (err) {
@@ -118,26 +140,20 @@ const ProductDetail: React.FC = () => {
   const currentVariantName = selectedVariant?.name || 'Standard';
 
   const cartItem = cart.find(item => item.product._id === product?._id && item.selectedVariant === currentVariantName);
-  // const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-  // const totalCartAmount = cart.reduce((acc, item) => {
-  //   const itemPrice = item.product.variants && item.product.variants.length > 0
-  //     ? (item.product.variants.find((v: any) => v.name === item.selectedVariant)?.price || item.product.price)
-  //     : item.product.price;
-  //   return acc + (itemPrice * item.quantity);
-  // }, 0);
 
   const handleShare = async () => {
+    const shareUrl = window.location.href;
     if (navigator.share) {
       try {
         await navigator.share({
-          title: product?.name,
-          text: `Check out ${product?.brand} ${product?.name} on MatAll`,
-          url: window.location.href,
+          title: `${product?.brand} ${product?.name}`,
+          text: `Check out ${product?.brand} ${product?.name} (${currentUnit}) on MatAll`,
+          url: shareUrl,
         });
       } catch (err) { console.error(err); }
     } else {
-      toast.success('Link copied!');
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(shareUrl);
+      toast.success('Link copied to clipboard!');
     }
   };
 
@@ -164,8 +180,6 @@ const ProductDetail: React.FC = () => {
           {product.brand} {product.name}
         </div>
         <div className="header-actions">
-           <button className="header-icon-btn"><Heart size={20} /></button>
-           <button className="header-icon-btn"><Search size={20} /></button>
            <button className="header-icon-btn" onClick={handleShare}><Share2 size={20} /></button>
         </div>
       </header>
@@ -204,9 +218,28 @@ const ProductDetail: React.FC = () => {
                 </div>
              </div>
 
-             <h1 className="prd-title-large">
-                <span className="brand-bold-large">{product.brand}</span> {product.name}
-             </h1>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+               <h1 className="prd-title-large" style={{ flex: 1 }}>
+                  <span className="brand-bold-large">{product.brand}</span> {product.name}
+               </h1>
+               <button 
+                 onClick={handleShare}
+                 style={{ 
+                   background: '#f1f5f9', 
+                   border: 'none', 
+                   borderRadius: '50%', 
+                   width: '40px', 
+                   height: '40px', 
+                   display: 'flex', 
+                   alignItems: 'center', 
+                   justifyContent: 'center',
+                   cursor: 'pointer',
+                   color: '#1e293b'
+                 }}
+               >
+                 <Share2 size={20} />
+               </button>
+             </div>
              <div className="prd-unit-label">{currentUnit}</div>
 
              {/* highlights row */}

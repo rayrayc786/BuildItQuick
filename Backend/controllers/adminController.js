@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const GSTClassification = require('../models/GSTClassification');
 const ServiceableArea = require('../models/ServiceableArea');
+const Settings = require('../models/Settings');
 
 
 // Inline Revenue Margin mapping if sheet exists
@@ -510,3 +511,33 @@ exports.checkServiceability = async (req, res) => {
   }
 };
 
+
+// Settings Handlers
+exports.getSettings = async (req, res) => {
+  try {
+    let settings = await Settings.findOne();
+    if (!settings) {
+      settings = new Settings({ isServiceEnabled: true });
+      await settings.save();
+    }
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateSettings = async (req, res) => {
+  try {
+    let settings = await Settings.findOne();
+    if (!settings) {
+      settings = new Settings({ ...req.body, lastUpdatedBy: req.user.id });
+    } else {
+      Object.assign(settings, req.body);
+      settings.lastUpdatedBy = req.user.id;
+    }
+    await settings.save();
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
