@@ -2,13 +2,18 @@ const Order = require('../models/Order');
 const DarkStore = require('../models/DarkStore');
 const axios = require('axios');
 
-const calculateOrderTotals = (items) => {
+const calculateOrderTotals = (items, settings = null) => {
   let totalWeight = 0;
   let totalVolume = 0;
   let subTotal = 0; // Sum of (unitPrice * quantity) - basically item total incl GST
   let totalBaseAmount = 0; // Sum of items excluding GST
   let totalTaxAmount = 0;
   
+  // Use settings or default values
+  const fee_platform = settings?.platformFee ?? 19;
+  const fee_delivery = settings?.deliveryCharge ?? 150;
+  const threshold_free = settings?.freeDeliveryThreshold ?? 5000;
+
   const mappedItems = items.map(item => {
     // Basic fields
     const unitPrice = item.unitPrice || item.price || 0; // Sale price (incl GST)
@@ -51,12 +56,12 @@ const calculateOrderTotals = (items) => {
   });
 
   // Additional Fees
-  const platformFee = 19; // Fixed Rs. 19 incl GST
-  const platformFeeBase = 19 / 1.18; // approx 16.10
-  const platformFeeGST = 19 - platformFeeBase; // approx 2.90
+  const platformFee = fee_platform; 
+  const platformFeeBase = platformFee / 1.18; 
+  const platformFeeGST = platformFee - platformFeeBase; 
 
-  // Delivery Logic (example: Rs 150 incl GST if < 5000)
-  const deliveryChargeInclGST = subTotal > 5000 ? 0 : 150;
+  // Delivery Logic
+  const deliveryChargeInclGST = subTotal > threshold_free ? 0 : fee_delivery;
   const deliveryChargeBase = deliveryChargeInclGST / 1.18;
   const deliveryChargeGST = deliveryChargeInclGST - deliveryChargeBase;
 
@@ -85,11 +90,14 @@ const determineVehicleClass = (weight) => {
 };
 
 const createOrder = async (orderData) => {
+  const Settings = require('../models/Settings');
+  const settings = await Settings.findOne();
+
   const { 
     totalAmount, subTotal, totalBaseAmount, totalTaxAmount, 
     platformFee, platformFeeGST, deliveryCharge, deliveryChargeGST,
     totalWeight, totalVolume, mappedItems 
-  } = calculateOrderTotals(orderData.items);
+  } = calculateOrderTotals(orderData.items, settings);
   const vehicleClass = determineVehicleClass(totalWeight);
 
   // Auto-fetch darkStoreId if missing

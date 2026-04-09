@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Plus, Search, Edit3, Trash2, X, Tag, ChevronDown, ChevronRight, Layers, Image, Menu } from 'lucide-react';
+import { getFullImageUrl } from '../../utils/imageUrl';
 
 const CategoryManager: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
@@ -69,9 +70,13 @@ const CategoryManager: React.FC = () => {
     e.preventDefault();
     try {
       if (editingCategory) {
-        await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/admin/categories/${editingCategory._id}`, catFormData);
+        const { data } = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/admin/categories/${editingCategory._id}`, catFormData);
+        if (data._image_processing) toast.success('Category saved & images downloaded!');
+        else toast.success('Category updated');
       } else {
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/admin/categories`, catFormData);
+        const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/admin/categories`, catFormData);
+        if (data._image_processing) toast.success('Category created & images saved!');
+        else toast.success('Category created');
       }
       setShowModal(false);
       setEditingCategory(null);
@@ -314,8 +319,22 @@ const CategoryManager: React.FC = () => {
                           >
                             {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                           </button>
-                          <div style={{ width: '36px', height: '36px', background: '#f1f5f9', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Tag size={18} color="#64748b" />
+                          <div style={{ 
+                            width: '40px', 
+                            height: '40px', 
+                            background: '#f1f5f9', 
+                            borderRadius: '8px', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            overflow: 'hidden',
+                            border: '1px solid #e2e8f0'
+                          }}>
+                            {cat.imageUrl ? (
+                              <img src={getFullImageUrl(cat.imageUrl)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <Tag size={18} color="#64748b" />
+                            )}
                           </div>
                           <div>
                             <span style={{ fontWeight: 700, display: 'block' }}>{cat.name}</span>
@@ -412,9 +431,18 @@ const CategoryManager: React.FC = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Category Image (for Featured section)</label>
+                  <label>Category Image (Upload or Paste URL)</label>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <input 
+                      type="text" 
+                      value={catFormData.imageUrl} 
+                      onChange={e => setCatFormData({...catFormData, imageUrl: e.target.value})} 
+                      placeholder="https://... or select file below"
+                      style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', marginBottom: '10px' }}
+                    />
+                  </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: '80px', height: '80px', borderRadius: '12px', border: '2px dashed #e2e8f0', backgroundImage: catFormData.imageUrl ? `url(${import.meta.env.VITE_API_BASE_URL}${catFormData.imageUrl})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '100px', height: '100px', borderRadius: '12px', border: '2px dashed #e2e8f0', backgroundImage: catFormData.imageUrl ? `url(${getFullImageUrl(catFormData.imageUrl)})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {!catFormData.imageUrl && <Image size={24} color="#64748b" opacity={0.5} />}
                     </div>
                     <div>

@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import { getFullImageUrl } from '../utils/imageUrl';
 import logoImg from '../assets/logo.jpeg';
 import './login.css';
+import SEO from '../components/SEO';
 
 const BANNER_ICONS = [
   { icon: <Construction size={32} />, label: 'Building' },
@@ -171,6 +172,10 @@ const Login: React.FC = () => {
 
   return (
     <div className="login-screen">
+      <SEO 
+        title="Login" 
+        description="Login to MatAll to access construction materials delivered in minutes. Manage your orders and more." 
+      />
       {/* Running Banner */}
       <div className="login-banner">
         <div className="banner-track">

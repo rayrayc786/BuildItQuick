@@ -1,0 +1,40 @@
+/* .floating-chat-btn {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  background: #5bbd1c; 
+  color: white;
+  padding: 10px 20px;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  z-index: 9999;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.floating-chat-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  background: #4cae1a;
+}
+
+.floating-chat-btn span {
+  font-size: 15px;
+}
+
+@media (max-width: 850px) {
+  .floating-chat-btn {
+    bottom: 90px;
+    left: 15px;
+    padding: 8px 16px;
+  }
+  
+  .floating-chat-btn span {
+    font-size: 14px;
+  }
+} */

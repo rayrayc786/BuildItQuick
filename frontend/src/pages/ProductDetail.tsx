@@ -4,20 +4,22 @@ import axios from 'axios';
 import { 
   ArrowLeft, 
   Share2, 
-  Search, 
-  Heart,
   ChevronRight,
   ChevronDown,
-  Clock,
+  AlertCircle,
   Star,
   Plus,
-  Minus
+  Minus,
+  RotateCcw,
+  ShieldCheck,
+  Info
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import ProductCard from '../components/ProductCard';
 import './product-detail.css';
 import toast from 'react-hot-toast';
 import { getFullImageUrl } from '../utils/imageUrl';
+import SEO from '../components/SEO';
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams();
@@ -30,10 +32,23 @@ const ProductDetail: React.FC = () => {
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
   const [showSpecs, setShowSpecs] = useState(false);
+  const [showReturnPolicy, setShowReturnPolicy] = useState(true);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [selections, setSelections] = useState<Record<string, string>>({});
   
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Sync selections with URL query parameters for easy sharing
+  useEffect(() => {
+    if (Object.keys(selections).length === 0) return;
+    
+    const params = new URLSearchParams();
+    Object.entries(selections).forEach(([k, v]) => params.set(k, v));
+    
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(null, '', newUrl);
+  }, [selections]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -41,21 +56,39 @@ const ProductDetail: React.FC = () => {
       try {
         const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products/${id}`);
         setProduct(data);
+        
+        // Parse current URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlSelections: Record<string, string> = {};
+        urlParams.forEach((value, key) => {
+           urlSelections[key] = value;
+        });
+
         if (data.variants && data.variants.length > 0) {
-          const firstVariant = data.variants[0];
-          setSelectedVariant(firstVariant);
-          
-          // Initialize selections from the first variant (now an object/Map)
-          const initialSelections: Record<string, string> = {};
-          if (firstVariant.attributes instanceof Object) {
-            Object.entries(firstVariant.attributes).forEach(([name, value]) => {
-              initialSelections[name] = value as string;
-            });
+          // If we have URL selections, use them. Otherwise use first variant.
+          if (Object.keys(urlSelections).length > 0) {
+            setSelections(urlSelections);
+          } else {
+            const firstVariant = data.variants[0];
+            setSelectedVariant(firstVariant);
+            
+            const initialSelections: Record<string, string> = {};
+            if (firstVariant.attributes instanceof Object) {
+              Object.entries(firstVariant.attributes).forEach(([name, value]) => {
+                initialSelections[name] = value as string;
+              });
+            }
+            setSelections(initialSelections);
           }
-          setSelections(initialSelections);
         }
         
-        // Fetch similar products in same category
+        try {
+          const reviewsRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/reviews/product/${data._id}`);
+          setReviews(reviewsRes.data);
+        } catch (rErr) {
+          console.error("Failed to fetch reviews", rErr);
+        }
+        
         const similarRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products?category=${data.category}`);
         setSimilarProducts(similarRes.data.filter((p: any) => p._id !== data._id).slice(0, 8));
       } catch (err) {
@@ -117,26 +150,20 @@ const ProductDetail: React.FC = () => {
   const currentVariantName = selectedVariant?.name || 'Standard';
 
   const cartItem = cart.find(item => item.product._id === product?._id && item.selectedVariant === currentVariantName);
-  // const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-  // const totalCartAmount = cart.reduce((acc, item) => {
-  //   const itemPrice = item.product.variants && item.product.variants.length > 0
-  //     ? (item.product.variants.find((v: any) => v.name === item.selectedVariant)?.price || item.product.price)
-  //     : item.product.price;
-  //   return acc + (itemPrice * item.quantity);
-  // }, 0);
 
   const handleShare = async () => {
+    const shareUrl = window.location.href;
     if (navigator.share) {
       try {
         await navigator.share({
-          title: product?.name,
-          text: `Check out ${product?.brand} ${product?.name} on MatAll`,
-          url: window.location.href,
+          title: `${product?.brand} ${product?.name}`,
+          text: `Check out ${product?.brand} ${product?.name} (${currentUnit}) on MatAll`,
+          url: shareUrl,
         });
       } catch (err) { console.error(err); }
     } else {
-      toast.success('Link copied!');
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(shareUrl);
+      toast.success('Link copied to clipboard!');
     }
   };
 
@@ -149,6 +176,11 @@ const ProductDetail: React.FC = () => {
 
   return (
     <div className="blinkit-detail-page">
+      <SEO 
+        title={`${product.brand} ${product.name}`}
+        description={product.description || `Buy ${product.brand} ${product.name} on MatAll. Get it delivered within 60 minutes.`}
+        ogImage={getFullImageUrl(images[0])}
+      />
       {/* Header */}
       <header className="detail-header-sticky">
         <button className="header-icon-btn" onClick={() => navigate(-1)}>
@@ -158,8 +190,6 @@ const ProductDetail: React.FC = () => {
           {product.brand} {product.name}
         </div>
         <div className="header-actions">
-           <button className="header-icon-btn"><Heart size={20} /></button>
-           <button className="header-icon-btn"><Search size={20} /></button>
            <button className="header-icon-btn" onClick={handleShare}><Share2 size={20} /></button>
         </div>
       </header>
@@ -189,18 +219,37 @@ const ProductDetail: React.FC = () => {
         <div className="detail-right-col">
           <main className="detail-main-info">
              {/* Metadata */}
-             <div className="meta-stats-row">
+             {/* <div className="meta-stats-row">
                 <div className="delivery-mini"><Clock size={12} /> <span>10 mins</span></div>
                 <div className="rating-mini">
                    <Star size={12} fill="#facc15" color="#facc15" /> 
                    <span>4.5</span> 
                    <span className="count">(3.2 lac)</span>
                 </div>
-             </div>
+             </div> */}
 
-             <h1 className="prd-title-large">
-                <span className="brand-bold-large">{product.brand}</span> {product.name}
-             </h1>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+               <h1 className="prd-title-large" style={{ flex: 1 }}>
+                  <span className="brand-bold-large">{product.brand}</span> {product.name}
+               </h1>
+               <button 
+                 onClick={handleShare}
+                 style={{ 
+                   background: '#f1f5f9', 
+                   border: 'none', 
+                   borderRadius: '50%', 
+                   width: '40px', 
+                   height: '40px', 
+                   display: 'flex', 
+                   alignItems: 'center', 
+                   justifyContent: 'center',
+                   cursor: 'pointer',
+                   color: '#1e293b'
+                 }}
+               >
+                 <Share2 size={20} />
+               </button>
+             </div>
              <div className="prd-unit-label">{currentUnit}</div>
 
              {/* highlights row */}
@@ -265,6 +314,16 @@ const ProductDetail: React.FC = () => {
                     {Math.round(((currentMrp - currentPrice)/currentMrp)*100)}% OFF on MRP
                   </div>
                 )}
+                {selectedVariant?.pricing?.sellingMeasureRate > 0 && (
+                  <div className="selling-rate-info" style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: '600', marginTop: '8px' }}>
+                    ₹{selectedVariant.pricing.sellingMeasureRate} {product.sellingMeasure || 'per unit'}
+                  </div>
+                )}
+                {selectedVariant?.measure?.value && (
+                  <div className="measure-info" style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>
+                    {selectedVariant.measure.term || 'Net contents'}: {selectedVariant.measure.value} {selectedVariant.measure.unit || ''}
+                  </div>
+                )}
              </div>
 
               {/* View Details Dropdown */}
@@ -308,6 +367,12 @@ const ProductDetail: React.FC = () => {
                                    <td className="spec-title">SKU / Model</td>
                                    <td className="spec-value">{selectedVariant.sku}</td>
                                 </tr>
+                                {selectedVariant.measure?.value && (
+                                  <tr>
+                                     <td className="spec-title">{selectedVariant.measure.term || 'Measure'}</td>
+                                     <td className="spec-value">{selectedVariant.measure.value} {selectedVariant.measure.unit || ''}</td>
+                                  </tr>
+                                )}
                                 {Object.entries(selectedVariant.attributes || {}).map(([k, v]) => (
                                   <tr key={k}>
                                      <td className="spec-title">{k}</td>
@@ -318,6 +383,30 @@ const ProductDetail: React.FC = () => {
                                   <tr>
                                      <td className="spec-title">Unit Weight</td>
                                      <td className="spec-value">{selectedVariant.inventory.unitWeight} gm</td>
+                                  </tr>
+                                )}
+                                {selectedVariant.meta?.warranty && (
+                                  <tr>
+                                     <td className="spec-title">Warranty</td>
+                                     <td className="spec-value">{selectedVariant.meta.warranty}</td>
+                                  </tr>
+                                )}
+                                {selectedVariant.meta?.suitableFor && (
+                                  <tr>
+                                     <td className="spec-title">Suitable For</td>
+                                     <td className="spec-value">{selectedVariant.meta.suitableFor}</td>
+                                  </tr>
+                                )}
+                                {selectedVariant.meta?.suppliedWith && (
+                                  <tr>
+                                     <td className="spec-title">Supplied With</td>
+                                     <td className="spec-value">{selectedVariant.meta.suppliedWith}</td>
+                                  </tr>
+                                )}
+                                {selectedVariant.inventory?.bulkApplication && (
+                                  <tr>
+                                     <td className="spec-title">Application</td>
+                                     <td className="spec-value">{selectedVariant.inventory.bulkApplication}</td>
                                   </tr>
                                 )}
                               </>
@@ -355,6 +444,108 @@ const ProductDetail: React.FC = () => {
                   )}
                 </div>
               )}
+
+               {/* Return Policy Section - Redesigned */}
+              <div className="premium-policy-card">
+                <div className="policy-card-header" onClick={() => setShowReturnPolicy(!showReturnPolicy)}>
+                  <div className="policy-title-group">
+                    <ShieldCheck size={20} className="policy-icon-main" />
+                    <h3>Standard Return Policy</h3>
+                  </div>
+                  <ChevronDown size={20} className={`chevron-policy ${showReturnPolicy ? 'active' : ''}`} />
+                </div>
+                
+                {showReturnPolicy && (
+                  <div className="policy-card-body">
+                    <div className="policy-intro">
+                      Returns are accepted if requested within the defined timeframes and meet the specified conditions.
+                    </div>
+
+                    <div className="policy-grid">
+                      <div className="policy-item">
+                        <div className="policy-item-icon damage">
+                           <AlertCircle size={18} />
+                        </div>
+                        <div className="policy-item-info">
+                          <div className="policy-item-row">
+                            <span className="policy-label">Damaged Product</span>
+                            <span className="policy-badge red">15 Mins</span>
+                          </div>
+                          <p className="policy-desc">Report any physical damage immediately upon delivery.</p>
+                        </div>
+                      </div>
+
+                      <div className="policy-item">
+                        <div className="policy-item-icon mismatch">
+                           <RotateCcw size={18} />
+                        </div>
+                        <div className="policy-item-info">
+                          <div className="policy-item-row">
+                            <span className="policy-label">Different Item</span>
+                            <span className="policy-badge red">15 Mins</span>
+                          </div>
+                          <p className="policy-desc">If the delivered product does not match your order.</p>
+                        </div>
+                      </div>
+
+                      <div className="policy-item">
+                        <div className="policy-item-icon hardware">
+                           <Info size={18} />
+                        </div>
+                        <div className="policy-item-info">
+                          <div className="policy-item-row">
+                            <span className="policy-label">Hardware Fit Issue</span>
+                            <span className="policy-badge blue">1 Hour</span>
+                          </div>
+                          <p className="policy-desc">Items must have original packing, no scratches, and no smudges.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="policy-footer">
+                       <Info size={14} />
+                       <span>Returns must be initiated via the 'My Orders' section in the app.</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+             {/* Reviews Section */}
+             <div className="premium-policy-card" style={{ marginTop: '16px' }}>
+                <div className="policy-card-header">
+                  <div className="policy-title-group">
+                    <Star size={20} className="policy-icon-main" style={{ color: '#f59e0b', background: '#fef3c7' }} />
+                    <h3>Customer Reviews ({reviews.length})</h3>
+                  </div>
+                </div>
+                
+                <div className="policy-card-body" style={{ padding: '0 1rem 1rem 1rem' }}>
+                  {reviews.length === 0 ? (
+                    <div style={{ padding: '1rem 0', color: '#64748b', fontSize: '0.9rem', textAlign: 'center' }}>
+                      No reviews yet for this product.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+                      {reviews.map((r, idx) => (
+                        <div key={idx} style={{ paddingBottom: '1rem', borderBottom: idx !== reviews.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e293b' }}>{r.userId?.name || 'Verified Customer'}</span>
+                            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                              {new Date(r.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
+                            {[1,2,3,4,5].map(s => (
+                              <Star key={s} size={14} fill={s <= r.rating ? "#facc15" : "transparent"} color={s <= r.rating ? "#facc15" : "#cbd5e1"} />
+                            ))}
+                          </div>
+                          <p style={{ fontSize: '0.875rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>{r.comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+             </div>
 
              {/* Desktop Add to Cart */}
              <div className="desktop-add-container hide-mobile">

@@ -1,22 +1,24 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { 
   ArrowLeft, 
   Home, 
-  ShoppingCart,
   Filter,
   ArrowUpDown,
   X
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import { useCart } from '../contexts/CartContext';
+
 import './product-list.css';
+import SEO from '../components/SEO';
+
 
 const ProductList: React.FC = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const resultsAreaRef = useRef<HTMLDivElement>(null);
   const [sortBy, setSortBy] = useState<string>('default'); // 'price-low', 'price-high'
   const [showFilters, setShowFilters] = useState(false);
   
@@ -31,10 +33,10 @@ const ProductList: React.FC = () => {
   const subCategoryName = params.get('subCategory');
   const categoryId = params.get('category');
   const initialBrand = params.get('brand');
-  const { cart, totalAmount } = useCart();
+  const searchTerm = params.get('search');
 
-  const cartTotal = totalAmount;
-  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+
 
   useEffect(() => {
     const fetchAllCats = async () => {
@@ -68,6 +70,13 @@ const ProductList: React.FC = () => {
     };
     fetchProducts();
   }, [location.search]);
+
+  // Scroll results area back to top when brand changes
+  useEffect(() => {
+    if (resultsAreaRef.current) {
+      resultsAreaRef.current.scrollTo(0, 0);
+    }
+  }, [selectedBrand]);
 
   useEffect(() => {
     const fetchSubCategories = async () => {
@@ -127,13 +136,19 @@ const ProductList: React.FC = () => {
 
   return (
     <div className="blinkit-list-page">
+      <SEO 
+        title={subCategoryName || categoryId || 'Products'}
+        description={`Explore our collection of ${subCategoryName || categoryId || 'products'} on MatAll. Quality supplies delivered fast.`}
+      />
       <header className="list-header-sticky">
         <div className="header-nav main-content-responsive">
           <button className="back-btn" onClick={() => navigate(-1)}>
             <ArrowLeft size={24} />
           </button>
           <div className="header-title-box">
-            <h2 className="buy-online-text">Buy {subCategoryName || 'Products'} online</h2>
+            <h2 className="buy-online-text">
+              {searchTerm ? `Results for "${searchTerm}"` : `Buy ${subCategoryName || 'Products'} online`}
+            </h2>
           </div>
           <Link to="/" className="home-btn-link">
             <Home size={24} />
@@ -202,7 +217,7 @@ const ProductList: React.FC = () => {
         </aside>
 
         {/* Product Grid Area */}
-        <section className="list-results-area">
+        <section className="list-results-area" ref={resultsAreaRef}>
           {loading ? (
             <div className="loading-box">Finding best deals...</div>
           ) : filteredProducts.length > 0 ? (
@@ -226,17 +241,6 @@ const ProductList: React.FC = () => {
         </section>
       </main>
 
-      {cartCount > 0 && (
-        <div className="view-cart-bar-sticky" onClick={() => navigate('/cart')}>
-          <div className="cart-bar-info">
-            <span className="item-count">{cartCount} Item{cartCount > 1 ? 's' : ''}</span>
-            <span className="cart-total">₹{cartTotal}</span>
-          </div>
-          <div className="view-cart-btn">
-            View Cart <ShoppingCart size={18} />
-          </div>
-        </div>
-      )}
 
       {/* Categories & Subcategories Filter Modal */}
       {showFilters && (

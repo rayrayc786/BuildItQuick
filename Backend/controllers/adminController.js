@@ -15,6 +15,8 @@ const fs = require('fs');
 const path = require('path');
 const GSTClassification = require('../models/GSTClassification');
 const ServiceableArea = require('../models/ServiceableArea');
+const Settings = require('../models/Settings');
+const axios = require('axios');
 
 
 // Inline Revenue Margin mapping if sheet exists
@@ -60,13 +62,89 @@ const resolveProductImages = (product) => {
     product.images = resolved;
     product.imageUrl = resolved[0];
   } else {
+    // Preserve existing local images if present
     product.images = product.images || [];
-    if (!product.imageUrl || product.imageUrl.includes('unsplash')) {
+    if (product.images.length > 0 && !product.images[0].includes('unsplash')) {
+      product.imageUrl = product.images[0];
+    } else if (!product.imageUrl || product.imageUrl.includes('unsplash')) {
        product.imageUrl = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=400';
     }
   }
 
   return product;
+};
+
+const downloadImage = async (url) => {
+  if (!url || !url.startsWith('http')) return url;
+  
+  // Skip if already a local path
+  if (url.startsWith('/images/')) return url;
+
+  let downloadUrl = url;
+  // Handle Google Drive view links specifically
+  if (url.includes('drive.google.com/file/d/')) {
+    try {
+      const fileId = url.split('/d/')[1].split('/')[0];
+      downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+    } catch (e) {
+      console.error('Error parsing GDrive link:', e);
+    }
+  }
+
+  try {
+    const response = await axios({
+      url: downloadUrl,
+      method: 'GET',
+      responseType: 'arraybuffer',
+      timeout: 15000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+    
+    const contentType = response.headers['content-type'];
+    let extension = 'png';
+    if (contentType) {
+      if (contentType.includes('jpeg')) extension = 'jpg';
+      else if (contentType.includes('png')) extension = 'png';
+      else if (contentType.includes('webp')) extension = 'webp';
+      else if (contentType.includes('gif')) extension = 'gif';
+    }
+    
+    const filename = `auto-${Date.now()}-${Math.floor(Math.random() * 1000)}.${extension}`;
+    const dir = path.join(__dirname, '..', 'public', 'images');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    
+    const filepath = path.join(dir, filename);
+    fs.writeFileSync(filepath, response.data);
+    console.log('Successfully saved remote image to:', filename);
+    return `/images/${filename}`;
+  } catch (err) {
+    console.error(`Failed to download image from ${url}:`, err.message);
+    return url; // Return original URL if download fails
+  }
+};
+
+const processImageFields = async (data) => {
+  if (data.imageUrl) {
+    data.imageUrl = await downloadImage(data.imageUrl);
+  }
+  if (data.logoUrl) {
+    data.logoUrl = await downloadImage(data.logoUrl);
+  }
+  if (data.images && Array.isArray(data.images)) {
+    data.images = await Promise.all(data.images.map(img => downloadImage(img)));
+  }
+  // Also check nested variants if any
+  if (data.variants && Array.isArray(data.variants)) {
+    for (let v of data.variants) {
+      if (v.imageUrl) v.imageUrl = await downloadImage(v.imageUrl);
+      if (v.images && Array.isArray(v.images)) {
+        v.images = await Promise.all(v.images.map(img => downloadImage(img)));
+      }
+    }
+  }
+  return data;
 };
 
 
@@ -370,8 +448,21 @@ exports.getAllProductsAdmin = async (req, res) => {
 
 const createHandlers = (Model, name) => ({
   getAll: async (req, res) => { try { res.json(await Model.find({}).sort({ name: 1 })); } catch (err) { res.status(500).json({ error: err.message }); } },
-  create: async (req, res) => { try { const d = new Model(req.body); await d.save(); res.status(201).json(d); } catch (err) { res.status(500).json({ error: err.message }); } },
-  update: async (req, res) => { try { res.json(await Model.findByIdAndUpdate(req.params.id, req.body, { new: true })); } catch (err) { res.status(500).json({ error: err.message }); } },
+  create: async (req, res) => { 
+    try { 
+      const processedData = await processImageFields(req.body);
+      const d = new Model(processedData); 
+      await d.save(); 
+      res.status(201).json({ ...d.toObject(), _image_processing: 'Remote images saved locally' }); 
+    } catch (err) { res.status(500).json({ error: err.message }); } 
+  },
+  update: async (req, res) => { 
+    try { 
+      const processedData = await processImageFields(req.body);
+      const d = await Model.findByIdAndUpdate(req.params.id, processedData, { new: true });
+      res.json({ ...d.toObject(), _image_processing: 'Remote images saved locally' }); 
+    } catch (err) { res.status(500).json({ error: err.message }); } 
+  },
   delete: async (req, res) => { try { await Model.findByIdAndDelete(req.params.id); res.json({ message: `${name} deleted` }); } catch (err) { res.status(500).json({ error: err.message }); } }
 });
 
@@ -463,8 +554,20 @@ exports.getAllOffers = oh.getAll; exports.createOffer = oh.create; exports.updat
 const flh = createHandlers(FooterLink, 'FooterLink');
 exports.getAllFooterLinks = flh.getAll; exports.createFooterLink = flh.create; exports.updateFooterLink = flh.update; exports.deleteFooterLink = flh.delete;
 
-exports.createProduct = async (req, res) => { try { const p = new Product(req.body); await p.save(); res.status(201).json(p); } catch (err) { res.status(500).json({ error: err.message }); } };
-exports.updateProduct = async (req, res) => { try { res.json(await Product.findByIdAndUpdate(req.params.id, req.body, { new: true })); } catch (err) { res.status(500).json({ error: err.message }); } };
+exports.createProduct = async (req, res) => { 
+  try { 
+    const processedData = await processImageFields(req.body);
+    const p = new Product(processedData); 
+    await p.save(); 
+    res.status(201).json({ ...p.toObject(), _image_processing: 'Remote images saved locally' }); 
+  } catch (err) { res.status(500).json({ error: err.message }); } 
+};
+exports.updateProduct = async (req, res) => { 
+  try { 
+    const processedData = await processImageFields(req.body);
+    res.json(await Product.findByIdAndUpdate(req.params.id, processedData, { new: true })); 
+  } catch (err) { res.status(500).json({ error: err.message }); } 
+};
 exports.deleteProduct = async (req, res) => { try { await Product.findByIdAndDelete(req.params.id); res.json({ message: 'Product deleted' }); } catch (err) { res.status(500).json({ error: err.message }); } };
 exports.clearAllProducts = async (req, res) => { try { const r = await Product.deleteMany({}); res.json({ message: `Deleted ${r.deletedCount} products.` }); } catch (err) { res.status(500).json({ error: err.message }); } };
 
@@ -510,3 +613,56 @@ exports.checkServiceability = async (req, res) => {
   }
 };
 
+
+// Settings Handlers
+exports.getSettings = async (req, res) => {
+  try {
+    let settings = await Settings.findOne();
+    if (!settings) {
+      settings = new Settings({ isServiceEnabled: true });
+      await settings.save();
+    }
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateSettings = async (req, res) => {
+  try {
+    let settings = await Settings.findOne();
+    if (!settings) {
+      settings = new Settings({ ...req.body, lastUpdatedBy: req.user.id });
+    } else {
+      Object.assign(settings, req.body);
+      settings.lastUpdatedBy = req.user.id;
+    }
+    await settings.save();
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+exports.togglePopularStatus = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    product.isPopular = !product.isPopular;
+    await product.save();
+    res.json({ message: `Product is now ${product.isPopular ? 'Popular' : 'Standard'}`, isPopular: product.isPopular });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.toggleActiveStatus = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    product.isActive = !product.isActive;
+    await product.save();
+    res.json({ message: `Product is now ${product.isActive ? 'Active' : 'Hidden'}`, isActive: product.isActive });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

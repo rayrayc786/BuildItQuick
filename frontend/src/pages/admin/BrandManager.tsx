@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Search, Edit3, Trash2, X, Award } from 'lucide-react';
+import { Plus, Search, Edit3, Trash2, X, Award, Image } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { getFullImageUrl } from '../../utils/imageUrl';
 
 const BrandManager: React.FC = () => {
@@ -28,6 +29,21 @@ const BrandManager: React.FC = () => {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const uploadData = new FormData();
+    uploadData.append('image', file);
+    
+    try {
+      const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/admin/products/upload-image`, uploadData);
+      setFormData({ ...formData, logoUrl: data.imageUrl });
+      toast.success('Logo uploaded successfully');
+    } catch (err) {
+      toast.error('Upload failed');
+    }
+  };
+
   useEffect(() => {
     fetchBrands();
   }, []);
@@ -36,16 +52,20 @@ const BrandManager: React.FC = () => {
     e.preventDefault();
     try {
       if (editingBrand) {
-        await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/admin/brands/${editingBrand._id}`, formData);
+        const { data } = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/admin/brands/${editingBrand._id}`, formData);
+        if (data._image_processing) toast.success('Brand saved & remote images downloaded locally!');
+        else toast.success('Brand updated successfully');
       } else {
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/admin/brands`, formData);
+        const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/admin/brands`, formData);
+        if (data._image_processing) toast.success('Brand created & images saved!');
+        else toast.success('Brand created successfully');
       }
       setShowModal(false);
       setEditingBrand(null);
       fetchBrands();
     } catch (err) {
       console.error(err);
-      alert('Failed to save brand');
+      toast.error('Failed to save brand');
     }
   };
 
@@ -209,13 +229,36 @@ const BrandManager: React.FC = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Logo URL</label>
-                  <input 
-                    type="text" 
-                    value={formData.logoUrl} 
-                    onChange={e => setFormData({...formData, logoUrl: e.target.value})} 
-                    placeholder="https://..."
-                  />
+                  <label>Logo URL (Upload or Paste URL)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ 
+                      width: '100px', 
+                      height: '100px', 
+                      borderRadius: '12px', 
+                      border: '2px dashed #e2e8f0', 
+                      backgroundImage: formData.logoUrl ? `url(${getFullImageUrl(formData.logoUrl)})` : 'none', 
+                      backgroundSize: 'contain', 
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'center', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      backgroundColor: '#f8fafc'
+                    }}>
+                      {!formData.logoUrl && <Image size={24} color="#64748b" opacity={0.5} />}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <input 
+                        type="text" 
+                        value={formData.logoUrl} 
+                        onChange={e => setFormData({...formData, logoUrl: e.target.value})} 
+                        placeholder="https://..."
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', marginBottom: '8px' }}
+                      />
+                      <input type="file" id="brand-logo-upload" hidden accept="image/*" onChange={handleImageUpload} />
+                      <label htmlFor="brand-logo-upload" className="secondary-btn" style={{ fontSize: '0.8rem', cursor: 'pointer', display: 'inline-block' }}>Upload Logo</label>
+                    </div>
+                  </div>
                 </div>
                 <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
                    <input 

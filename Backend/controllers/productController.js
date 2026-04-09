@@ -2,10 +2,11 @@ const Product = require('../models/Product');
 const fs = require('fs');
 const path = require('path');
 const Brand = require('../models/Brand');
+const Settings = require('../models/Settings');
 
 // Helper to resolve image names to actual file paths from Image Master
 const resolveProductImages = (product) => {
-  const imageMasterPath = path.resolve(__dirname, '..', '..', 'Image Master');
+  const imageMasterPath = path.join(__dirname, '..', 'public', 'images');
   
   let files = [];
   try {
@@ -46,8 +47,11 @@ const resolveProductImages = (product) => {
       item.images = resolved;
       item.imageUrl = resolved[0];
     } else {
+      // If no new images resolved, preserve existing local images if present
       item.images = item.images || [];
-      if (!item.imageUrl || item.imageUrl.includes('unsplash')) {
+      if (item.images.length > 0 && !item.images[0].includes('unsplash')) {
+        item.imageUrl = item.images[0];
+      } else if (!item.imageUrl || item.imageUrl.includes('unsplash')) {
          item.imageUrl = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=400';
       }
     }
@@ -283,19 +287,6 @@ exports.getFilters = async (req, res) => {
   }
 };
 
-exports.togglePopularStatus = async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
-
-    product.isPopular = !product.isPopular;
-    await product.save();
-
-    res.json({ message: `Product is now ${product.isPopular ? 'Popular' : 'Standard'}`, isPopular: product.isPopular });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
 
 exports.getBrands = async (req, res) => {
   try {
@@ -332,6 +323,19 @@ exports.getOffers = async (req, res) => {
   try {
     const Offer = require('../models/Offer');
     res.json(await Offer.find({ isActive: true }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getSettings = async (req, res) => {
+  try {
+    let settings = await Settings.findOne();
+    if (!settings) {
+      settings = new Settings({ isServiceEnabled: true });
+      await settings.save();
+    }
+    res.json(settings);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

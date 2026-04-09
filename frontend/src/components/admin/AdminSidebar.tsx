@@ -58,6 +58,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose }) => {
         { icon: <Tag size={18} />, label: 'Offers & Banners', path: '/admin/offers' },
         { icon: <MapPin size={18} />, label: 'Service Areas', path: '/admin/locations' },
         { icon: <Link size={18} />, label: 'Footer Links', path: '/admin?tab=actions&sub=footer-links' },
+        { icon: <Award size={18} />, label: 'Service Settings', path: '/admin?tab=actions&sub=settings' },
       ]
     }
   ];

@@ -6,8 +6,8 @@ exports.login = async (req, res) => {
   try {
     const { phoneNumber } = req.body;
     
-    // In dev mode, you might still want a bypass (optional)
-    if (process.env.NODE_ENV === 'development' && phoneNumber === '9999988888') {
+    const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+    if (isDev && phoneNumber === '9999988888') {
       return res.json({ message: 'Dev mode: Use 111111' });
     }
 
@@ -23,7 +23,8 @@ exports.verifyOTP = async (req, res) => {
     const { phoneNumber, otp } = req.body;
     
     let isValid = false;
-    if (process.env.NODE_ENV === 'development' && phoneNumber === '9999988888' && otp === '111111') {
+    const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+    if (isDev && phoneNumber === '9999988888' && otp === '111111') {
       isValid = true;
     } else {
       isValid = await msg91Service.verifyOTP(phoneNumber, otp);

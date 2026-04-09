@@ -16,15 +16,18 @@ async function seedBulk() {
     console.log('Cleared existing products...');
 
     // Use the new master file
-    const filePath = path.join(__dirname, '..', 'SAFE_Cleaned_Product_Master.xlsx');
+    const filePath = path.join(__dirname, '..', 'Final_Full_Product_Master NEW.xlsx');
+    if (!fs.existsSync(filePath)) {
+      console.error('Master file not found at:', filePath);
+      return;
+    }
     const workbook = xlsx.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     const rawData = xlsx.utils.sheet_to_json(sheet);
 
-    console.log(`Processing ${rawData.length} rows...`);
+    console.log(`Processing ${rawData.length} rows from Excel...`);
 
-    // Create a map of existing filenames in public/images (name without ext -> full filename)
     const imagesDir = path.join(__dirname, 'public', 'images');
     const imageFilesMap = new Map();
     if (fs.existsSync(imagesDir)) {
@@ -40,85 +43,80 @@ async function seedBulk() {
     const productsMap = new Map();
 
     rawData.forEach((row, index) => {
-      // Grouping logic: Same Product Name + Brand + Category + Sub Category
-      const groupKey = `${row['Product Name']}-${row['Brand']}-${row['Category']}-${row['Sub Category']}`.trim().toLowerCase();
-      if (!groupKey) return; 
+      const pName = row['Product Name'] || 'Unnamed Product';
+      const brand = row['Brand'] || '';
+      const cat = String(row['Category'] || '');
+      const subCat = String(row['Sub Category'] || '');
+      
+      const groupKey = `${pName}-${brand}-${cat}-${subCat}`.trim().toLowerCase();
+      
+      if (!groupKey) return;
 
       if (!productsMap.has(groupKey)) {
+        const altNamesRaw = row['Alternate Names (for search)'] || '';
+        const altNames = String(altNamesRaw).split(',').map(n => n.trim()).filter(Boolean);
+
         productsMap.set(groupKey, {
-          productId: row['Product ID'],
-          name: row['Product Name'] || 'Unnamed Product',
-          productName: row['Product Name'] || 'Unnamed Product',
-          category: String(row['Category'] || ''),
-          subCategory: String(row['Sub Category'] || ''),
-          brand: row['Brand'] || '',
+          productName: pName,
+          name: pName, 
+          category: cat,
+          subCategory: subCat,
+          brand: brand,
+          alternateNames: altNames,
           description: row['Product Description'] || '',
           hsnCode: String(row['HSN Code'] || ''),
           sellingMeasure: row['Selling Measure'] || '',
-          measureTerm: row['Measure Term'] || '',
-          measureValue: String(row['Measure Value'] || ''),
           deliveryTime: row['Delivery Time'] || '',
+          returns: row['Returns'] || '',
           logisticsRule: row['Logistics Rule'] || '',
           status: row['Status'] || 'Active',
           imageUrl: '', 
           price: 0,
+          mrp: 0,
           variants: []
         });
       }
 
       const product = productsMap.get(groupKey);
 
-      // Extract dynamic attributes as an Object
+      // Extract dynamic attributes
       const attributes = {};
-      let lastAttrName = '';
       for (let i = 1; i <= 5; i++) {
         let name = row[`Variant ${i} Name`];
         let value = row[`Variant ${i} Value`];
-
         if (value !== undefined && value !== null && String(value).trim() !== '') {
+          // If name is missing but value exists, use generic name to avoid overwriting previous attributes
           if (!name || String(name).trim() === '') {
-            name = lastAttrName || `Attribute ${i}`;
-          } else {
-            lastAttrName = name;
+            name = `Attribute ${i}`;
           }
           attributes[name.trim()] = String(value).trim();
         }
       }
 
-      // Add "Size" if exists
       if (row['Size'] && String(row['Size']).trim() !== '' && String(row['Size']).trim().toLowerCase() !== 'size') {
         attributes['Size'] = String(row['Size']).trim();
       }
-
-      // Add "Pack of" if exists and > 1
       const packOf = parseInt(row['Pack of']) || 1;
       if (packOf > 1) {
         attributes['Pack of'] = String(packOf);
       }
 
-      // Handle images mapping
+      // Images
       const rawImages = row['Images'] ? String(row['Images']).split(',').map(img => img.trim()).filter(Boolean) : [];
       const images = rawImages.map(img => {
         if (img.startsWith('http')) return img;
         let cleanName = img.replace(/^public\/images\//, '').replace(/^images\//, '');
         if (cleanName.includes('.')) return `/images/${cleanName}`;
-        if (imageFilesMap.has(cleanName)) {
-          return `/images/${imageFilesMap.get(cleanName)}`;
-        }
+        if (imageFilesMap.has(cleanName)) return `/images/${imageFilesMap.get(cleanName)}`;
         return `/images/${cleanName}.png`; 
       });
 
-      // Prepare variant
-      const variantAttrsString = Object.entries(attributes)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(', ');
-
+      const variantAttrsString = Object.entries(attributes).map(([k, v]) => `${k}: ${v}`).join(', ');
       const gstVal = parseFloat(row['GST']) || 0;
-      // If GST is provided as 0.18, we want it as 18 for DB consistency with frontend expectation of percentage
       const gstPercentage = gstVal < 1 ? gstVal * 100 : gstVal;
 
       const variant = {
-        sku: row['Product Code'] || `V-${row['Product ID']}-${product.variants.length + 1}`,
+        sku: row['Product Code'] || row['Product ID'] || `V-${index}`,
         name: variantAttrsString ? `${product.productName} - ${variantAttrsString}` : product.productName,
         attributes: attributes, 
         pricing: {
@@ -129,41 +127,39 @@ async function seedBulk() {
           discountRate: parseFloat(row['Discount Rate']) || 0,
           gst: gstPercentage,
           buyingPrice: parseFloat(row['Buying Price']) || 0,
-          marginValue: parseFloat(row['Margin Value']) || 0
+          marginValue: parseFloat(row['Margin Value']) || 0,
+          sellingMeasureRate: parseFloat(row['Selling Measure Rate']) || 0
         },
         inventory: {
           packOf: packOf,
-          unitWeight: parseFloat(row['Unit Weight \n(in gm)']) || 0,
-          bulkApplication: row['Application'] || ''
+          unitWeight: parseFloat(row['Unit Weight \r\n(in gm)'] || row['Unit Weight \n(in gm)'] || row['Unit Weight (in gm)']) || 0,
+          bulkApplication: row['Application'] || row['Bulk application'] || ''
+        },
+        measure: {
+          value: String(row['Measure Value'] || ''),
+          term: row['Measure Term'] || '',
+          unit: row['Measure'] || '' // The 'Measure' column usually contains 'sq ft', 'mt', etc.
         },
         meta: {
           suppliedWith: row['Supplied With'] || '',
-          suitableFor: row['Suitable For'] || ''
+          suitableFor: row['Suitable For'] || '',
+          warranty: row['Warranty'] || ''
         },
         images: images
       };
 
-      if (product.variants.length === 0) {
-        product.imageUrl = variant.images[0] || '';
-        product.price = variant.pricing.salePrice;
-      }
-
       product.variants.push(variant);
+
+      if (product.variants.length === 1 || (!product.price && variant.pricing.salePrice)) {
+        product.price = variant.pricing.salePrice;
+        product.mrp = variant.pricing.mrp;
+        product.imageUrl = images[0] || '';
+      }
     });
 
-    console.log(`Successfully grouped into ${productsMap.size} unique products.`);
-
-    const bulkData = Array.from(productsMap.values());
-    
-    // Save in chunks
-    const chunkSize = 100;
-    for (let i = 0; i < bulkData.length; i += chunkSize) {
-      const chunk = bulkData.slice(i, i + chunkSize);
-      await Product.insertMany(chunk);
-      console.log(`Inserted chunk ${Math.floor(i / chunkSize) + 1}...`);
-    }
-
-    console.log('Bulk seeding complete!');
+    console.log(`Saving ${productsMap.size} unique products to database...`);
+    await Product.insertMany(Array.from(productsMap.values()));
+    console.log('Seeding completed successfully!');
     process.exit(0);
   } catch (err) {
     console.error('Seeding failed:', err);

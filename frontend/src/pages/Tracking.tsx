@@ -13,6 +13,7 @@ import {
 import { getFullImageUrl } from '../utils/imageUrl';
 import { customerSocket } from '../socket';
 import './tracking.css';
+import SEO from '../components/SEO';
 
 const Tracking: React.FC = () => {
   const { id } = useParams();
@@ -21,6 +22,55 @@ const Tracking: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeAction, setActiveTab] = useState<'none' | 'track' | 'feedback' | 'faqs'>('track');
   const [rating, setRating] = useState(5);
+  const [reviewState, setReviewState] = useState<{ [productId: string]: { rating: number, comment: string, isOpen: boolean, isSubmitting: boolean, submitted: boolean } }>({});
+
+  const toggleReviewForm = (productId: string) => {
+    setReviewState(prev => ({
+      ...prev,
+      [productId]: {
+        ...prev[productId],
+        isOpen: !prev[productId]?.isOpen,
+        rating: prev[productId]?.rating || 5,
+        comment: prev[productId]?.comment || ''
+      }
+    }));
+  };
+
+  const submitProductReview = async (productId: string) => {
+    const currentReview = reviewState[productId];
+    if (!currentReview || !currentReview.comment.trim()) return;
+    
+    try {
+      setReviewState(prev => ({
+        ...prev,
+        [productId]: { ...prev[productId], isSubmitting: true }
+      }));
+      
+      const token = localStorage.getItem('token');
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/reviews`, {
+        productId,
+        orderId: id,
+        rating: currentReview.rating,
+        comment: currentReview.comment
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setReviewState(prev => ({
+        ...prev,
+        [productId]: { ...prev[productId], isSubmitting: false, submitted: true, isOpen: false }
+      }));
+      
+      alert('Review submitted successfully!');
+    } catch (error) {
+      console.error(error);
+      alert('Failed to submit review');
+      setReviewState(prev => ({
+        ...prev,
+        [productId]: { ...prev[productId], isSubmitting: false }
+      }));
+    }
+  };
 
 
   useEffect(() => {
@@ -163,6 +213,7 @@ const Tracking: React.FC = () => {
 
   return (
     <div className="blinkit-tracking-page">
+      <SEO title={`Track Order #${id?.slice(-8).toUpperCase()}`} description="Track your MatAll order status in real-time. See delivery timeline and details." />
       <header className="tracking-header-sticky">
         <div className="header-left-group">
           <button className="back-btn" onClick={() => navigate(-1)}>
@@ -193,25 +244,86 @@ const Tracking: React.FC = () => {
            </div>
            <div className="order-item-list-detailed">
               {order.items.map((item: any, idx: number) => (
-                <div key={idx} className="item-row-detailed">
-                    <div className="item-thumb-box">
-                       <img 
-                          src={getFullImageUrl(item?.productId?.imageUrl || item?.product?.imageUrl || (item?.productId?.images && item?.productId?.images[0]))} 
-                          alt="" 
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=400';
-                          }}
-                       />
+                 <div key={idx} className="item-row-wrapper-detailed">
+                    <div className="item-row-detailed">
+                        <div className="item-thumb-box">
+                           <img 
+                              src={getFullImageUrl(item?.productId?.imageUrl || item?.product?.imageUrl || (item?.productId?.images && item?.productId?.images[0]))} 
+                              alt="" 
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=400';
+                              }}
+                           />
+                        </div>
+                       <div className="item-info-col">
+                          <p className="item-name-bold">{item?.productId?.brand} {item?.productId?.name || item?.product?.name}</p>
+                          <span className="item-variant-label">{item?.selectedVariant || 'Standard'}</span>
+                          <div className="item-price-qty-row">
+                             <span className="qty-pill">Qty: {item.quantity}</span>
+                             <span className="price-bold">₹{item.unitPrice || item.price || 0}</span>
+                          </div>
+                       </div>
                     </div>
-                   <div className="item-info-col">
-                      <p className="item-name-bold">{item?.productId?.brand} {item?.productId?.name || item?.product?.name}</p>
-                      <span className="item-variant-label">{item?.selectedVariant || 'Standard'}</span>
-                      <div className="item-price-qty-row">
-                         <span className="qty-pill">Qty: {item.quantity}</span>
-                         <span className="price-bold">₹{item.unitPrice || item.price || 0}</span>
+                    {order.status === 'Order Delivered' && (
+                      <div className="product-review-actions" style={{ padding: '0 1rem 1rem 1rem', background: '#fff' }}>
+                        {reviewState[item?.productId?._id || item?.product?._id]?.submitted ? (
+                          <span style={{ color: '#16a34a', fontSize: '0.875rem' }}>✓ Review Submitted</span>
+                        ) : (
+                          <button 
+                            className="write-review-btn-inline" 
+                            onClick={() => toggleReviewForm(item?.productId?._id || item?.product?._id)}
+                            style={{ fontSize: '0.875rem', color: '#f59e0b', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          >
+                            {reviewState[item?.productId?._id || item?.product?._id]?.isOpen ? 'Cancel Review' : 'Write a Review'}
+                          </button>
+                        )}
+                        
+                        {reviewState[item?.productId?._id || item?.product?._id]?.isOpen && !reviewState[item?.productId?._id || item?.product?._id]?.submitted && (
+                          <div className="inline-review-form" style={{ marginTop: '0.75rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+                            <div className="star-rating-row" style={{ marginTop: 0, marginBottom: '0.5rem' }}>
+                              {[1,2,3,4,5].map(s => (
+                                <Star 
+                                  key={s} 
+                                  size={24} 
+                                  fill={s <= (reviewState[item?.productId?._id || item?.product?._id]?.rating || 5) ? "#facc15" : "transparent"} 
+                                  color={s <= (reviewState[item?.productId?._id || item?.product?._id]?.rating || 5) ? "#facc15" : "#cbd5e1"}
+                                  onClick={() => setReviewState(prev => ({
+                                    ...prev,
+                                    [item?.productId?._id || item?.product?._id]: {
+                                      ...prev[item?.productId?._id || item?.product?._id],
+                                      rating: s
+                                    }
+                                  }))}
+                                  className="star-icon"
+                                  style={{ cursor: 'pointer', marginRight: '4px' }}
+                                />
+                              ))}
+                            </div>
+                            <textarea 
+                              placeholder="Share your experience with this product..."
+                              style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0', minHeight: '60px', marginBottom: '0.75rem', fontSize: '0.875rem' }}
+                              value={reviewState[item?.productId?._id || item?.product?._id]?.comment || ''}
+                              onChange={(e) => setReviewState(prev => ({
+                                ...prev,
+                                [item?.productId?._id || item?.product?._id]: {
+                                  ...prev[item?.productId?._id || item?.product?._id],
+                                  comment: e.target.value
+                                }
+                              }))}
+                            ></textarea>
+                            <button 
+                              className="submit-feedback-btn" 
+                              style={{ padding: '0.5rem 1rem', fontSize: '0.875rem', width: 'auto' }}
+                              onClick={() => submitProductReview(item?.productId?._id || item?.product?._id)}
+                              disabled={reviewState[item?.productId?._id || item?.product?._id]?.isSubmitting}
+                            >
+                              {reviewState[item?.productId?._id || item?.product?._id]?.isSubmitting ? 'Submitting...' : 'Submit'}
+                            </button>
+                          </div>
+                        )}
                       </div>
-                   </div>
-                </div>
+                    )}
+                 </div>
               ))}
            </div>
         </div>

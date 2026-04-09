@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ArrowLeft, Home, ArrowUpDown, Filter } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import './sub-category.css';
+import SEO from '../components/SEO';
 
 const SLUG_MAP: {[key: string]: string} = {
   'wooden-boards': 'Wooden & Boards',
@@ -89,6 +90,10 @@ const SubCategoryPage: React.FC = () => {
 
   return (
     <div className="sub-category-page">
+      <SEO 
+        title={displayCategory} 
+        description={`Browse ${displayCategory} construction materials on MatAll. Quality supplies for your building needs, delivered in 60 minutes.`} 
+      />
       <header className="sub-cat-header-v2">
         <div className="main-content-responsive header-content-box">
           <div className="header-nav-v2">

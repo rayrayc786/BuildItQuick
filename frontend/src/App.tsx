@@ -1,9 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { CartProvider } from './contexts/CartContext';
+import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { Toaster } from 'react-hot-toast';
-import { Menu } from 'lucide-react';
+import { Menu, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { APIProvider } from '@vis.gl/react-google-maps';
+import axios from 'axios';
+
+// Global Axios Configuration
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
 
 // User Pages
 import Home from './pages/Home';
@@ -51,6 +65,7 @@ import Reports from './pages/Reports';
 import SupplierDashboard from './pages/SupplierDashboard';
 import Navbar from './components/Navbar';
 import AdminSidebar from './components/admin/AdminSidebar';
+import ScrollToTop from './components/ScrollToTop';
 // import FloatingCart from './components/FloatingCart';
 import { customerSocket, supplierSocket, connectSocket } from './socket';
 import './App.css';
@@ -131,6 +146,7 @@ const SocketManager = () => {
 
 import Footer from './components/Footer';
 import SiteFooter from './components/SiteFooter';
+// import FloatingChat from './components/FloatingChat';
 
 const AppContent = () => {
   const location = useLocation();
@@ -149,7 +165,17 @@ const AppContent = () => {
 
   return (
     <div className={`app-container app-container-responsive ${showBottomNav ? 'with-footer-padding' : ''}`}>
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster 
+        position="top-right" 
+        reverseOrder={false} 
+        toastOptions={{
+          duration: 2000,
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
+        }}
+      />
       <SocketManager />
       {showNavbar && <Navbar />}
       {/* <FloatingCart /> */}
@@ -205,23 +231,53 @@ const AppContent = () => {
 
       {showSiteFooter && <SiteFooter />}
       {showBottomNav && <Footer />}
+      {/* {showNavbar && <FloatingChat />} */}
     </div>
   );
 };
 
-import { APIProvider } from '@vis.gl/react-google-maps';
+const ServiceBanner = () => {
+  const { isCurrentlyEnabled, settings } = useSettings();
+  if (isCurrentlyEnabled) return null;
+  return (
+    <div style={{
+      background: 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)',
+      color: 'white',
+      textAlign: 'center',
+      padding: '12px 20px',
+      fontSize: '0.95rem',
+      fontWeight: '700',
+      position: 'sticky',
+      top: 0,
+      zIndex: 10000,
+      boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '8px',
+      letterSpacing: '0.5px'
+    }}>
+      <AlertTriangle size={20} />
+      <span>{settings.offlineMessage}</span>
+    </div>
+  );
+};
 
 const App: React.FC = () => {
   return (
-    <Router>
+    <SettingsProvider>
       <CartProvider>
-        <APIProvider 
-          apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""} 
-        >
-          <AppContent />
-        </APIProvider>
+        <Router>
+          <ScrollToTop />
+          <ServiceBanner />
+          <APIProvider 
+            apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""} 
+          >
+            <AppContent />
+          </APIProvider>
+        </Router>
       </CartProvider>
-    </Router>
+    </SettingsProvider>
   );
 };
 

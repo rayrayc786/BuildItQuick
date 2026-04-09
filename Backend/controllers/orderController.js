@@ -2,12 +2,63 @@ const OrderService = require('../services/orderService');
 const Order = require('../models/Order');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const Settings = require('../models/Settings');
 
 const getRazorpayInstance = () => {
   return new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_mock12345',
     key_secret: process.env.RAZORPAY_KEY_SECRET || 'secret12345'
   });
+};
+
+/**
+ * Centralized logic to check if the store is currently offline.
+ * 
+ * LOGIC EXPLAINED:
+ * 1. MANUAL OVERRIDE: If 'isServiceEnabled' is false, the store is forced OFF.
+ * 2. AUTOMATED SCHEDULE: If 'useOperatingHours' is true, we check the current time:
+ *    a) NORMAL SHIFT (Start < End): Open if current time is BETWEEN start and end.
+ *       Example: 09:00 - 21:00 -> Open if time is 10:00.
+ *    b) OVERNIGHT SHIFT (Start > End): Open if current time is AFTER start OR BEFORE end.
+ *       Example: 21:00 - 03:00 -> Open if time is 23:00 (after start) OR 01:00 (before end).
+ * 3. FALLBACK: If neither of the above forces it OFF, the store is ONLINE.
+ */
+const isServiceOffline = async () => {
+  const settings = await Settings.findOne();
+  if (!settings) return false;
+  
+  // 1. Manual override (Always Closed) takes precedence
+  if (!settings.isServiceEnabled) return settings.offlineMessage;
+
+  // 2. Schedule-based check
+  if (settings.useOperatingHours) {
+    const now = new Date();
+    // Minutes since midnight (0-1439)
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+    const [startH, startM] = settings.serviceStartTime.split(':').map(Number);
+    const [endH, endM] = settings.serviceEndTime.split(':').map(Number);
+    
+    const startTime = startH * 60 + startM;
+    const endTime = endH * 60 + endM;
+
+    let isWithinHours = false;
+
+    if (startTime < endTime) {
+      // Normal case: e.g., 09:00 to 21:00
+      isWithinHours = (currentTime >= startTime && currentTime <= endTime);
+    } else {
+      // Overnight case: e.g., 21:00 to 06:00
+      isWithinHours = (currentTime >= startTime || currentTime <= endTime);
+    }
+
+    if (!isWithinHours) {
+      return settings.offlineMessage || `We are currently closed. Our hours are ${settings.serviceStartTime} to ${settings.serviceEndTime}.`;
+    }
+  }
+
+  // Store is LIVE
+  return false;
 };
 
 exports.getAllOrders = async (req, res) => {
@@ -35,6 +86,11 @@ exports.getMyOrders = async (req, res) => {
 
 exports.createRazorpayOrder = async (req, res) => {
   try {
+    const offlineError = await isServiceOffline();
+    if (offlineError) {
+      return res.status(403).json({ message: offlineError });
+    }
+
     const { amount } = req.body; // Amount in INR
     const rzp = getRazorpayInstance();
 
@@ -75,6 +131,11 @@ exports.verifyRazorpayPayment = async (req, res) => {
 
 exports.checkout = async (req, res) => {
   try {
+    const offlineError = await isServiceOffline();
+    if (offlineError) {
+      return res.status(403).json({ message: offlineError });
+    }
+
     const orderData = {
       ...req.body,
       userId: req.user.id

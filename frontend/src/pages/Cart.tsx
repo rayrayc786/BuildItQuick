@@ -14,17 +14,21 @@ import ProductCard from '../components/ProductCard';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { getFullImageUrl } from '../utils/imageUrl';
+import { useSettings } from '../contexts/SettingsContext';
 import './cart.css';
+import SEO from '../components/SEO';
 
 const Cart: React.FC = () => {
   const { cart, addToCart, removeFromCart, totalAmount, totalGst } = useCart();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [maxDeliveryTime, setMaxDeliveryTime] = useState('15 mins');
 
   // Same fee logic as Checkout.tsx
-  const deliveryCharge = totalAmount > 5000 ? 0 : 150;
-  const handlingCharge = 25;
+  // Use fees from settings
+  const deliveryCharge = totalAmount > settings.freeDeliveryThreshold ? 0 : settings.deliveryCharge;
+  const handlingCharge = settings.platformFee;
   const grandTotal = totalAmount + deliveryCharge + handlingCharge;
 
   useEffect(() => {
@@ -76,6 +80,7 @@ const Cart: React.FC = () => {
   if (cart.length === 0) {
     return (
       <div className="blinkit-cart-page">
+        <SEO title="My Shopping Cart" description="Review your items in the cart and proceed to checkout for fast delivery." />
         <div className="cart-empty-lux main-content-responsive">
           <ShoppingCart size={80} strokeWidth={1.5} color="#e2e8f0" />
           <h2>Your cart is empty</h2>
@@ -88,6 +93,7 @@ const Cart: React.FC = () => {
 
   return (
     <div className="blinkit-cart-page">
+      <SEO title="My Shopping Cart" description="Review your items in the cart and proceed to checkout for fast delivery." />
       <main className="checkout-content main-content-responsive">
         <div className="checkout-grid-responsive">
           <div className="checkout-left-col">
@@ -205,15 +211,19 @@ const Cart: React.FC = () => {
             </section>
 
             <div className="desktop-order-actions hide-mobile mt-4">
-              <button className="final-place-btn-desktop" onClick={() => {
-                if (!localStorage.getItem('token')) {
-                  toast.error('Please login to continue to checkout');
-                  navigate('/login', { state: { from: '/cart' } });
-                } else {
-                  navigate('/checkout');
-                }
-              }}>
-                Place Order • ₹{grandTotal.toFixed(2)}
+              <button 
+                className={`final-place-btn-desktop ${!settings.isServiceEnabled ? 'disabled' : ''}`} 
+                disabled={!settings.isServiceEnabled}
+                onClick={() => {
+                  if (!localStorage.getItem('token')) {
+                    toast.error('Please login to continue to checkout');
+                    navigate('/login', { state: { from: '/cart' } });
+                  } else {
+                    navigate('/checkout');
+                  }
+                }}
+              >
+                {settings.isServiceEnabled ? `Place Order • ₹${grandTotal.toFixed(2)}` : 'Service Offline'}
               </button>
             </div>
           </div>
@@ -230,7 +240,8 @@ const Cart: React.FC = () => {
           <button className="addr-change-btn">Change</button>
         </div>
 
-        <div className="payment-place-order-bar" onClick={() => {
+        <div className={`payment-place-order-bar ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => {
+          if (!settings.isServiceEnabled) return;
           if (!localStorage.getItem('token')) {
             toast.error('Please login to continue to checkout');
             navigate('/login', { state: { from: '/cart' }, replace: true });

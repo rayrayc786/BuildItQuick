@@ -377,3 +377,24 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
 }
+.sku-row-inactive {
+  opacity: 0.6;
+  background-color: #f8fafc;
+}
+
+.sku-row-inactive td {
+  color: #64748b;
+}
+
+.visibility-btn {
+  color: #94a3b8;
+  transition: all 0.2s;
+}
+
+.visibility-btn:hover {
+  background: #f1f5f9;
+}
+
+.visibility-btn.is-inactive {
+  background: #fef2f2;
+}

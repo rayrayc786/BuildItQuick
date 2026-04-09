@@ -4,7 +4,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: 80px;
+  padding-bottom: 0;
 }
 
 .list-header-sticky {
@@ -135,7 +135,7 @@
 }
 
 .brand-sidebar-vertical {
-  width: 90px;
+  width: 80px;
   background: white;
   border-right: 1px solid #eee;
   display: flex;
@@ -206,14 +206,14 @@
 .list-results-area {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 8px;
   background: white;
 }
 
 .list-grid-3xN {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 8px;
 }
 
 @media (min-width: 851px) {

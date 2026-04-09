@@ -120,23 +120,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         >
           <Heart size={16} fill={isFavorite ? '#ef4444' : 'none'} strokeWidth={2} />
         </button>
-        
         <img 
-          src={getFullImageUrl((selectedVariant?.images && selectedVariant.images[0]) || selectedVariant?.image || product.imageUrl)} 
+          src={getFullImageUrl(selectedVariant?.images?.[0] || product.images?.[0] || product.imageUrl)} 
           alt={product.name} 
           className="list-product-img"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=400';
-          }}
         />
-        
-        <div className="stock-dot-indicator">
+        {/* <div className="stock-dot-indicator">
           <div className="dot"></div>
-        </div>
+        </div> */}
       </div>
 
       <div className="list-card-details">
-        {/* 2. Unit & Action Row */}
+        {/* 2. Action Row (Unit Selector + ADD) */}
         <div className="list-action-row">
           <div 
             className={`list-unit-info ${product.variants?.length > 1 ? 'is-clickable' : ''}`}

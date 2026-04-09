@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { ShieldCheck, Star, MapPin, Phone } from 'lucide-react';
+import SEO from '../components/SEO';
 
 const SupplierStore: React.FC = () => {
   const { id } = useParams();
@@ -34,6 +35,10 @@ const SupplierStore: React.FC = () => {
 
   return (
     <main className="content supplier-store">
+      <SEO 
+        title={supplier?.name || 'Supplier Store'} 
+        description={`Explore building materials from ${supplier?.name || 'our verified suppliers'} on MatAll.`} 
+      />
       <header className="supplier-profile card">
         <div className="profile-info">
           <h1>{supplier.name} {supplier.isVerified && <ShieldCheck className="verified-icon" />}</h1>
