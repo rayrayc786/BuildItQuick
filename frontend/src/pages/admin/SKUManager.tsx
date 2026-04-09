@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Plus, Search, FileUp, Edit3, Trash2, X, CheckCircle2, AlertCircle, Star, Menu } from 'lucide-react';
+import { Plus, Search, FileUp, Edit3, Trash2, X, CheckCircle2, AlertCircle, Star, Menu, Eye, EyeOff, Truck } from 'lucide-react';
 import { getFullImageUrl } from '../../utils/imageUrl';
 import './sku.css';
 
 const SKUManager: React.FC = () => {
+  const navigate = useNavigate();
   const [skus, setSkus] = useState<any[]>([]);
   const [masterCategories, setMasterCategories] = useState<any[]>([]);
   const [masterSubCategories, setMasterSubCategories] = useState<any[]>([]);
@@ -41,6 +43,7 @@ const SKUManager: React.FC = () => {
     size: '',
     subVariants: [] as any[],
     isPopular: false,
+    isActive: true,
     infoPara: '',
     description: '',
     bulkPricing: [] as any[],
@@ -254,12 +257,23 @@ const SKUManager: React.FC = () => {
 
   const handleTogglePopular = async (id: string) => {
     try {
-      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/products/${id}/toggle-popular`);
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/products/${id}/toggle-popular`);
       fetchSKUs();
       toast.success('Product status updated');
     } catch (err) {
       console.error(err);
       toast.error('Failed to update product status');
+    }
+  };
+
+  const handleToggleActive = async (id: string) => {
+    try {
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/products/${id}/toggle-active`);
+      fetchSKUs();
+      toast.success('Visibility updated');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update visibility');
     }
   };
 
@@ -297,6 +311,7 @@ const SKUManager: React.FC = () => {
       size: sku.size || sku.subVariants?.[0]?.title || '',
       subVariants: sku.subVariants || [],
       isPopular: sku.isPopular || false,
+      isActive: sku.isActive !== false,
       infoPara: sku.infoPara || '',
       description: sku.description || '',
       bulkPricing: sku.bulkPricing || [],
@@ -329,6 +344,7 @@ const SKUManager: React.FC = () => {
       size: '',
       subVariants: [],
       isPopular: false,
+      isActive: true,
       infoPara: '',
       description: '',
       bulkPricing: [],
@@ -369,9 +385,12 @@ const SKUManager: React.FC = () => {
           <button className="secondary-btn sku-clear-all-btn" onClick={handleClearAll}>
             <Trash2 size={18} /> Clear All
           </button>
-          <button className="add-sku-btn" onClick={resetForm}>
-            <Plus size={18} /> New Product SKU
-          </button>
+          <button className="secondary-btn" onClick={() => navigate('/admin?tab=actions&sub=settings')}>
+             <Truck size={18} /> Global Fees
+           </button>
+           <button className="add-sku-btn" onClick={resetForm}>
+             <Plus size={18} /> New Product SKU
+           </button>
         </div>
       </header>
 
@@ -424,16 +443,16 @@ const SKUManager: React.FC = () => {
               <tr><td colSpan={7} className="empty-cell">No products found matching "{search}"</td></tr>
             ) : (
               filteredSkus.map(sku => (
-                <tr key={sku._id}>
+                <tr key={sku._id} className={!sku.isActive ? 'sku-row-inactive' : ''}>
                   <td className="product-cell">
                     <div className="sku-product-info">
                       <img 
                         src={getFullImageUrl(sku.imageUrl)} 
                         alt="" 
                         className="sku-image"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=100';
-                        }}
+                        // onError={(e) => {
+                        //   (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=100';
+                        // }}
                       />
                       <div>
                         <div className="sku-product-name">{sku.productName || sku.name}</div>
@@ -484,6 +503,13 @@ const SKUManager: React.FC = () => {
                   </td>
                   <td className="actions-cell">
                     <div className="sku-actions-container">
+                      <button 
+                        className={`icon-btn visibility-btn ${!sku.isActive ? 'is-inactive' : ''}`} 
+                        onClick={() => handleToggleActive(sku._id)} 
+                        title={sku.isActive ? "Hide from Store" : "Show on Store"}
+                      >
+                        {sku.isActive ? <Eye size={16} /> : <EyeOff size={16} color="#ef4444" />}
+                      </button>
                       <button 
                         className={`icon-btn star-btn ${sku.isPopular ? 'is-popular' : ''}`} 
                         onClick={() => handleTogglePopular(sku._id)} 
@@ -690,6 +716,14 @@ const SKUManager: React.FC = () => {
                           onChange={e => setFormData({...formData, isPopular: e.target.checked})} 
                         />
                         Mark as Popular Demand
+                      </label>
+                      <label className="checkbox-label" style={{ marginLeft: '2rem' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={formData.isActive} 
+                          onChange={e => setFormData({...formData, isActive: e.target.checked})} 
+                        />
+                        Product Active (Visible on App)
                       </label>
                     </div>
                   </>

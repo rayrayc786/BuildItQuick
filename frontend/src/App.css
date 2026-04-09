@@ -836,7 +836,7 @@ a {
 }
 
 .app-container-responsive.with-footer-padding {
-  padding-bottom: 90px;
+  padding-bottom: 80px;
 }
 
 @media (min-width: 851px) {

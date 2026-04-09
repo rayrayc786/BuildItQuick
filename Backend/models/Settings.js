@@ -6,6 +6,9 @@ const settingsSchema = new mongoose.Schema({
   useOperatingHours: { type: Boolean, default: false },
   serviceStartTime: { type: String, default: "09:00" }, // HH:mm format
   serviceEndTime: { type: String, default: "21:00" },   // HH:mm format
+  deliveryCharge: { type: Number, default: 150 },
+  freeDeliveryThreshold: { type: Number, default: 5000 },
+  platformFee: { type: Number, default: 15 },
   lastUpdatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 

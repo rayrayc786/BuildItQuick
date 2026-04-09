@@ -11,7 +11,10 @@ import {
   Clock,
   Star,
   Plus,
-  Minus
+  Minus,
+  RotateCcw,
+  ShieldCheck,
+  Info
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import ProductCard from '../components/ProductCard';
@@ -31,6 +34,8 @@ const ProductDetail: React.FC = () => {
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
   const [showSpecs, setShowSpecs] = useState(false);
+  const [showReturnPolicy, setShowReturnPolicy] = useState(true);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [selections, setSelections] = useState<Record<string, string>>({});
   
@@ -77,6 +82,13 @@ const ProductDetail: React.FC = () => {
             }
             setSelections(initialSelections);
           }
+        }
+        
+        try {
+          const reviewsRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/reviews/product/${data._id}`);
+          setReviews(reviewsRes.data);
+        } catch (rErr) {
+          console.error("Failed to fetch reviews", rErr);
         }
         
         const similarRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products?category=${data.category}`);
@@ -209,14 +221,14 @@ const ProductDetail: React.FC = () => {
         <div className="detail-right-col">
           <main className="detail-main-info">
              {/* Metadata */}
-             <div className="meta-stats-row">
+             {/* <div className="meta-stats-row">
                 <div className="delivery-mini"><Clock size={12} /> <span>10 mins</span></div>
                 <div className="rating-mini">
                    <Star size={12} fill="#facc15" color="#facc15" /> 
                    <span>4.5</span> 
                    <span className="count">(3.2 lac)</span>
                 </div>
-             </div>
+             </div> */}
 
              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                <h1 className="prd-title-large" style={{ flex: 1 }}>
@@ -304,6 +316,16 @@ const ProductDetail: React.FC = () => {
                     {Math.round(((currentMrp - currentPrice)/currentMrp)*100)}% OFF on MRP
                   </div>
                 )}
+                {selectedVariant?.pricing?.sellingMeasureRate > 0 && (
+                  <div className="selling-rate-info" style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: '600', marginTop: '8px' }}>
+                    ₹{selectedVariant.pricing.sellingMeasureRate} {product.sellingMeasure || 'per unit'}
+                  </div>
+                )}
+                {selectedVariant?.measure?.value && (
+                  <div className="measure-info" style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>
+                    {selectedVariant.measure.term || 'Net contents'}: {selectedVariant.measure.value} {selectedVariant.measure.unit || ''}
+                  </div>
+                )}
              </div>
 
               {/* View Details Dropdown */}
@@ -347,6 +369,12 @@ const ProductDetail: React.FC = () => {
                                    <td className="spec-title">SKU / Model</td>
                                    <td className="spec-value">{selectedVariant.sku}</td>
                                 </tr>
+                                {selectedVariant.measure?.value && (
+                                  <tr>
+                                     <td className="spec-title">{selectedVariant.measure.term || 'Measure'}</td>
+                                     <td className="spec-value">{selectedVariant.measure.value} {selectedVariant.measure.unit || ''}</td>
+                                  </tr>
+                                )}
                                 {Object.entries(selectedVariant.attributes || {}).map(([k, v]) => (
                                   <tr key={k}>
                                      <td className="spec-title">{k}</td>
@@ -357,6 +385,30 @@ const ProductDetail: React.FC = () => {
                                   <tr>
                                      <td className="spec-title">Unit Weight</td>
                                      <td className="spec-value">{selectedVariant.inventory.unitWeight} gm</td>
+                                  </tr>
+                                )}
+                                {selectedVariant.meta?.warranty && (
+                                  <tr>
+                                     <td className="spec-title">Warranty</td>
+                                     <td className="spec-value">{selectedVariant.meta.warranty}</td>
+                                  </tr>
+                                )}
+                                {selectedVariant.meta?.suitableFor && (
+                                  <tr>
+                                     <td className="spec-title">Suitable For</td>
+                                     <td className="spec-value">{selectedVariant.meta.suitableFor}</td>
+                                  </tr>
+                                )}
+                                {selectedVariant.meta?.suppliedWith && (
+                                  <tr>
+                                     <td className="spec-title">Supplied With</td>
+                                     <td className="spec-value">{selectedVariant.meta.suppliedWith}</td>
+                                  </tr>
+                                )}
+                                {selectedVariant.inventory?.bulkApplication && (
+                                  <tr>
+                                     <td className="spec-title">Application</td>
+                                     <td className="spec-value">{selectedVariant.inventory.bulkApplication}</td>
                                   </tr>
                                 )}
                               </>
@@ -394,6 +446,108 @@ const ProductDetail: React.FC = () => {
                   )}
                 </div>
               )}
+
+               {/* Return Policy Section - Redesigned */}
+              <div className="premium-policy-card">
+                <div className="policy-card-header" onClick={() => setShowReturnPolicy(!showReturnPolicy)}>
+                  <div className="policy-title-group">
+                    <ShieldCheck size={20} className="policy-icon-main" />
+                    <h3>Standard Return Policy</h3>
+                  </div>
+                  <ChevronDown size={20} className={`chevron-policy ${showReturnPolicy ? 'active' : ''}`} />
+                </div>
+                
+                {showReturnPolicy && (
+                  <div className="policy-card-body">
+                    <div className="policy-intro">
+                      Returns are accepted if requested within the defined timeframes and meet the specified conditions.
+                    </div>
+
+                    <div className="policy-grid">
+                      <div className="policy-item">
+                        <div className="policy-item-icon damage">
+                           <AlertCircle size={18} />
+                        </div>
+                        <div className="policy-item-info">
+                          <div className="policy-item-row">
+                            <span className="policy-label">Damaged Product</span>
+                            <span className="policy-badge red">15 Mins</span>
+                          </div>
+                          <p className="policy-desc">Report any physical damage immediately upon delivery.</p>
+                        </div>
+                      </div>
+
+                      <div className="policy-item">
+                        <div className="policy-item-icon mismatch">
+                           <RotateCcw size={18} />
+                        </div>
+                        <div className="policy-item-info">
+                          <div className="policy-item-row">
+                            <span className="policy-label">Different Item</span>
+                            <span className="policy-badge red">15 Mins</span>
+                          </div>
+                          <p className="policy-desc">If the delivered product does not match your order.</p>
+                        </div>
+                      </div>
+
+                      <div className="policy-item">
+                        <div className="policy-item-icon hardware">
+                           <Info size={18} />
+                        </div>
+                        <div className="policy-item-info">
+                          <div className="policy-item-row">
+                            <span className="policy-label">Hardware Fit Issue</span>
+                            <span className="policy-badge blue">1 Hour</span>
+                          </div>
+                          <p className="policy-desc">Items must have original packing, no scratches, and no smudges.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="policy-footer">
+                       <Info size={14} />
+                       <span>Returns must be initiated via the 'My Orders' section in the app.</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+             {/* Reviews Section */}
+             <div className="premium-policy-card" style={{ marginTop: '16px' }}>
+                <div className="policy-card-header">
+                  <div className="policy-title-group">
+                    <Star size={20} className="policy-icon-main" style={{ color: '#f59e0b', background: '#fef3c7' }} />
+                    <h3>Customer Reviews ({reviews.length})</h3>
+                  </div>
+                </div>
+                
+                <div className="policy-card-body" style={{ padding: '0 1rem 1rem 1rem' }}>
+                  {reviews.length === 0 ? (
+                    <div style={{ padding: '1rem 0', color: '#64748b', fontSize: '0.9rem', textAlign: 'center' }}>
+                      No reviews yet for this product.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+                      {reviews.map((r, idx) => (
+                        <div key={idx} style={{ paddingBottom: '1rem', borderBottom: idx !== reviews.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e293b' }}>{r.userId?.name || 'Verified Customer'}</span>
+                            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                              {new Date(r.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
+                            {[1,2,3,4,5].map(s => (
+                              <Star key={s} size={14} fill={s <= r.rating ? "#facc15" : "transparent"} color={s <= r.rating ? "#facc15" : "#cbd5e1"} />
+                            ))}
+                          </div>
+                          <p style={{ fontSize: '0.875rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>{r.comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+             </div>
 
              {/* Desktop Add to Cart */}
              <div className="desktop-add-container hide-mobile">

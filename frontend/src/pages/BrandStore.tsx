@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { 
@@ -21,6 +21,7 @@ const BrandStore: React.FC = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubCat, setSelectedSubCat] = useState<string | null>(null);
+  const resultsAreaRef = useRef<HTMLDivElement>(null);
   const [sortBy, setSortBy] = useState<string>('default');
   const [subCategories, setSubCategories] = useState<any[]>([]);
 
@@ -52,6 +53,13 @@ const BrandStore: React.FC = () => {
     };
     fetchData();
   }, [brandName]);
+
+  // Scroll results area back to top when sub-category changes
+  useEffect(() => {
+    if (resultsAreaRef.current) {
+      resultsAreaRef.current.scrollTo(0, 0);
+    }
+  }, [selectedSubCat]);
 
   const filteredProducts = useMemo(() => {
     let result = selectedSubCat 
@@ -130,7 +138,7 @@ const BrandStore: React.FC = () => {
         </aside>
 
         {/* Main Content: Brand Products Grid */}
-        <section className="cat-product-results">
+        <section className="cat-product-results" ref={resultsAreaRef}>
           {loading ? (
             <div className="loading-box">Entering {brandName} Store...</div>
           ) : filteredProducts.length > 0 ? (
@@ -146,7 +154,7 @@ const BrandStore: React.FC = () => {
       </main>
 
       {/* Persistent Cart Bar for Brand Shopping */}
-      {cartCount > 0 && (
+      {/* {cartCount > 0 && (
         <div className="view-cart-bar-sticky">
           <div className="cart-bar-info">
             <span className="item-count">{cartCount} Item{cartCount > 1 ? 's' : ''}</span>
@@ -156,7 +164,7 @@ const BrandStore: React.FC = () => {
             View Cart <ShoppingCart size={18} />
           </Link>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

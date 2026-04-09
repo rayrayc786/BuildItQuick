@@ -9,6 +9,9 @@ interface Settings {
   useOperatingHours: boolean;
   serviceStartTime: string;
   serviceEndTime: string;
+  deliveryCharge: number;
+  freeDeliveryThreshold: number;
+  platformFee: number;
 }
 
 interface SettingsContextType {
@@ -26,7 +29,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     offlineMessage: "",
     useOperatingHours: false,
     serviceStartTime: "09:00",
-    serviceEndTime: "21:00"
+    serviceEndTime: "21:00",
+    deliveryCharge: 150,
+    freeDeliveryThreshold: 5000,
+    platformFee: 15
   });
   const [loading, setLoading] = useState(true);
   const [isCurrentlyEnabled, setIsCurrentlyEnabled] = useState(true);
@@ -65,10 +71,13 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const { data } = await axios.get(`${API_BASE}/products/site/settings`);
       const updated = {
         isServiceEnabled: data.isServiceEnabled,
-        offlineMessage: data.offlineMessage || "",
-        useOperatingHours: data.useOperatingHours || false,
-        serviceStartTime: data.serviceStartTime || "09:00",
-        serviceEndTime: data.serviceEndTime || "21:00"
+        offlineMessage: data.offlineMessage ?? "",
+        useOperatingHours: data.useOperatingHours ?? false,
+        serviceStartTime: data.serviceStartTime ?? "09:00",
+        serviceEndTime: data.serviceEndTime ?? "21:00",
+        deliveryCharge: data.deliveryCharge ?? 150,
+        freeDeliveryThreshold: data.freeDeliveryThreshold ?? 5000,
+        platformFee: data.platformFee ?? 15
       };
       setSettings(updated);
       setIsCurrentlyEnabled(checkStatus(updated));

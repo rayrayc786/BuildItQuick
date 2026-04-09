@@ -10,7 +10,6 @@ router.get('/categories', productController.getCategories);
 router.get('/brands', productController.getBrands);
 router.get('/offers', productController.getOffers);
 router.get('/', productController.getAllProducts);
-router.patch('/:id/toggle-popular', productController.togglePopularStatus);
 router.get('/:id', productController.getProductById);
 
 module.exports = router;

@@ -16,11 +16,13 @@ import {
   Image,
   Menu
 } from 'lucide-react';
+import { getFullImageUrl } from '../../utils/imageUrl';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import Reports from '../Reports';
 import FooterManager from './FooterManager';
 import ServiceSettings from './ServiceSettings';
+import ReviewManager from './ReviewManager';
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -274,7 +276,7 @@ function ManagementModal({
                   <div className="modal-images-grid">
                     {(formData.images || []).map((imgUrl: string, idx: number) => (
                       <div key={idx} className="modal-image-item">
-                        <img src={imgUrl.startsWith('/') ? `${API_BASE.replace('/api', '')}${imgUrl}` : imgUrl} alt="" />
+                        <img src={getFullImageUrl(imgUrl)} alt="" />
                         <button type="button" className="remove-img" onClick={() => {
                           const newImgs = formData.images.filter((_: string, i: number) => i !== idx);
                           setFormData({...formData, images: newImgs});
@@ -465,15 +467,31 @@ function ManagementModal({
                  </div>
               </div>
               <div className="input-group-admin">
-                 <label>Category Image</label>
-                 <div className="image-upload-wrapper">
-                    <input type="text" value={formData.imageUrl || ''} placeholder="Image URL" onChange={e => setFormData({...formData, imageUrl: e.target.value})} />
-                    <label className="upload-mini-btn">
-                      <Image size={18} />
-                      <input type="file" hidden accept="image/*" onChange={handleCategoryImageUpload} />
-                    </label>
-                 </div>
-              </div>
+                  <label>Category Image (Upload or Paste URL)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ 
+                      width: '60px', 
+                      height: '60px', 
+                      borderRadius: '8px', 
+                      border: '1px solid #e2e8f0', 
+                      backgroundImage: formData.imageUrl ? `url(${getFullImageUrl(formData.imageUrl)})` : 'none', 
+                      backgroundSize: 'cover', 
+                      backgroundPosition: 'center', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center' 
+                    }}>
+                      {!formData.imageUrl && <Image size={20} color="#64748b" opacity={0.5} />}
+                    </div>
+                    <div className="image-upload-wrapper" style={{ flex: 1 }}>
+                       <input type="text" value={formData.imageUrl || ''} placeholder="https://..." onChange={e => setFormData({...formData, imageUrl: e.target.value})} />
+                       <label className="upload-mini-btn">
+                         <Image size={18} />
+                         <input type="file" hidden accept="image/*" onChange={handleCategoryImageUpload} />
+                       </label>
+                    </div>
+                  </div>
+               </div>
             </div>
           )}
         </div>
@@ -595,7 +613,7 @@ const AdminDashboard: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState<'dashboard' | 'reports' | 'actions'>((tabParam as any) || 'dashboard');
   const subParam = searchParams.get('sub');
-  const [activeActionTab, setActiveActionTab] = useState<'list' | 'users' | 'orders' | 'categories' | 'products' | 'tickets' | 'userRequests' | 'footer-links' | 'gst' | 'settings'>((subParam as any) || 'list');
+  const [activeActionTab, setActiveActionTab] = useState<'list' | 'users' | 'orders' | 'categories' | 'products' | 'tickets' | 'userRequests' | 'footer-links' | 'gst' | 'settings' | 'reviews'>((subParam as any) || 'list');
   const [loading, setLoading] = useState(false);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
 
@@ -705,20 +723,45 @@ const AdminDashboard: React.FC = () => {
     };
   }, []);
 
+  const handleCategoryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const uploadData = new FormData();
+    uploadData.append('image', file);
+    
+    setLoading(true);
+    try {
+      const { data } = await axios.post(`${API_BASE}/admin/products/upload-image`, uploadData);
+      setFormData({ ...formData, imageUrl: data.imageUrl });
+      toast.success('Image uploaded');
+    } catch (err) {
+      toast.error('Upload failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAction = async (method: 'post' | 'put' | 'patch' | 'delete', endpoint: string, data?: any) => {
     try {
       const url = `${API_BASE}${endpoint}`;
+      let response;
       if (method === 'delete') {
-         await axios.delete(url);
+         response = await axios.delete(url);
       } else if (method === 'post') {
-         await axios.post(url, data);
+         response = await axios.post(url, data);
       } else if (method === 'patch') {
-         await axios.patch(url, data);
+         response = await axios.patch(url, data);
       } else {
-         await axios.put(url, data);
+         response = await axios.put(url, data);
       }
-      const successMsg = method === 'delete' ? 'Item deleted successfully' : (method === 'post' ? 'New item created!' : 'Changes saved successfully!');
-      toast.success(successMsg);
+
+      if (response && response.data && response.data._image_processing) {
+        toast.success(`Done! ${response.data._image_processing}`);
+      } else {
+        const successMsg = method === 'delete' ? 'Item deleted successfully' : (method === 'post' ? 'New item created!' : 'Changes saved successfully!');
+        toast.success(successMsg);
+      }
+      
       setShowModal(false);
       setEditingItem(null);
       fetchData();
@@ -878,8 +921,14 @@ const AdminDashboard: React.FC = () => {
     {
       id: 'settings',
       name: 'Service Settings',
-      sub: 'Manage service availability, turn orders on/off and set offline messages',
+      sub: 'Manage availability, delivery charges, platform fees and offline messages',
       color: '#DEDEDE'
+    },
+    {
+      id: 'reviews',
+      name: 'Review Management',
+      sub: 'Manage customer reviews for products, approve or reject them',
+      color: '#FFEA00'
     }
   ];
 
@@ -1266,7 +1315,12 @@ const AdminDashboard: React.FC = () => {
               <Trash2 size={18} />
             </button>
             <div className="row-mid-info" style={{ flex: 1, display: 'flex', justifyContent: 'center', background: '#f8fafc', borderRadius: '8px', padding: '0.5rem' }}>
-               <img src={(req.imageUrl && req.imageUrl.startsWith('/')) ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}${req.imageUrl}` : req.imageUrl} alt="Request" style={{ maxWidth: '100%', maxHeight: '250px', objectFit: 'contain', cursor: 'pointer' }} onClick={() => window.open((req.imageUrl && req.imageUrl.startsWith('/')) ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}${req.imageUrl}` : req.imageUrl, '_blank')} />
+               <img 
+                  src={getFullImageUrl(req.imageUrl)} 
+                  alt="Request" 
+                  style={{ maxWidth: '100%', maxHeight: '250px', objectFit: 'contain', cursor: 'pointer' }} 
+                  onClick={() => window.open(getFullImageUrl(req.imageUrl), '_blank')} 
+                />
             </div>
           </div>
         ))}
@@ -1330,6 +1384,7 @@ const AdminDashboard: React.FC = () => {
     if (activeActionTab === 'userRequests') return renderUserRequestsManagement();
     if (activeActionTab === 'footer-links') return <FooterManager />;
     if (activeActionTab === 'settings') return <ServiceSettings />;
+    if (activeActionTab === 'reviews') return <ReviewManager />;
 
     return (
       <div className="admin-scroll-content animate-fade-in">
@@ -1354,24 +1409,6 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
     );
-  };
-
-   const handleCategoryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const uploadData = new FormData();
-    uploadData.append('image', file);
-    
-    setLoading(true);
-    try {
-      const { data } = await axios.post(`${API_BASE}/admin/products/upload-image`, uploadData);
-      setFormData({ ...formData, imageUrl: data.imageUrl });
-      toast.success('Image uploaded');
-    } catch (err) {
-      toast.error('Upload failed');
-    } finally {
-      setLoading(false);
-    }
   };
 
   if (loading) return (

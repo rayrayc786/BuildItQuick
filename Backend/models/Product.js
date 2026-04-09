@@ -15,16 +15,23 @@ const VariantSchema = new mongoose.Schema({
     discountValue: { type: Number },
     discountRate: { type: Number },
     buyingPrice: { type: Number },
-    marginValue: { type: Number }
+    marginValue: { type: Number },
+    sellingMeasureRate: { type: Number } // Rate per sq ft / per mt
   },
   inventory: {
     packOf: { type: Number },
     unitWeight: { type: Number },
     bulkApplication: { type: String }
   },
+  measure: {
+    value: { type: String }, // e.g., "32"
+    term: { type: String },  // e.g., "Area"
+    unit: { type: String }   // e.g., "sq ft"
+  },
   meta: {
     suppliedWith: { type: String },
-    suitableFor: { type: String }
+    suitableFor: { type: String },
+    warranty: { type: String }
   },
   images: [{ type: String }] // Variant-level images with full paths
 });
@@ -40,9 +47,7 @@ const ProductSchema = new mongoose.Schema({
   
   // Shared Parent Attributes
   hsnCode: { type: String },
-  sellingMeasure: { type: String },
-  measureTerm: { type: String },
-  measureValue: { type: String },
+  sellingMeasure: { type: String }, // e.g. "per sq ft" - usually shared for one product type
   deliveryTime: { type: String },
   returns: { type: String },
   logisticsRule: { type: String },

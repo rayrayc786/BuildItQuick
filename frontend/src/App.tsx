@@ -65,6 +65,7 @@ import Reports from './pages/Reports';
 import SupplierDashboard from './pages/SupplierDashboard';
 import Navbar from './components/Navbar';
 import AdminSidebar from './components/admin/AdminSidebar';
+import ScrollToTop from './components/ScrollToTop';
 // import FloatingCart from './components/FloatingCart';
 import { customerSocket, supplierSocket, connectSocket } from './socket';
 import './App.css';
@@ -163,7 +164,17 @@ const AppContent = () => {
 
   return (
     <div className={`app-container app-container-responsive ${showBottomNav ? 'with-footer-padding' : ''}`}>
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster 
+        position="top-right" 
+        reverseOrder={false} 
+        toastOptions={{
+          duration: 2000,
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
+        }}
+      />
       <SocketManager />
       {showNavbar && <Navbar />}
       {/* <FloatingCart /> */}
@@ -255,6 +266,7 @@ const App: React.FC = () => {
     <SettingsProvider>
       <CartProvider>
         <Router>
+          <ScrollToTop />
           <ServiceBanner />
           <APIProvider 
             apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""} 

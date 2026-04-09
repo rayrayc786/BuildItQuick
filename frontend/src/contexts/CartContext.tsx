@@ -71,6 +71,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addToCart = (product: Product, quantity: number = 1, variantName?: string) => {
     if (quantity > 0) {
       toast.success(`${product.name} added to cart`, {
+        id: 'cart-toast',
         position: 'bottom-center',
         duration: 2000
       });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Power, Save, AlertTriangle, Clock, CheckCircle, XCircle, Calendar } from 'lucide-react';
+import { Power, Save, AlertTriangle, Clock, CheckCircle, XCircle, Calendar, Truck, CreditCard, ShoppingBag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSettings } from '../../contexts/SettingsContext';
 
@@ -13,7 +13,10 @@ const ServiceSettings: React.FC = () => {
     offlineMessage: "",
     useOperatingHours: false,
     serviceStartTime: "09:00",
-    serviceEndTime: "21:00"
+    serviceEndTime: "21:00",
+    deliveryCharge: 150,
+    freeDeliveryThreshold: 5000,
+    platformFee: 15
   });
 
   const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000') + '/api';
@@ -24,10 +27,13 @@ const ServiceSettings: React.FC = () => {
         const { data } = await axios.get(`${API_BASE}/admin/settings`);
         setSettings({
           isServiceEnabled: data.isServiceEnabled,
-          offlineMessage: data.offlineMessage || "",
-          useOperatingHours: data.useOperatingHours || false,
-          serviceStartTime: data.serviceStartTime || "09:00",
-          serviceEndTime: data.serviceEndTime || "21:00"
+          offlineMessage: data.offlineMessage ?? "",
+          useOperatingHours: data.useOperatingHours ?? false,
+          serviceStartTime: data.serviceStartTime ?? "09:00",
+          serviceEndTime: data.serviceEndTime ?? "21:00",
+          deliveryCharge: data.deliveryCharge ?? 150,
+          freeDeliveryThreshold: data.freeDeliveryThreshold ?? 5000,
+          platformFee: data.platformFee ?? 15
         });
       } catch (err) {
         toast.error('Failed to load settings');
@@ -260,7 +266,61 @@ const ServiceSettings: React.FC = () => {
 
         <hr style={{ border: '0', borderTop: '1px solid #f1f5f9', margin: '2rem 0' }} />
 
-        {/* Offline Message */}
+        {/* Delivery & Platform Charges Section */}
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Truck size={24} color="#000" /> Order & Delivery Charges
+        </h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+           <div className="input-group-admin">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <CreditCard size={14} /> Platform Fee (Handling)
+              </label>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#64748b' }}>₹</span>
+                <input 
+                  type="number" 
+                  value={settings.platformFee} 
+                  onChange={(e) => setSettings({ ...settings, platformFee: Number(e.target.value) })}
+                  style={{ paddingLeft: '2rem' }}
+                />
+              </div>
+              <p style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '4px' }}>Charged on every order</p>
+           </div>
+
+           <div className="input-group-admin">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Truck size={14} /> Standard Delivery Charge
+              </label>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#64748b' }}>₹</span>
+                <input 
+                  type="number" 
+                  value={settings.deliveryCharge} 
+                  onChange={(e) => setSettings({ ...settings, deliveryCharge: Number(e.target.value) })}
+                  style={{ paddingLeft: '2rem' }}
+                />
+              </div>
+              <p style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '4px' }}>Base charge if below threshold</p>
+           </div>
+        </div>
+
+        <div className="input-group-admin" style={{ marginBottom: '2rem' }}>
+           <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+             <ShoppingBag size={14} /> Free Delivery Threshold
+           </label>
+           <div style={{ position: 'relative' }}>
+             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#64748b' }}>₹</span>
+             <input 
+               type="number" 
+               value={settings.freeDeliveryThreshold} 
+               onChange={(e) => setSettings({ ...settings, freeDeliveryThreshold: Number(e.target.value) })}
+               style={{ paddingLeft: '2rem' }}
+             />
+           </div>
+           <p style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '4px' }}>Orders above this amount get free delivery (Set large value to disable free delivery)</p>
+        </div>
+
         <div className="input-group-admin">
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <AlertTriangle size={18} color="#f59e0b" /> Custom Offline Message
@@ -273,6 +333,8 @@ const ServiceSettings: React.FC = () => {
             style={{ width: '100%', minHeight: '100px' }}
           />
         </div>
+
+        <hr style={{ border: '0', borderTop: '1px solid #f1f5f9', margin: '2rem 0' }} />
 
         {/* Save Button */}
         <div style={{ marginTop: '2.5rem' }}>

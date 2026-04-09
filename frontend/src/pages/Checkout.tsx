@@ -71,8 +71,8 @@ const Checkout: React.FC = () => {
   const itemsTotal = totalAmount;
   const mrpTotal = cart.reduce((acc, item) => acc + (item.product.mrp || item.product.price) * item.quantity, 0);
   const savings = mrpTotal - itemsTotal;
-  const deliveryCharge = itemsTotal > 5000 ? 0 : 150;
-  const handlingCharge = 25;
+  const deliveryCharge = itemsTotal > settings.freeDeliveryThreshold ? 0 : settings.deliveryCharge;
+  const handlingCharge = settings.platformFee;
   const grandTotal = itemsTotal + deliveryCharge + handlingCharge;
 
   useEffect(() => {

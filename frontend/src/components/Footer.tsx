@@ -8,31 +8,12 @@ const Footer: React.FC = () => {
   const { cart } = useCart();
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   const location = useLocation();
-  const [isAtBottom, setIsAtBottom] = React.useState(false);
 
-  React.useEffect(() => {
-    const handleScroll = () => {
-      // Threshold to detect when we're close to the bottom (SiteFooter area)
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      
-      // If we're within 300px of the bottom (SiteFooter usually takes >400px)
-      if (scrollTop + windowHeight >= documentHeight - 300) {
-        setIsAtBottom(true);
-      } else {
-        setIsAtBottom(false);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <footer className={`landing-footer ${isAtBottom ? 'is-transparent' : ''}`}>
+    <footer className="landing-footer">
       <Link to="/" className={`footer-item ${isActive('/') ? 'active' : ''}`}>
         <Home size={22} />
         <span>Home</span>

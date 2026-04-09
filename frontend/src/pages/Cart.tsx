@@ -26,8 +26,9 @@ const Cart: React.FC = () => {
   const [maxDeliveryTime, setMaxDeliveryTime] = useState('15 mins');
 
   // Same fee logic as Checkout.tsx
-  const deliveryCharge = totalAmount > 5000 ? 0 : 150;
-  const handlingCharge = 25;
+  // Use fees from settings
+  const deliveryCharge = totalAmount > settings.freeDeliveryThreshold ? 0 : settings.deliveryCharge;
+  const handlingCharge = settings.platformFee;
   const grandTotal = totalAmount + deliveryCharge + handlingCharge;
 
   useEffect(() => {

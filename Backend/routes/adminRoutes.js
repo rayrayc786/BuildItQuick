@@ -13,6 +13,8 @@ router.get('/ping', (req, res) => res.json({ status: 'Admin routes active' }));
 
 router.get('/stats', adminController.getDashboardStats);
 router.get('/riders', adminController.getFleetStatus);
+router.patch('/products/:id/toggle-popular', adminController.togglePopularStatus);
+router.patch('/products/:id/toggle-active', adminController.toggleActiveStatus);
 router.patch('/orders/:id/status', adminController.updateOrderStatus);
 
 // Product management
