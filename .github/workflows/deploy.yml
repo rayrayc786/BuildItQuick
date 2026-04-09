@@ -20,13 +20,19 @@ jobs:
             cd /var/www/MatAll
             git pull origin main
 
+            # Backend
             cd Backend
             npm install
             pm2 restart all
 
+            # Frontend
             cd ../frontend
             npm install
             npm run build
+
+            # Clean + copy
+            rm -rf /var/www/html/*
             cp -r dist/* /var/www/html/
 
+            # Restart nginx
             sudo systemctl restart nginx
