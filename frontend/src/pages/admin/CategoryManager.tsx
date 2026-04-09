@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Plus, Search, Edit3, Trash2, X, Tag, ChevronDown, ChevronRight, Layers, Image, Menu, Link } from 'lucide-react';
+import { Plus, Search, Edit3, Trash2, X, Tag, ChevronDown, ChevronRight, Layers, Image, Menu } from 'lucide-react';
 import { getFullImageUrl } from '../../utils/imageUrl';
 
 const CategoryManager: React.FC = () => {

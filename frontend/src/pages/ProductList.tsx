@@ -4,16 +4,15 @@ import axios from 'axios';
 import { 
   ArrowLeft, 
   Home, 
-  ShoppingCart,
   Filter,
   ArrowUpDown,
   X
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import { useCart } from '../contexts/CartContext';
+
 import './product-list.css';
 import SEO from '../components/SEO';
-import ScrollToTop from '../components/ScrollToTop';
+
 
 const ProductList: React.FC = () => {
   const [products, setProducts] = useState<any[]>([]);
@@ -35,10 +34,9 @@ const ProductList: React.FC = () => {
   const categoryId = params.get('category');
   const initialBrand = params.get('brand');
   const searchTerm = params.get('search');
-  const { cart, totalAmount } = useCart();
 
-  const cartTotal = totalAmount;
-  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+
 
   useEffect(() => {
     const fetchAllCats = async () => {

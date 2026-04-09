@@ -4,11 +4,9 @@ import axios from 'axios';
 import { 
   ArrowLeft, 
   Share2, 
-  Search, 
-  Heart,
   ChevronRight,
   ChevronDown,
-  Clock,
+  AlertCircle,
   Star,
   Plus,
   Minus,

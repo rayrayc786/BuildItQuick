@@ -116,7 +116,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <div className="list-card-image-section">
         <button 
           className={`list-fav-btn ${isFavorite ? 'active' : ''}`} 
-          onClick={(e) => { e.stopPropagation(); setIsFavorite(!isFavorite); }}
+          onClick={toggleFavorite}
         >
           <Heart size={16} fill={isFavorite ? '#ef4444' : 'none'} strokeWidth={2} />
         </button>

@@ -40,7 +40,7 @@ import './admin-dashboard.css';
 function ManagementModal({ 
   showModal, setShowModal, editingItem, activeActionTab, formData, setFormData, 
   handleAction, userTab, setUserTab, productTab, setProductTab, 
-  userOrders, fetchUserOrders, handleProductImageUpload, handleCategoryImageUpload, API_BASE 
+  userOrders, fetchUserOrders, handleProductImageUpload, handleCategoryImageUpload 
 }: any) {
   if (!showModal) return null;
   const isEditing = !!editingItem;

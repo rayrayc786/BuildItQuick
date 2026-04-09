@@ -5,18 +5,17 @@ import {
   ArrowLeft, 
   Home, 
   ArrowUpDown, 
-  Filter,
-  ShoppingCart
+  Filter
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import { useCart } from '../contexts/CartContext';
+
 import './sub-category.css'; // Reusing established layout styles
 import SEO from '../components/SEO';
 
 const BrandStore: React.FC = () => {
   const { brandName } = useParams();
   const navigate = useNavigate();
-  const { cart, totalAmount } = useCart();
+
   
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,8 +24,7 @@ const BrandStore: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>('default');
   const [subCategories, setSubCategories] = useState<any[]>([]);
 
-  const cartTotal = totalAmount;
-  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
 
   useEffect(() => {
     const fetchData = async () => {
