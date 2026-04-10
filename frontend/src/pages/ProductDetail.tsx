@@ -141,7 +141,7 @@ const ProductDetail: React.FC = () => {
 
   const currentPrice = selectedVariant?.pricing?.salePrice || product?.price || 0;
   const gstRate = selectedVariant?.pricing?.gst || (product?.variants?.[0]?.pricing?.gst) || 0;
-  const basePrice = Math.round(currentPrice / (1 + gstRate / 100));
+  const basePrice = currentPrice / (1 + gstRate / 100);
   const gstAmount = currentPrice - basePrice;
   const currentMrp = selectedVariant?.pricing?.mrp || product?.mrp || 0;
   const currentUnit = selectedVariant && selectedVariant.attributes 
@@ -304,11 +304,11 @@ const ProductDetail: React.FC = () => {
 
              <div className="prd-price-block">
                 <div className="prd-price-row">
-                   <span className="current-p">₹{currentPrice}</span>
-                   {currentMrp > currentPrice && <span className="original-mrp">MRP ₹{currentMrp}</span>}
+                   <span className="current-p">₹{currentPrice.toFixed(2)}</span>
+                   {currentMrp > currentPrice && <span className="original-mrp">MRP ₹{currentMrp.toFixed(2)}</span>}
                 </div>
                 <div className="price-gst-breakdown" style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>
-                   <span>(₹{basePrice} + GST ₹{gstAmount})</span>
+                   <span>(₹{basePrice.toFixed(2)} + GST ₹{gstAmount.toFixed(2)})</span>
                 </div>
                 {currentMrp > currentPrice && (
                   <div className="list-discount-badge-blinkit" style={{ fontSize: '0.75rem', marginTop: '4px' }}>
@@ -317,7 +317,7 @@ const ProductDetail: React.FC = () => {
                 )}
                 {selectedVariant?.pricing?.sellingMeasureRate > 0 && (
                   <div className="selling-rate-info" style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: '600', marginTop: '8px' }}>
-                    ₹{selectedVariant.pricing.sellingMeasureRate} {product.sellingMeasure || 'per unit'}
+                    ₹{Number(selectedVariant.pricing.sellingMeasureRate).toFixed(2)} {product.sellingMeasure || 'per unit'}
                   </div>
                 )}
                 {selectedVariant?.measure?.value && (
@@ -582,11 +582,11 @@ const ProductDetail: React.FC = () => {
 
       {/* Sticky Footer */}
       <footer className="detail-sticky-footer">
-         <div className="footer-price-info">
+          <div className="footer-price-info">
             <span className="f-unit">{currentUnit}</span>
-            <span className="f-price">₹{currentPrice}</span>
+            <span className="f-price">₹{currentPrice.toFixed(2)}</span>
             <span className="f-tax">Inclusive of all taxes</span>
-         </div>
+          </div>
          <div className="footer-action">
             {cartItem ? (
               <div className="f-qty-control">

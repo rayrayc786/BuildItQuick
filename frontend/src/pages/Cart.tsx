@@ -151,7 +151,7 @@ const Cart: React.FC = () => {
                           <span className="c-qty-val">{item.quantity}</span>
                           <button onClick={() => addToCart(item.product, 1, item.selectedVariant)}><Plus size={14} /></button>
                         </div>
-                        <span className="c-item-price">₹{(item.product.salePrice || item.product.price) * item.quantity}</span>
+                        <span className="c-item-price">₹{((item.product.salePrice || item.product.price) * item.quantity).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -171,11 +171,11 @@ const Cart: React.FC = () => {
               </div>
               <div className="bill-row-item">
                 <span>Delivery Charge</span>
-                {deliveryCharge > 0 ? <span>₹{deliveryCharge}</span> : <span style={{ color: '#16a34a' }}>FREE</span>}
+                {deliveryCharge > 0 ? <span>₹{deliveryCharge.toFixed(2)}</span> : <span style={{ color: '#16a34a' }}>FREE</span>}
               </div>
               <div className="bill-row-item">
                 <span>Handling Charge</span>
-                <span>₹{handlingCharge}</span>
+                <span>₹{handlingCharge.toFixed(2)}</span>
               </div>
               <div className="bill-row-total">
                 <span>Grand Total</span>
@@ -211,12 +211,12 @@ const Cart: React.FC = () => {
                 <div className="bill-row-checkout">
                   <span>Delivery Charge</span>
                   <span className="bill-val">
-                    {deliveryCharge > 0 ? `₹${deliveryCharge}` : <span className="free">FREE</span>}
+                    {deliveryCharge > 0 ? `₹${deliveryCharge.toFixed(2)}` : <span className="free">FREE</span>}
                   </span>
                 </div>
                 <div className="bill-row-checkout">
                   <span>Handling Charge</span>
-                  <span className="bill-val">₹{handlingCharge}</span>
+                  <span className="bill-val">₹{handlingCharge.toFixed(2)}</span>
                 </div>
                 <div className="bill-row-checkout grand-total-row">
                   <span className="total-label">Grand Total</span>

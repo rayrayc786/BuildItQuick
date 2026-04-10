@@ -769,11 +769,11 @@ const Checkout: React.FC = () => {
                 </div>
                 <div className="bill-row-checkout">
                   <span>Delivery Charge</span>
-                  <span className="bill-val">{deliveryCharge > 0 ? `₹${deliveryCharge}` : <span className="free">FREE</span>}</span>
+                  <span className="bill-val">{deliveryCharge > 0 ? `₹${deliveryCharge.toFixed(2)}` : <span className="free">FREE</span>}</span>
                 </div>
                 <div className="bill-row-checkout">
                   <span>Handling Charge</span>
-                  <span className="bill-val">₹{handlingCharge}</span>
+                  <span className="bill-val">₹{handlingCharge.toFixed(2)}</span>
                 </div>
                 <div className="bill-row-checkout grand-total-row">
                   <span className="total-label">Grand Total</span>
@@ -785,7 +785,7 @@ const Checkout: React.FC = () => {
             {savings > 0 && (
               <div className="savings-tile">
                 <span className="savings-text">Your total savings</span>
-                <span className="savings-amount">₹{savings}</span>
+                <span className="savings-amount">₹{savings.toFixed(2)}</span>
               </div>
             )}
 

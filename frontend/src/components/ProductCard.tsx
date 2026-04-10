@@ -53,7 +53,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   const currentPrice = Number(selectedVariant?.pricing?.salePrice || selectedVariant?.price || product.salePrice || product.price || 0);
   const gstRate = Number(selectedVariant?.pricing?.gst || (product.variants?.[0]?.pricing?.gst) || 0);
-  const basePrice = Math.round(currentPrice / (1 + gstRate / 100));
+  const basePrice = currentPrice / (1 + gstRate / 100);
   const gstAmount = currentPrice - basePrice;
   const currentMrp = Number(selectedVariant?.pricing?.mrp || selectedVariant?.mrp || product.mrp || 0);
   
@@ -204,11 +204,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         {/* 3. Pricing Section */}
         <div className="list-pricing-section">
            <div className="list-price-row">
-              <span className="list-price">₹{currentPrice}</span>
-              {currentMrp > currentPrice && <span className="list-mrp">₹{currentMrp}</span>}
+              <span className="list-price">₹{currentPrice.toFixed(2)}</span>
+              {currentMrp > currentPrice && <span className="list-mrp">₹{currentMrp.toFixed(2)}</span>}
            </div>
            <div className="list-gst-breakdown">
-              (₹{basePrice} + GST ₹{gstAmount})
+              (₹{basePrice.toFixed(2)} + GST ₹{gstAmount.toFixed(2)})
            </div>
         </div>
 
@@ -249,7 +249,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 // Pricing calculations for variant
                 const vsPrice = Number(v.pricing?.salePrice || v.price || 0);
                 const vGstRate = Number(v.pricing?.gst || (product.variants?.[0]?.pricing?.gst) || 0);
-                const vBase = Math.round(vsPrice / (1 + vGstRate / 100));
+                const vBase = vsPrice / (1 + vGstRate / 100);
                 const vGst = vsPrice - vBase;
                 const vmrp = Number(v.pricing?.mrp || v.mrp || 0);
                 const vDisc = (vmrp > vsPrice && vmrp > 0) ? Math.round(((vmrp - vsPrice) / vmrp) * 100) : 0;
@@ -270,11 +270,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                     <div className="v-item-mid">
                       <span className="v-name">{v.name}</span>
                       <div className="v-price-row">
-                        <span className="v-price">₹{vsPrice}</span>
-                        {vmrp > vsPrice && <span className="v-mrp">₹{vmrp}</span>}
+                        <span className="v-price">₹{vsPrice.toFixed(2)}</span>
+                        {vmrp > vsPrice && <span className="v-mrp">₹{vmrp.toFixed(2)}</span>}
                       </div>
                       <div className="v-gst-breakdown">
-                        (₹{vBase} + GST ₹{vGst})
+                        (₹{vBase.toFixed(2)} + GST ₹{vGst.toFixed(2)})
                       </div>
                     </div>
                     
