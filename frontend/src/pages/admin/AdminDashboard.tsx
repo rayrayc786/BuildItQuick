@@ -610,13 +610,14 @@ const ORDERS_STATS_DATA = [
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [onDemandRequests, setOnDemandRequests] = useState<any[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
   const tabParam = searchParams.get('tab');
   
   const [activeTab, setActiveTab] = useState<'dashboard' | 'reports' | 'actions'>((tabParam as any) || 'dashboard');
   const subParam = searchParams.get('sub');
-  const [activeActionTab, setActiveActionTab] = useState<'list' | 'users' | 'orders' | 'categories' | 'products' | 'tickets' | 'userRequests' | 'footer-links' | 'gst' | 'settings' | 'reviews' | 'searchLogs'>((subParam as any) || 'list');
+  const [activeActionTab, setActiveActionTab] = useState<'list' | 'users' | 'orders' | 'categories' | 'products' | 'tickets' | 'userRequests' | 'onDemandRequests' | 'footer-links' | 'gst' | 'settings' | 'reviews' | 'searchLogs'>((subParam as any) || 'list');
   const [loading, setLoading] = useState(false);
-  const [dashboardStats, setDashboardStats] = useState<any>(null);
 
   const [users, setUsers] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
@@ -648,17 +649,19 @@ const AdminDashboard: React.FC = () => {
         axios.get(`${API_BASE}/admin/categories`),
         axios.get(`${API_BASE}/admin/products`),
         axios.get(`${API_BASE}/user-requests`),
+        axios.get(`${API_BASE}/on-demand`),
         axios.get(`${API_BASE}/admin/stats`),
         axios.get(`${API_BASE}/admin/search-logs`)
       ]);
       
-      const [uRes, oRes, cRes, pRes, urRes, statsRes, searchRes] = results;
+      const [uRes, oRes, cRes, pRes, urRes, odRes, statsRes, searchRes] = results;
       
       if (uRes.data) setUsers(uRes.data);
       if (oRes.data) setOrders(oRes.data);
       if (cRes.data) setCategories(cRes.data);
       if (pRes.data) setProducts(pRes.data);
       if (urRes.data) setUserRequests(urRes.data);
+      if (odRes.data) setOnDemandRequests(odRes.data);
       if (statsRes.data) setDashboardStats(statsRes.data);
       if (searchRes && searchRes.data) setSearchLogs(searchRes.data);
 
@@ -708,23 +711,37 @@ const AdminDashboard: React.FC = () => {
 
 
     const onNewUserRequest = (request: any) => {
-       // Play notification sound
        const audio = new Audio('/sounds/New request.mpeg');
        audio.play().catch(e => console.error('Audio play failed:', e));
-
        toast.success(`📸 New Material Request from ${request.name}!`);
        fetchData();
+    };
+
+    const onNewOnDemandRequest = (request: any) => {
+       const audio = new Audio('/sounds/New request.mpeg');
+       audio.play().catch(e => console.error('Audio play failed:', e));
+       toast.success(`📞 New On-Demand Request for ${request.productName}!`);
+       fetchData();
+    };
+
+    const onOnDemandStatusUpdate = (data: any) => {
+       console.log('Received on-demand-status-update:', data);
+       fetchData(); // Refresh requests to show updated status instantly
     };
 
 
     adminSocket.on('connect', onConnect);
     adminSocket.on('new-order', onNewOrder);
     adminSocket.on('new-user-request', onNewUserRequest);
+    adminSocket.on('new-on-demand-request', onNewOnDemandRequest);
+    adminSocket.on('on-demand-status-update', onOnDemandStatusUpdate);
 
     return () => {
       adminSocket.off('connect', onConnect);
       adminSocket.off('new-order', onNewOrder);
       adminSocket.off('new-user-request', onNewUserRequest);
+      adminSocket.off('new-on-demand-request', onNewOnDemandRequest);
+      adminSocket.off('on-demand-status-update', onOnDemandStatusUpdate);
       // NOTE: Removed adminSocket.disconnect() to prevent breaking the singleton connection on quick re-renders
     };
   }, []);
@@ -798,6 +815,11 @@ const AdminDashboard: React.FC = () => {
     await handleAction('patch', `/admin/orders/${orderId}/status`, { status });
   };
 
+  const updateOnDemandStatus = async (id: string, status: string) => {
+    await handleAction('patch', `/on-demand/${id}/status`, { status });
+    fetchData(); // Refresh data to show updated status
+  };
+
   const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -849,7 +871,8 @@ const AdminDashboard: React.FC = () => {
     { label: 'Active Orders', val: dashboardStats?.activeOrders ?? '0', icon: <Package size={20} />, color: '#FFEA00', tab: 'orders' },
     { label: 'Active Products', val: dashboardStats?.totalProducts ?? products.length ?? '0', icon: <Layers size={20} />, color: '#DEDEDE', tab: 'products' },
     { label: 'Active Categories', val: dashboardStats?.activeCategories ?? '0', icon: <Layers size={20} />, color: '#DEDEDE', tab: 'categories' },
-    { label: 'User Material Requests', val: userRequests.length ?? '0', icon: <Clock size={20} />, color: '#DEDEDE', tab: 'userRequests' },
+    { label: 'Material Requests', val: userRequests.length ?? '0', icon: <Clock size={20} />, color: '#DEDEDE', tab: 'userRequests' },
+    { label: 'On-Demand Requests', val: onDemandRequests.length ?? '0', icon: <Clock size={20} />, color: '#FFEA00', tab: 'onDemandRequests' },
   ];
 
   const ACTION_ITEMS = [
@@ -896,6 +919,12 @@ const AdminDashboard: React.FC = () => {
       id: 'userRequests', 
       name: 'User Material Requests', 
       sub: 'View uploaded images, handwritten lists, and BOQs from Users', 
+      color: '#FFEA00' 
+    },
+    { 
+      id: 'onDemandRequests', 
+      name: 'On-Demand Orders', 
+      sub: 'View specialized item requests with quantity and urgency details', 
       color: '#FFEA00' 
     },
     {
@@ -1395,6 +1424,69 @@ const AdminDashboard: React.FC = () => {
     </div>
   );
 
+  const renderOnDemandManagement = () => (
+    <div className="admin-actions-view animate-fade-in">
+      <div className="management-header-card grey">
+        <div className="header-info">
+          <h2>On-Demand Requests</h2>
+        </div>
+        <div className="search-bar-admin">
+          <Search size={18} />
+          <input 
+            type="text" 
+            placeholder="Search product or user..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+      
+      <div className="admin-list-container">
+        {onDemandRequests.filter(r => 
+          (r.productName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+          (r.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (r.userId?.fullName || '').toLowerCase().includes(searchTerm.toLowerCase())
+        ).length === 0 ? <p className="text-center py-4">No on-demand requests yet.</p> : 
+        onDemandRequests.filter(r => 
+          (r.productName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+          (r.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (r.userId?.fullName || '').toLowerCase().includes(searchTerm.toLowerCase())
+        ).map((item, i) => (
+          <div key={item._id || i} className="admin-list-row-item">
+            <div className="row-left-info">
+              <span className="row-name">{item.productName} 
+                {item.variantName && item.variantName !== 'Standard' && <span className="text-muted ml-2">({item.variantName})</span>}
+              </span>
+              <span className="row-sub">
+                Requested by: <strong>{item.userId?.fullName || item.name}</strong> • Phone: {item.userId?.phoneNumber || item.phone}
+              </span>
+              <div className="request-meta-badges">
+                <span className={`req-badge ${item.requiredBy === 'Today' ? 'urgent' : ''}`}>Required: {item.requiredBy}</span>
+                <span className="req-badge">Qty: {item.quantity}</span>
+                <div className="status-selector-admin">
+                  <select 
+                    value={item.status} 
+                    onChange={(e) => updateOnDemandStatus(item._id, e.target.value)}
+                    className={`on-demand-status-select ${item.status.toLowerCase()}`}
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Quoted">Quoted</option>
+                    <option value="Ordered">Ordered</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="row-actions-btns">
+              <button className="list-icon-btn danger" onClick={() => handleAction('delete', `/on-demand/${item._id}`)}><Trash2 size={16} /></button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   const renderGstManagement = () => (
     <div className="admin-scroll-content animate-fade-in">
       <div className="management-header-card grey">
@@ -1447,6 +1539,7 @@ const AdminDashboard: React.FC = () => {
     if (activeActionTab === 'gst') return renderGstManagement();
     if (activeActionTab === 'tickets') return renderTicketManagement();
     if (activeActionTab === 'userRequests') return renderUserRequestsManagement();
+    if (activeActionTab === 'onDemandRequests') return renderOnDemandManagement();
     if (activeActionTab === 'footer-links') return <FooterManager />;
     if (activeActionTab === 'settings') return <ServiceSettings />;
     if (activeActionTab === 'reviews') return <ReviewManager />;

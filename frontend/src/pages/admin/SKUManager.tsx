@@ -503,7 +503,11 @@ const SKUManager: React.FC = () => {
                       </>
                     )}
                   </td>
-                  <td><span className="sku-delivery-text">{sku.deliveryTime || 'N/A'}</span></td>
+                  <td>
+                    <span className={`sku-delivery-text ${sku.deliveryTime === 'On Demand' ? 'on-demand-highlight' : ''}`}>
+                      {sku.deliveryTime || 'N/A'}
+                    </span>
+                  </td>
                   <td>
                     <span className="sku-stock-text">{sku.stock || 240} {sku.unitLabel}s</span>
                   </td>
@@ -614,6 +618,7 @@ const SKUManager: React.FC = () => {
                         onChange={e => setFormData({...formData, deliveryTime: e.target.value})}
                       >
                         <option value="">Select Delivery Time...</option>
+                        <option value="On Demand">On Demand (Inquiry Based)</option>
                         {masterDeliveryTimes.map(dt => (
                           <option key={dt._id} value={dt.name}>{dt.name}</option>
                         ))}

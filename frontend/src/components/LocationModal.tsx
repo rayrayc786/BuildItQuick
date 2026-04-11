@@ -10,9 +10,18 @@ interface LocationModalProps {
   onClose: () => void;
   onSelectAddress: (address: string, coords: [number, number]) => void;
   currentAddress?: string;
+  initialData?: any;
+  editIndex?: number | null;
 }
 
-const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, onSelectAddress, currentAddress }) => {
+const LocationModal: React.FC<LocationModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSelectAddress, 
+  currentAddress,
+  initialData,
+  editIndex
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -62,21 +71,53 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, onSelect
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      setStep(1);
-      setShowAddForm(false);
       
-      if (currentAddress) setSearchTerm(currentAddress);
+      if (initialData) {
+        // Edit Mode
+        setStep(2);
+        setShowAddForm(true);
+        setNewAddrName(initialData.name || '');
+        setNewAddrType(initialData.addressType || 'Home');
+        setNewAddrText(initialData.addressText || '');
+        setNewAddrPhone(initialData.contactPhone || '');
+        setNewAddrCoords(initialData.location?.coordinates || null);
+        if (initialData.location?.coordinates) {
+          setMapCenter({ 
+            lat: initialData.location.coordinates[1], 
+            lng: initialData.location.coordinates[0] 
+          });
+        }
+        // Fill search term to show markers correctly
+        setSearchTerm(initialData.addressText || '');
+        setSelectedAddress(initialData.addressText || '');
+      } else {
+        // Fresh Add Mode
+        setStep(1);
+        setShowAddForm(false);
+        setNewAddrName('');
+        setNewAddrType('Home');
+        setNewAddrText('');
+        setNewAddrPhone('');
+        setNewAddrCoords(null);
+        setHouseNumber('');
+        setFloor('');
+        setTower('');
+        setLandmark('');
+        setDirections('');
+        
+        if (currentAddress) setSearchTerm(currentAddress);
 
-      if (navigator.geolocation) {
-         navigator.geolocation.getCurrentPosition((pos) => {
-           setMapCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-         }, () => {}, { timeout: 10000 });
+        if (navigator.geolocation) {
+           navigator.geolocation.getCurrentPosition((pos) => {
+             setMapCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+           }, () => {}, { timeout: 10000 });
+        }
       }
     } else {
       document.body.style.overflow = 'unset';
     }
     return () => { document.body.style.overflow = 'unset'; };
-  }, [isOpen]);
+  }, [isOpen, initialData]);
 
   const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -277,7 +318,14 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, onSelect
 
         // Fetch fresh user data from localStorage to avoid stale spread
         const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-        const updatedJobsites = [...(currentUser.jobsites || []), newJobsite];
+        let updatedJobsites = [];
+        
+        if (editIndex !== undefined && editIndex !== null) {
+            updatedJobsites = [...(currentUser.jobsites || [])];
+            updatedJobsites[editIndex] = newJobsite;
+        } else {
+            updatedJobsites = [...(currentUser.jobsites || []), newJobsite];
+        }
         
         console.log('Saving address:', newJobsite);
 
@@ -387,7 +435,7 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, onSelect
                     <div className="map-display-container">
                       <Map
                         style={{ width: '100%', height: '100%' }}
-                        defaultCenter={mapCenter}
+                        center={mapCenter}
                         defaultZoom={15}
                         onClick={handleMapClick}
                         mapId={import.meta.env.VITE_GOOGLE_MAP_ID}

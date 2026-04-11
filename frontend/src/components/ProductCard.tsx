@@ -6,6 +6,7 @@ import { Plus, Minus, Heart, Star, X, Clock, ChevronDown } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import toast from 'react-hot-toast';
 import { getFullImageUrl } from '../utils/imageUrl';
+import OnDemandModal from './OnDemandModal';
 import './product-card.css';
 
 interface ProductCardProps {
@@ -24,6 +25,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     product.variants && product.variants.length > 0 ? product.variants[0] : null
   );
   const [showVariantModal, setShowVariantModal] = useState(false);
+  const [showOnDemandModal, setShowOnDemandModal] = useState(false);
 
   // Sync selected variant if product changes (e.g. on navigation or filter change)
   useEffect(() => {
@@ -140,7 +142,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           }}
         />
 
-        <div className="list-delivery-time">
+        <div className={`list-delivery-time ${product.deliveryTime === 'On Demand' ? 'on-demand' : ''}`}>
            <Clock size={12} strokeWidth={3} />
            <span>{product.deliveryTime || '10 mins'}</span>
         </div>
@@ -170,7 +172,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
           
           <div className="list-add-container">
-            {cartItem ? (
+            {product.deliveryTime === 'On Demand' ? (
+              <button 
+                className="list-request-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setShowOnDemandModal(true);
+                }}
+              >
+                REQUEST
+              </button>
+            ) : cartItem ? (
               <div className="list-qty-control" onClick={e => { e.stopPropagation(); e.preventDefault(); }}>
                 <button onClick={(e) => { e.stopPropagation(); addToCart(product, -1, currentVariantName); }} aria-label="Decrease quantity"><Minus size={14} strokeWidth={3} /></button>
                 <span className="list-qty-val">{cartItem.quantity}</span>
@@ -306,6 +319,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>,
         document.body
       )}
+
+      <OnDemandModal 
+        isOpen={showOnDemandModal}
+        onClose={() => setShowOnDemandModal(false)}
+        product={product}
+        variant={selectedVariant}
+      />
     </div>
   );
 };

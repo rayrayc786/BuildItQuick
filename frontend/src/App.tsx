@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Outlet, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { CartProvider } from './contexts/CartContext';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { Toaster } from 'react-hot-toast';
@@ -162,6 +162,23 @@ const SocketManager = () => {
   return null;
 };
 
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    // If user is logged in but has wrong role, send to home
+    toast.error('Access Denied: You do not have permission to view this page.');
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 import Footer from './components/Footer';
 import SiteFooter from './components/SiteFooter';
 
@@ -217,7 +234,14 @@ const AppContent = () => {
         <Route path="/support" element={<Support />} />
         
         {/* Admin Routes */}
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<AdminDashboard />} />
           <Route path="inventory" element={<SKUManager />} />
           <Route path="suppliers" element={<SupplierManager />} />
@@ -236,14 +260,28 @@ const AppContent = () => {
 
 
         {/* Rider Routes */}
-        <Route path="/rider" element={<RiderDashboard />} />
-        <Route path="/rider/verify/:id" element={<TaskVerification />} />
-        <Route path="/rider/delivery/:id" element={<DeliveryNavigation />} />
-        <Route path="/rider/pod/:id" element={<ProofOfDelivery />} />
+        <Route 
+          path="/rider" 
+          element={
+            <ProtectedRoute allowedRoles={['Rider']}>
+              <RiderDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route path="/rider/verify/:id" element={<ProtectedRoute allowedRoles={['Rider']}><TaskVerification /></ProtectedRoute>} />
+        <Route path="/rider/delivery/:id" element={<ProtectedRoute allowedRoles={['Rider']}><DeliveryNavigation /></ProtectedRoute>} />
+        <Route path="/rider/pod/:id" element={<ProtectedRoute allowedRoles={['Rider']}><ProofOfDelivery /></ProtectedRoute>} />
 
         {/* Supplier Routes */}
-        <Route path="/supplier" element={<SupplierDashboard />} />
-        <Route path="/reports" element={<Reports />} />
+        <Route 
+          path="/supplier" 
+          element={
+            <ProtectedRoute allowedRoles={['Supplier']}>
+              <SupplierDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route path="/reports" element={<ProtectedRoute allowedRoles={['Supplier']}><Reports /></ProtectedRoute>} />
       </Routes>
 
       {showSiteFooter && <SiteFooter />}

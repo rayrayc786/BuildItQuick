@@ -7,6 +7,25 @@ const Settings = require('../models/Settings');
 const Category = require('../models/Category');
 const SubCategory = require('../models/SubCategory');
 
+const CATEGORY_MAP = {
+  'Wooden & Boards': '03',
+  'Wooden Material': '03',
+  'Electricals': '04',
+  'Electrical Material': '04',
+  'Hardware': '22',
+  'Modular Hardware': '22',
+  'Paint & POP': '06',
+  'Paint': '06',
+  'Tiles & Flooring': 'tiles',
+  'Power Tools': 'tools',
+  'Tools': 'tools',
+  'Civil': '26',
+  'Bathroom': 'Bathroom',
+  'Plumbing': 'Plumbing'
+};
+
+const getCategoryIdFromName = (name) => CATEGORY_MAP[name] || null;
+
 // Helper to resolve image names to actual file paths from Image Master
 const resolveProductImages = (product) => {
   const imageMasterPath = path.join(__dirname, '..', 'public', 'images');
@@ -146,33 +165,15 @@ exports.getAllProducts = async (req, res) => {
     const search = Array.isArray(rawSearch) ? rawSearch[0] : (rawSearch || '');
     let query = { isActive: true };
 
-    const CATEGORY_MAP = {
-      'Wooden & Boards': '03',
-      'Wooden Material': '03',
-      'Electricals': '04',
-      'Electrical Material': '04',
-      'Hardware': '22',
-      'Modular Hardware': '22',
-      'Paint & POP': '06',
-      'Paint': '06',
-      'Tiles & Flooring': 'tiles',
-      'Power Tools': 'tools',
-      'Tools': 'tools',
-      'Civil': '26',
-      'Bathroom': 'Bathroom',
-      'Plumbing': 'Plumbing'
-    };
-
-    const getCategoryIdFromName = (name) => CATEGORY_MAP[name] || null;
-
     if (category) {
-      const categoryValues = Array.isArray(category) ? category : [category];
+      const categoryValues = typeof category === 'string' ? category.split(',') : (Array.isArray(category) ? category : [category]);
       const queryValues = [];
       categoryValues.forEach(val => {
-        queryValues.push(val);
-        queryValues.push(val.toLowerCase());
-        queryValues.push(val.toUpperCase());
-        const id = getCategoryIdFromName(val);
+        const trimmed = val.trim();
+        queryValues.push(trimmed);
+        queryValues.push(trimmed.toLowerCase());
+        queryValues.push(trimmed.toUpperCase());
+        const id = getCategoryIdFromName(trimmed);
         if (id) queryValues.push(id);
       });
       
@@ -182,13 +183,13 @@ exports.getAllProducts = async (req, res) => {
     }
     
     if (brand) {
-      const brands = Array.isArray(brand) ? brand : [brand];
-      query.brand = { $in: brands };
+      const brands = typeof brand === 'string' ? brand.split(',') : (Array.isArray(brand) ? brand : [brand]);
+      query.brand = { $in: brands.map(b => b.trim()) };
     }
 
     if (subCategory) {
-      const subCategoriesList = Array.isArray(subCategory) ? subCategory : [subCategory];
-      query.subCategory = { $in: subCategoriesList };
+      const subCategoriesList = typeof subCategory === 'string' ? subCategory.split(',') : (Array.isArray(subCategory) ? subCategory : [subCategory]);
+      query.subCategory = { $in: subCategoriesList.map(s => s.trim()) };
     }
 
     if (isPopular === 'true') {
@@ -196,29 +197,46 @@ exports.getAllProducts = async (req, res) => {
     }
 
     if (search) {
-      const searchTerms = search.split(',').map(s => s.trim()).filter(Boolean);
-      const regexPattern = searchTerms.map(s => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|');
-      const regex = new RegExp(regexPattern, 'i');
+      // Split by commas first (OR groups)
+      const orGroups = search.split(',').map(g => g.trim()).filter(Boolean);
       
-      const orConditions = [
-        { productName: regex },
-        { brand: regex },
-        { subCategory: regex },
-        { category: regex },
-        { 'variants.name': regex },
-        { 'variants.productCode': regex },
-        { 'variants.sku': regex }
-      ];
+      if (orGroups.length > 0) {
+        const orConditions = orGroups.map(group => {
+          // Within each group, split by spaces (AND terms)
+          const searchTerms = group.split(/\s+/).filter(Boolean);
+          
+          if (searchTerms.length === 0) return null;
 
-      searchTerms.forEach(term => {
-        Object.entries(CATEGORY_MAP).forEach(([name, id]) => {
-          if (name.toLowerCase().includes(term.toLowerCase())) {
-            orConditions.push({ category: id });
-          }
-        });
-      });
+          const andConditions = searchTerms.map(term => {
+            const regex = new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i');
+            const termOrConditions = [
+              { productName: regex },
+              { brand: regex },
+              { subCategory: regex },
+              { category: regex },
+              { alternateNames: regex },
+              { 'variants.name': regex },
+              { 'variants.productCode': regex },
+              { 'variants.sku': regex }
+            ];
 
-      query.$or = orConditions;
+            // Add category ID mappings if they match the term
+            Object.entries(CATEGORY_MAP).forEach(([name, id]) => {
+              if (name.toLowerCase().includes(term.toLowerCase())) {
+                termOrConditions.push({ category: id });
+              }
+            });
+
+            return { $or: termOrConditions };
+          });
+
+          return andConditions.length === 1 ? andConditions[0] : { $and: andConditions };
+        }).filter(Boolean);
+
+        if (orConditions.length > 0) {
+          query.$or = orConditions;
+        }
+      }
     }
 
     let products = await Product.find(query).lean();
@@ -273,20 +291,43 @@ exports.autocomplete = async (req, res) => {
     const { q } = req.query;
     if (!q) return res.json([]);
 
-    const searchTerms = q.split(',').map(s => s.trim()).filter(Boolean);
-    const regexPattern = searchTerms.map(s => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|');
-    const regex = new RegExp(regexPattern, 'i');
+    const orGroups = q.split(',').map(g => g.trim()).filter(Boolean);
+    if (orGroups.length === 0) return res.json([]);
+
+    const orConditions = orGroups.map(group => {
+      const searchTerms = group.split(/\s+/).filter(Boolean);
+      if (searchTerms.length === 0) return null;
+
+      const andConditions = searchTerms.map(term => {
+        const regex = new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i');
+        const termOrConditions = [
+          { productName: regex },
+          { brand: regex },
+          { subCategory: regex },
+          { category: regex },
+          { alternateNames: regex },
+          { 'variants.name': regex },
+          { 'variants.productCode': regex },
+          { 'variants.sku': regex }
+        ];
+
+        // Add category ID mappings if they match the term
+        Object.entries(CATEGORY_MAP).forEach(([name, id]) => {
+          if (name.toLowerCase().includes(term.toLowerCase())) {
+            termOrConditions.push({ category: id });
+          }
+        });
+
+        return { $or: termOrConditions };
+      });
+
+      return andConditions.length === 1 ? andConditions[0] : { $and: andConditions };
+    }).filter(Boolean);
+
+    if (orConditions.length === 0) return res.json([]);
 
     let products = await Product.find({
-      $or: [
-        { productName: regex },
-        { brand: regex },
-        { subCategory: regex },
-        { category: regex },
-        { 'variants.name': regex },
-        { 'variants.productCode': regex },
-        { 'variants.sku': regex }
-      ],
+      $or: orConditions,
       isActive: true
     }).limit(10).lean();
 

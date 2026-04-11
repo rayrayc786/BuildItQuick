@@ -129,10 +129,14 @@ const AISearch: React.FC = () => {
 
     setIsProcessing(true);
     try {
+      const token = localStorage.getItem('token');
       await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/user-requests`, {
+        userId: user._id || user.id,
         name: user.fullName || user.name || 'Unknown User',
         phone: user.phoneNumber || user.phone || 'Unknown Phone',
         imageBase64
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       setIsSuccess(true);
       setShowCameraModal(false);

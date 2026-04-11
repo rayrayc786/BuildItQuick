@@ -1,14 +1,31 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const UserRequest = require('../models/UserRequest');
+const User = require('../models/User');
+const auth = require('../middleware/auth');
 const fs = require('fs');
 const path = require('path');
 
 router.post('/', async (req, res) => {
   try {
     const { name, phone, imageBase64 } = req.body;
+    let { userId } = req.body;
+
     if (!name || !phone || !imageBase64) {
       return res.status(400).json({ error: 'Name, phone, and image are required.' });
+    }
+
+    // Try to get userId from token if not provided in body
+    if (!userId && req.headers.authorization) {
+      try {
+        const authHeader = req.headers.authorization;
+        const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecretkey_matall');
+        userId = decoded.id || decoded._id;
+      } catch (e) {
+        console.warn('Invalid token provided in UserRequest POST');
+      }
     }
 
     const matches = imageBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
@@ -30,7 +47,12 @@ router.post('/', async (req, res) => {
       imageUrl = imageBase64;
     }
 
-    const newRequest = new UserRequest({ name, phone, imageUrl });
+    const newRequest = new UserRequest({ 
+      userId: userId || null,
+      name, 
+      phone, 
+      imageUrl 
+    });
     await newRequest.save();
 
     const io = req.app.get('socketio');
@@ -47,7 +69,7 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const requests = await UserRequest.find().sort({ createdAt: -1 });
+    const requests = await UserRequest.find({ isDeletedByUser: { $ne: true } }).sort({ createdAt: -1 });
     res.json(requests);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch user requests' });
@@ -74,6 +96,43 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Delete error:', error);
     res.status(500).json({ error: 'Failed to delete request' });
+  }
+});
+
+router.get('/my-requests', auth(), async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const requests = await UserRequest.find({ 
+      userId, 
+      isDeletedByUser: false 
+    }).sort({ createdAt: -1 });
+    res.json(requests);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch your requests' });
+  }
+});
+
+router.patch('/:id/revoke', auth(), async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const request = await UserRequest.findOne({ _id: req.params.id, userId });
+    
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found or unauthorized' });
+    }
+
+    request.isDeletedByUser = true;
+    request.status = 'Cancelled';
+    await request.save();
+
+    const io = req.app.get('socketio');
+    if (io) {
+      io.of('/admin').emit('user-request-revoked', { id: request._id, status: 'Cancelled' });
+    }
+
+    res.json({ success: true, message: 'Request revoked successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to revoke request' });
   }
 });
 

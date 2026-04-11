@@ -12,12 +12,17 @@ import {
   Share2, 
   ChevronRight,
   LogOut,
-  Trash2
+  Trash2,
+  FileText,
+  X,
+  Loader2,
+  Pencil
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './profile.css';
 import SEO from '../components/SEO';
 import LocationModal from '../components/LocationModal';
+import { customerSocket } from '../socket';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -27,9 +32,17 @@ const Profile: React.FC = () => {
     orderCount: 0,
     avgTime: '45m'
   });
-  const [loading, setLoading] = useState(true);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [showRequestsModal, setShowRequestsModal] = useState(false);
+  const [userRequests, setUserRequests] = useState<any[]>([]);
+  const [onDemandRequests, setOnDemandRequests] = useState<any[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [loadingOnDemand, setLoadingOnDemand] = useState(false);
+  const [showOnDemandModal, setShowOnDemandModal] = useState(false);
+  const [selectedOnDemand, setSelectedOnDemand] = useState<any>(null);
+  const [addressToEdit, setAddressToEdit] = useState<any>(null);
+  const [editIndex, setEditIndex] = useState<number | null>(null);
 
   const refreshUser = async () => {
     try {
@@ -64,6 +77,67 @@ const Profile: React.FC = () => {
       toast.error('Failed to delete address');
     }
   };
+  
+  const fetchUserRequests = async () => {
+    try {
+      setLoadingRequests(true);
+      const token = localStorage.getItem('token');
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user-requests/my-requests`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUserRequests(data);
+    } catch (err) {
+      console.error('Failed to fetch requests', err);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  const handleRevokeRequest = async (id: string) => {
+    if (!window.confirm('Are you sure you want to revoke this request?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/user-requests/${id}/revoke`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Request revoked successfully');
+      fetchUserRequests();
+    } catch (err) {
+      toast.error('Failed to revoke request');
+    }
+  };
+
+  const fetchOnDemandRequests = async () => {
+    try {
+      setLoadingOnDemand(true);
+      const token = localStorage.getItem('token');
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/on-demand/my-requests`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setOnDemandRequests(data);
+    } catch (err) {
+      console.error('Failed to fetch on-demand requests', err);
+    } finally {
+      setLoadingOnDemand(false);
+    }
+  };
+
+  const handleRevokeOnDemand = async (id: string) => {
+    if (!window.confirm('Are you sure you want to revoke this inquiry?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/on-demand/${id}/revoke`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Inquiry revoked successfully');
+      setSelectedOnDemand(null);
+      fetchOnDemandRequests();
+    } catch (err) {
+      toast.error('Failed to revoke inquiry');
+    }
+  };
 
   useEffect(() => {
     const initData = async () => {
@@ -74,8 +148,6 @@ const Profile: React.FC = () => {
       }
 
       try {
-        setLoading(true);
-        // Parallelize profile and order fetching
         const [profileRes, ordersRes] = await Promise.all([
           axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/profile`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -88,19 +160,16 @@ const Profile: React.FC = () => {
         const profileData = profileRes.data;
         const ordersData = ordersRes.data;
 
-        // Update User State
         setUser(profileData);
         localStorage.setItem('user', JSON.stringify(profileData));
 
-        // Calculate Stats from orders
         const count = ordersData.filter((o: any) => o.status !== 'Cancelled').length;
         const totalSpent = ordersData.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0);
         
-        // Dynamic stats
         setStats({
-          totalSaving: Math.round(totalSpent * 0.12), // Estimate 12% savings
+          totalSaving: Math.round(totalSpent * 0.12),
           orderCount: count,
-          avgTime: count > 3 ? '24m' : '38m' // Show faster time for loyal users
+          avgTime: count > 3 ? '24m' : '38m'
         });
 
       } catch (err: any) {
@@ -109,11 +178,26 @@ const Profile: React.FC = () => {
            handleLogout();
         }
       } finally {
-        setLoading(false);
       }
     };
 
     initData();
+
+    const handleOnDemandStatusUpdate = (data: any) => {
+      setOnDemandRequests((prev: any[]) => prev.map(req => 
+        req._id === data.requestId ? { ...req, status: data.status } : req
+      ));
+      
+      setSelectedOnDemand((prev: any) => 
+        (prev && prev._id === data.requestId) ? { ...prev, status: data.status } : prev
+      );
+    };
+
+    customerSocket.on('on-demand-status-update', handleOnDemandStatusUpdate);
+
+    return () => {
+      customerSocket.off('on-demand-status-update', handleOnDemandStatusUpdate);
+    };
   }, [navigate]);
 
   const handleLogout = () => {
@@ -126,7 +210,7 @@ const Profile: React.FC = () => {
   const handleShare = async () => {
     const shareData = {
       title: 'MatAll - Home Repair Supplies',
-      text: 'Order construction and home repair supplies in 10 minutes with MatAll!',
+      text: 'Order construction and home repair supplies in 60 minutes with MatAll!',
       url: window.location.origin
     };
 
@@ -141,11 +225,6 @@ const Profile: React.FC = () => {
       console.error('Error sharing:', err);
     }
   };
-
-
-  if (loading && stats.orderCount === 0) {
-      // Just a subtle indicator, or no-op if flash is fast
-  }
 
   return (
     <div className="blinkit-profile-page">
@@ -166,7 +245,6 @@ const Profile: React.FC = () => {
           </header>
 
           <div className="profile-scroll-area">
-            {/* Quick Access Icons */}
             <div className="profile-quick-actions">
                <Link to="/support" className="quick-action-item">
                   <div className="qa-icon-box"><MessageSquare size={24} /></div>
@@ -176,65 +254,302 @@ const Profile: React.FC = () => {
                   <div className="qa-icon-box"><History size={24} /></div>
                   <span>History</span>
                </Link>
+               <div className="quick-action-item" onClick={() => {
+                  fetchUserRequests();
+                  setShowRequestsModal(true);
+               }}>
+                  <div className="qa-icon-box"><FileText size={24} /></div>
+                  <span>Requests</span>
+               </div>
+               <div className="quick-action-item" onClick={() => {
+                  fetchOnDemandRequests();
+                  setShowOnDemandModal(true);
+               }}>
+                  <div className="qa-icon-box"><Package size={24} /></div>
+                  <span>On-Demand</span>
+               </div>
                <div className="quick-action-item" onClick={() => setIsAddressModalOpen(true)}>
                   <div className="qa-icon-box"><MapPin size={24} /></div>
                   <span>Address</span>
                </div>
             </div>
 
-            {/* Address Management Drawer */}
-            {isAddressModalOpen && (
-              <div className="address-manager-overlay" onClick={() => setIsAddressModalOpen(false)}>
+            {showRequestsModal && (
+              <div className="address-manager-overlay" onClick={() => setShowRequestsModal(false)}>
                 <div className="address-manager-drawer" onClick={e => e.stopPropagation()}>
                   <div className="drawer-header">
-                    <h3>Manage Addresses</h3>
-                    <button onClick={() => setIsAddressModalOpen(false)} className="close-drawer-btn">
-                      <ChevronRight size={24} style={{ transform: 'rotate(90deg)' }} />
+                    <h3>Material Requests</h3>
+                    <button onClick={() => setShowRequestsModal(false)} className="close-drawer-btn">
+                      <X size={24} />
                     </button>
                   </div>
                   
-                  <div className="saved-addresses-list">
-                    {user.jobsites?.length > 0 ? (
-                      user.jobsites.map((site: any, idx: number) => (
-                        <div key={idx} className="profile-addr-card">
-                          <div className="addr-icon-bg">
-                            <MapPin size={20} />
+                  <div className="requests-list-container">
+                    {loadingRequests ? (
+                      <div className="loading-requests-state">
+                        <Loader2 className="spinner" size={32} />
+                        <span>Fetching your requirements...</span>
+                      </div>
+                    ) : userRequests?.length > 0 ? (
+                      userRequests.map((req: any, index: number) => {
+                        const statusClass = 
+                          req.status === 'Pending' ? 'status-pending' : 
+                          req.status === 'Cancelled' ? 'status-cancelled' : 
+                          req.status === 'Delivered' ? 'status-delivered' : 'status-default';
+
+                        return (
+                          <div key={req._id} className="profile-request-card" style={{ animationDelay: `${index * 0.05}s` }}>
+                            <div className="req-img-wrapper">
+                              <img src={req.imageUrl.startsWith('http') ? req.imageUrl : `${import.meta.env.VITE_API_BASE_URL}/api${req.imageUrl}`} alt="Material" />
+                            </div>
+                            <div className="req-content-main">
+                              <div className="req-card-top">
+                                <span className="req-date-label">
+                                  {new Date(req.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                                </span>
+                                <span className={`req-status-pill ${statusClass}`}>
+                                  {req.status}
+                                </span>
+                              </div>
+                              <p className="req-title">Material List Request</p>
+                              {req.status !== 'Cancelled' && req.status !== 'Delivered' && (
+                                <button 
+                                  className="revoke-request-btn"
+                                  onClick={() => handleRevokeRequest(req._id)}
+                                >
+                                  <Trash2 size={14} /> Revoke
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <div className="addr-info-main">
-                            <span className="addr-nickname">{site.name || site.addressType}</span>
-                            <p className="addr-text-full">{site.addressText}</p>
-                          </div>
-                          <button 
-                            className="delete-addr-btn"
-                            onClick={() => handleDeleteAddress(idx)}
-                            title="Delete Address"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <div className="empty-address-state">
-                        <MapPin size={48} color="#e2e8f0" />
-                        <p>No addresses saved yet</p>
+                        <div className="addr-icon-bg" style={{ width: '64px', height: '64px', borderRadius: '50%' }}>
+                          <FileText size={32} />
+                        </div>
+                        <p style={{ fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>No material requests yet</p>
+                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', textAlign: 'center', maxWidth: '200px' }}>
+                          Upload site notes or handwritten lists via AI Search
+                        </span>
                       </div>
                     )}
                   </div>
-
-                  <button 
-                    className="add-address-full-btn"
-                    onClick={() => {
-                      setIsAddressModalOpen(false);
-                      setShowLocationModal(true);
-                    }}
-                  >
-                    + Add New Address
-                  </button>
                 </div>
               </div>
             )}
 
-            {/* Business Insights (Basic MIS) */}
+            {showOnDemandModal && (
+              <div className="address-manager-overlay" onClick={() => setShowOnDemandModal(false)}>
+                <div className="address-manager-drawer" onClick={e => e.stopPropagation()}>
+                  <div className="drawer-header">
+                    <h3>On-Demand Quotes</h3>
+                    <button onClick={() => setShowOnDemandModal(false)} className="close-drawer-btn">
+                      <X size={24} />
+                    </button>
+                  </div>
+                  
+                  <div className="requests-list-container">
+                    {loadingOnDemand ? (
+                      <div className="loading-requests-state">
+                        <Loader2 className="spinner" size={32} />
+                        <span>Fetching your quotes...</span>
+                      </div>
+                    ) : onDemandRequests?.length > 0 ? (
+                      onDemandRequests.map((req: any, index: number) => {
+                        const statusClass = 
+                          req.status === 'Pending' ? 'status-pending' : 
+                          req.status === 'Cancelled' ? 'status-cancelled' : 
+                          req.status === 'Quoted' ? 'status-delivered' : 
+                          req.status === 'Ordered' ? 'status-delivered' : 'status-default';
+
+                        return (
+                          <div 
+                            key={req._id} 
+                            className="profile-request-card" 
+                            style={{ animationDelay: `${index * 0.05}s`, cursor: 'pointer' }}
+                            onClick={() => setSelectedOnDemand(req)}
+                          >
+                            <div className="req-img-wrapper">
+                              <img 
+                                src={req.productId?.imageUrl?.startsWith('http') ? req.productId.imageUrl : `${import.meta.env.VITE_API_BASE_URL}/api/admin/products/image/${req.productId?.imageUrl?.split('/').pop()}`} 
+                                alt="Product" 
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=100';
+                                }}
+                              />
+                            </div>
+                            <div className="req-content-main">
+                              <div className="req-card-top">
+                                <span className="req-date-label">
+                                  {new Date(req.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                                </span>
+                                <span className={`req-status-pill ${statusClass}`}>
+                                  {req.status}
+                                </span>
+                              </div>
+                              <p className="req-title" style={{ fontSize: '0.9rem', marginBottom: '2px' }}>{req.productName}</p>
+                              {req.variantName && req.variantName !== 'Standard' && (
+                                <p className="req-subtitle" style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px' }}>{req.variantName}</p>
+                              )}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1e293b' }}>Qty: {req.quantity}</span>
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Req: {req.requiredBy}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="empty-address-state">
+                        <div className="addr-icon-bg" style={{ width: '64px', height: '64px', borderRadius: '50%' }}>
+                          <Package size={32} />
+                        </div>
+                        <p style={{ fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>No on-demand quotes yet</p>
+                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', textAlign: 'center', maxWidth: '200px' }}>
+                          Requests for non-standard products will appear here
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedOnDemand && (
+              <div className="address-manager-overlay" style={{ zIndex: 2100 }} onClick={() => setSelectedOnDemand(null)}>
+                <div className="address-manager-drawer" onClick={e => e.stopPropagation()}>
+                  <div className="drawer-header">
+                    <h3>Inquiry Details</h3>
+                    <button onClick={() => setSelectedOnDemand(null)} className="close-drawer-btn">
+                      <X size={24} />
+                    </button>
+                  </div>
+
+                  <div className="drawer-scroll-content" style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
+                    <div className="od-detail-hero" style={{ textAlign: 'center', marginBottom: '1.5rem', background: '#f8fafc', padding: '1.5rem', borderRadius: '20px' }}>
+                      <div className="od-detail-img" style={{ width: '100px', height: '100px', margin: '0 auto 1rem', borderRadius: '15px', overflow: 'hidden', border: '2px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                        <img 
+                          src={selectedOnDemand.productId?.imageUrl?.startsWith('http') ? selectedOnDemand.productId.imageUrl : `${import.meta.env.VITE_API_BASE_URL}/api/admin/products/image/${selectedOnDemand.productId?.imageUrl?.split('/').pop()}`} 
+                          alt="" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=200'; }}
+                        />
+                      </div>
+                      <h4 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', fontWeight: 900 }}>{selectedOnDemand.productName}</h4>
+                      <span className={`status-badge-inline ${selectedOnDemand.status.toLowerCase()}`} style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', padding: '4px 12px', borderRadius: '100px', background: '#000', color: '#fff' }}>
+                        {selectedOnDemand.status}
+                      </span>
+                    </div>
+
+                    <div className="od-detail-info-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div className="od-info-row" style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: 700 }}>Quantity</span>
+                        <span style={{ fontWeight: 800 }}>{selectedOnDemand.quantity} Units</span>
+                      </div>
+                      <div className="od-info-row" style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: 700 }}>Required By</span>
+                        <span style={{ fontWeight: 800 }}>{selectedOnDemand.requiredBy}</span>
+                      </div>
+                      <div className="od-info-row" style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '12px 0' }}>
+                        <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: 700 }}>Project Address</span>
+                        <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: '#1e293b' }}>{selectedOnDemand.address || 'Standard Location'}</p>
+                      </div>
+
+                      {['Pending', 'Quoted'].includes(selectedOnDemand.status) && (
+                        <button 
+                          className="revoke-request-btn"
+                          style={{ width: '100%', marginTop: '1rem', justifyContent: 'center', padding: '12px' }}
+                          onClick={() => handleRevokeOnDemand(selectedOnDemand._id)}
+                        >
+                          <Trash2 size={16} /> Revoke Inquiry
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="od-timeline-simple" style={{ marginTop: '2rem', padding: '1rem', border: '1.5px solid #f1f5f9', borderRadius: '15px' }}>
+                      <h5 style={{ margin: '0 0 1rem 0', fontWeight: 800 }}>Request Progress</h5>
+                      <div className="timeline-steps" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div className="t-step active" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                           <div className="t-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></div>
+                           <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>Requirement Placed</span>
+                        </div>
+                        <div className={`t-step ${['Quoted', 'Ordered', 'Delivered'].includes(selectedOnDemand.status) ? 'active' : ''}`} style={{ display: 'flex', gap: '12px', alignItems: 'center', opacity: ['Quoted', 'Ordered', 'Delivered'].includes(selectedOnDemand.status) ? 1 : 0.4 }}>
+                           <div className="t-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></div>
+                           <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>Quote shared by MatAll</span>
+                        </div>
+                        <div className={`t-step ${['Ordered', 'Delivered'].includes(selectedOnDemand.status) ? 'active' : ''}`} style={{ display: 'flex', gap: '12px', alignItems: 'center', opacity: ['Ordered', 'Delivered'].includes(selectedOnDemand.status) ? 1 : 0.4 }}>
+                           <div className="t-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></div>
+                           <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>Dispatch Confirmed</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isAddressModalOpen && (
+              <div className="address-manager-overlay" onClick={() => setIsAddressModalOpen(false)}>
+                <div className="address-manager-drawer" onClick={e => e.stopPropagation()}>
+                  <div className="drawer-header">
+                    <h3>Your Saved Addresses</h3>
+                    <button onClick={() => setIsAddressModalOpen(false)} className="close-drawer-btn">
+                      <X size={24} />
+                    </button>
+                  </div>
+                  <div className="saved-addresses-list">
+                    {user.jobsites?.length > 0 ? (
+                      user.jobsites.map((addr: any, idx: number) => (
+                        <div key={idx} className="profile-addr-card">
+                          <div className="addr-icon-bg">
+                            {addr.addressType === 'Home' ? <History size={20} /> : <MapPin size={20} />}
+                          </div>
+                          <div className="addr-info-main">
+                            <span className="addr-nickname">{addr.name}</span>
+                            <p className="addr-text-full">{addr.addressText}</p>
+                            {addr.contactPhone && <span className="addr-phone">Ph: {addr.contactPhone}</span>}
+                          </div>
+                          <div className="addr-actions" style={{ display: 'flex', gap: '8px' }}>
+                            <button className="edit-addr-btn" onClick={() => {
+                              setAddressToEdit(addr);
+                              setEditIndex(idx);
+                              setIsAddressModalOpen(false);
+                              setShowLocationModal(true);
+                            }} style={{ background: '#f1f5f9', border: 'none', padding: '8px', borderRadius: '8px', color: '#64748b' }}>
+                              <Pencil size={18} />
+                            </button>
+                            <button className="delete-addr-btn" onClick={() => handleDeleteAddress(idx)}>
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="empty-address-state">
+                        <div className="addr-icon-bg" style={{ width: '64px', height: '64px', borderRadius: '50%' }}>
+                          <MapPin size={32} />
+                        </div>
+                        <p style={{ fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>No addresses saved yet</p>
+                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', textAlign: 'center', maxWidth: '200px' }}>
+                          Add your home, office or site address for faster delivery
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="drawer-footer-actions">
+                    <button className="add-address-full-btn" onClick={() => {
+                        setIsAddressModalOpen(false);
+                        setShowLocationModal(true);
+                      }}>
+                      + Add New Address
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <section className="profile-section-tile insights-tile">
                <div className="insights-grid">
                   <div className="insight-item">
@@ -263,7 +578,6 @@ const Profile: React.FC = () => {
                </div>
             </section>
 
-            {/* Additional Options */}
             <div className="profile-list-options">
                <div className="list-option-row" onClick={handleShare}>
                   <div className="opt-label-box">
@@ -272,13 +586,6 @@ const Profile: React.FC = () => {
                   </div>
                   <ChevronRight size={20} />
                </div>
-               {/* <div className="list-option-row" onClick={() => handleAction('GST Details')}>
-                  <div className="opt-label-box">
-                     <FileText size={20} />
-                     <span>Fetch GST Details</span>
-                  </div>
-                  <ChevronRight size={20} />
-               </div> */}
                
                 <div className="list-option-row logout-action" onClick={handleLogout}>
                   <div className="opt-label-box">
@@ -293,13 +600,19 @@ const Profile: React.FC = () => {
 
         <LocationModal 
           isOpen={showLocationModal}
-          onClose={() => setShowLocationModal(false)}
+          onClose={() => {
+            setShowLocationModal(false);
+            setAddressToEdit(null);
+            setEditIndex(null);
+          }}
           onSelectAddress={() => {
-            // Address is already saved to DB inside LocationModal.tsx handleAddAddress
-            // We just need to refresh local user state
             refreshUser();
             setShowLocationModal(false);
+            setAddressToEdit(null);
+            setEditIndex(null);
           }}
+          initialData={addressToEdit}
+          editIndex={editIndex}
         />
       </main>
     </div>

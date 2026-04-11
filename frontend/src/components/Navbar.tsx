@@ -117,35 +117,43 @@ const Navbar: React.FC = () => {
   const isBlinkitHeader = !isLoggedIn && isDesktop;
 
   const renderSearchBar = () => (
-    <div className="search-container-main" ref={suggestionRef}>
-      <form className="search-bar" onSubmit={handleSearch}>
-        <Search size={20} className="search-icon" color="#333" />
-        <input 
-          type="text" 
-          placeholder='Search (e.g. Pipe, Wire)...' 
-          value={searchTerm}
-          onChange={onInputChange}
-          onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
-        />
-        <AISearch />
-      </form>
+    <div className="search-row-main-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', flex: 1 }}>
+      <div className="search-container-main" ref={suggestionRef}>
+        <form className="search-bar" onSubmit={handleSearch}>
+          <Search size={20} className="search-icon" color="#333" />
+          <input 
+            type="text" 
+            placeholder='Search (e.g. Pipe, Wire)...' 
+            value={searchTerm}
+            onChange={onInputChange}
+            onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+          />
+          <AISearch />
+        </form>
 
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="search-suggestions-dropdown">
-          {suggestions.map((s) => (
-            <div 
-              key={s._id} 
-              className="suggestion-item"
-              onClick={() => handleSuggestionClick(s)}
-            >
-              <div className="s-info">
-                 <span className="s-brand">{s.brand}</span>
-                 <span className="s-name">{s.productName || s.name}</span>
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="search-suggestions-dropdown">
+            {suggestions.map((s) => (
+              <div 
+                key={s._id} 
+                className="suggestion-item"
+                onClick={() => handleSuggestionClick(s)}
+              >
+                <div className="s-info">
+                  <span className="s-brand">{s.brand}</span>
+                  <span className="s-name">{s.productName || s.name}</span>
+                </div>
+                <span className="s-price">₹{Number(s.pricing?.salePrice || s.price || 0)}</span>
               </div>
-              <span className="s-price">₹{Number(s.pricing?.salePrice || s.price || 0)}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
+      </div>
+      
+      {!isDesktop && (
+        <Link to="/favorites" className="wishlist-header-btn">
+          <Heart size={24} />
+        </Link>
       )}
     </div>
   );

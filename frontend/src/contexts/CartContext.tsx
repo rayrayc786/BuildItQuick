@@ -43,6 +43,7 @@ interface Product {
     unitWeightGm?: number;
   }[];
   bulkPricing?: { minQty: number, discount: number }[];
+  logisticsCategory?: string;
 }
 
 interface CartItem {

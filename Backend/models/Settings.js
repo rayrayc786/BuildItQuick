@@ -9,6 +9,15 @@ const settingsSchema = new mongoose.Schema({
   deliveryCharge: { type: Number, default: 150 },
   freeDeliveryThreshold: { type: Number, default: 5000 },
   platformFee: { type: Number, default: 15 },
+  isCodEnabled: { type: Boolean, default: true },
+  isPartPaymentEnabled: { type: Boolean, default: true },
+  isFullPaymentEnabled: { type: Boolean, default: true },
+  partPaymentPercentage: { type: Number, default: 50 },
+  logisticsRates: {
+    light: { rate: { type: Number, default: 50 }, mode: { type: String, default: "Bike" } },
+    medium: { rate: { type: Number, default: 150 }, mode: { type: String, default: "Three Wheeler" } },
+    heavy: { rate: { type: Number, default: 500 }, mode: { type: String, default: "Truck" } }
+  },
   lastUpdatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 

@@ -82,6 +82,28 @@
 .search-container-main {
   flex: 1;
   max-width: 800px;
+  min-width: 0;
+}
+
+.search-row-main-wrapper {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.wishlist-header-btn {
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  flex-shrink: 0;
+  transition: transform 0.1s;
+}
+
+.wishlist-header-btn:active {
+  transform: scale(0.9);
 }
 
 .search-bar {

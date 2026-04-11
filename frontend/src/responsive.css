@@ -1,5 +1,5 @@
 :root {
-  --desktop-max-width: 1200px;
+  --desktop-max-width: 1400px;
 }
 
 .app-container-responsive {
@@ -13,7 +13,7 @@
   width: 100%;
   max-width: var(--desktop-max-width);
   margin: 0 auto;
-  /* padding: 0 1.5rem; */
+  padding: 0 1.5rem;
   box-sizing: border-box;
 }
 

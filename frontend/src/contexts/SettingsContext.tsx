@@ -3,6 +3,11 @@ import axios from 'axios';
 
 const settingsChannel = new BroadcastChannel('settings_sync');
 
+interface LogisticsRate {
+  rate: number;
+  mode: string;
+}
+
 interface Settings {
   isServiceEnabled: boolean;
   offlineMessage: string;
@@ -12,6 +17,15 @@ interface Settings {
   deliveryCharge: number;
   freeDeliveryThreshold: number;
   platformFee: number;
+  isCodEnabled: boolean;
+  isPartPaymentEnabled: boolean;
+  isFullPaymentEnabled: boolean;
+  partPaymentPercentage: number;
+  logisticsRates: {
+    light: LogisticsRate;
+    medium: LogisticsRate;
+    heavy: LogisticsRate;
+  };
 }
 
 interface SettingsContextType {
@@ -32,7 +46,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     serviceEndTime: "21:00",
     deliveryCharge: 150,
     freeDeliveryThreshold: 5000,
-    platformFee: 15
+    platformFee: 15,
+    isCodEnabled: true,
+    isPartPaymentEnabled: true,
+    isFullPaymentEnabled: true,
+    partPaymentPercentage: 50,
+    logisticsRates: {
+      light: { rate: 50, mode: "Bike" },
+      medium: { rate: 150, mode: "Three Wheeler" },
+      heavy: { rate: 500, mode: "Truck" }
+    }
   });
   const [loading, setLoading] = useState(true);
   const [isCurrentlyEnabled, setIsCurrentlyEnabled] = useState(true);
@@ -77,7 +100,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         serviceEndTime: data.serviceEndTime ?? "21:00",
         deliveryCharge: data.deliveryCharge ?? 150,
         freeDeliveryThreshold: data.freeDeliveryThreshold ?? 5000,
-        platformFee: data.platformFee ?? 15
+        platformFee: data.platformFee ?? 15,
+        isCodEnabled: data.isCodEnabled ?? true,
+        isPartPaymentEnabled: data.isPartPaymentEnabled ?? true,
+        isFullPaymentEnabled: data.isFullPaymentEnabled ?? true,
+        partPaymentPercentage: data.partPaymentPercentage ?? 50,
+        logisticsRates: data.logisticsRates ?? {
+          light: { rate: 50, mode: "Bike" },
+          medium: { rate: 150, mode: "Three Wheeler" },
+          heavy: { rate: 500, mode: "Truck" }
+        }
       };
       setSettings(updated);
       setIsCurrentlyEnabled(checkStatus(updated));

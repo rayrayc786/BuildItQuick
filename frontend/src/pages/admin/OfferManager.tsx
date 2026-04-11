@@ -15,14 +15,25 @@ const OfferManager: React.FC = () => {
     discount: '',
     imageUrl: '',
     isActive: true,
-    link: ''
+    link: '',
+    categories: [] as string[],
+    subCategories: [] as string[]
   });
+
+  const [allCategories, setAllCategories] = useState<any[]>([]);
+  const [allSubCategories, setAllSubCategories] = useState<any[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/offers`);
-      setOffers(data);
+      const [{ data: offersData }, { data: catsData }, { data: subCatsData }] = await Promise.all([
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/offers`),
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/categories`),
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/sub-categories`)
+      ]);
+      setOffers(offersData);
+      setAllCategories(catsData);
+      setAllSubCategories(subCatsData);
     } catch (err) {
       console.error('Fetch failed:', err);
     } finally {
@@ -48,6 +59,26 @@ const OfferManager: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (formData.categories.length > 0 || formData.subCategories.length > 0) {
+      const catParts = formData.categories.map(id => {
+        const cat = allCategories.find(c => c._id === id);
+        return cat ? cat.name : id;
+      }).join(',');
+      
+      const subParts = formData.subCategories.map(id => {
+        const sub = allSubCategories.find(s => s._id === id);
+        return sub ? sub.name : id;
+      }).join(',');
+
+      let newLink = '/products?';
+      if (catParts) newLink += `category=${encodeURIComponent(catParts)}`;
+      if (subParts) newLink += `${catParts ? '&' : ''}subCategory=${encodeURIComponent(subParts)}`;
+      
+      setFormData(prev => ({ ...prev, link: newLink }));
+    }
+  }, [formData.categories, formData.subCategories]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -72,7 +103,9 @@ const OfferManager: React.FC = () => {
         discount: item.discount || '',
         imageUrl: item.imageUrl || '',
         isActive: item.isActive,
-        link: item.link || ''
+        link: item.link || '',
+        categories: item.categories || [],
+        subCategories: item.subCategories || []
       });
     } else {
       setFormData({
@@ -81,7 +114,9 @@ const OfferManager: React.FC = () => {
         discount: '',
         imageUrl: '',
         isActive: true,
-        link: ''
+        link: '',
+        categories: [],
+        subCategories: []
       });
     }
     setShowModal(true);
@@ -127,6 +162,17 @@ const OfferManager: React.FC = () => {
                 <div className="card-body" style={{ padding: '1.25rem' }}>
                   <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>{offer.title}</h3>
                   <p style={{ fontSize: '0.85rem', color: '#64748b', minHeight: '40px' }}>{offer.description}</p>
+                  
+                  {offer.categories?.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px' }}>
+                      {offer.categories.map((catId: string) => (
+                        <span key={catId} style={{ fontSize: '10px', background: '#f8fafc', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                          {allCategories.find(c => c._id === catId)?.name || 'Cat'}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: offer.isActive ? '#10b981' : '#ef4444' }}></div>
@@ -180,7 +226,58 @@ const OfferManager: React.FC = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Target Link (Where to go on click)</label>
+                <label>Dynamic Filtering (Club Categories/Subcategories)</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '15px', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+                  <div>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '8px', color: '#64748b' }}>SELECT CATEGORIES</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {allCategories.map(cat => (
+                        <label key={cat._id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', padding: '4px 10px', border: formData.categories.includes(cat._id) ? '1px solid #FFEA00' : '1px solid #eee', background: formData.categories.includes(cat._id) ? '#ffea0010' : 'white', borderRadius: '20px', cursor: 'pointer' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={formData.categories.includes(cat._id)}
+                            onChange={(e) => {
+                              const newCats = e.target.checked 
+                                ? [...formData.categories, cat._id]
+                                : formData.categories.filter(id => id !== cat._id);
+                              setFormData({ ...formData, categories: newCats });
+                            }}
+                            style={{ display: 'none' }}
+                          />
+                          {cat.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '8px', color: '#64748b' }}>SELECT SUBCATEGORIES (Optional)</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '120px', overflowY: 'auto', padding: '4px' }}>
+                      {allSubCategories
+                        .filter(sc => formData.categories.length === 0 || formData.categories.includes(sc.categoryId?._id || sc.categoryId))
+                        .map(sc => (
+                        <label key={sc._id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', padding: '4px 10px', border: formData.subCategories.includes(sc._id) ? '1px solid #FFEA00' : '1px solid #eee', background: formData.subCategories.includes(sc._id) ? '#ffea0010' : 'white', borderRadius: '20px', cursor: 'pointer' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={formData.subCategories.includes(sc._id)}
+                            onChange={(e) => {
+                              const newSubs = e.target.checked 
+                                ? [...formData.subCategories, sc._id]
+                                : formData.subCategories.filter(id => id !== sc._id);
+                              setFormData({ ...formData, subCategories: newSubs });
+                            }}
+                            style={{ display: 'none' }}
+                          />
+                          {sc.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Target Link (Auto-generated from combo)</label>
                 <input 
                   type="text" 
                   value={formData.link} 

@@ -49,8 +49,26 @@ const Cart: React.FC = () => {
   useEffect(() => {
     const fetchRecs = async () => {
       try {
-        const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products`);
-        setRecommendations(data.slice(4, 10));
+        if (cart.length === 0) return;
+        
+        // Get categories/subCategories from cart items
+        const subCategories = [...new Set(cart.map(item => item.product.subCategory).filter(Boolean))];
+        const categories = [...new Set(cart.map(item => item.product.category))];
+        
+        let query = '';
+        if (subCategories.length > 0) {
+          query = `subCategory=${subCategories[0]}`;
+        } else {
+          query = `category=${categories[0]}`;
+        }
+        
+        const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products?${query}`);
+        
+        // Filter out items already in cart
+        const cartIds = cart.map(item => item.product._id);
+        const filtered = data.filter((p: any) => !cartIds.includes(p._id));
+        
+        setRecommendations(filtered.slice(0, 10));
       } catch (err) {
         console.error(err);
       }
@@ -70,7 +88,7 @@ const Cart: React.FC = () => {
         console.error('Failed to parse user for address', e);
       }
     }
-  }, []);
+  }, [cart.length]);
 
   const handleMoveToWishlist = async (product: any, variant?: string) => {
     const token = localStorage.getItem('token');

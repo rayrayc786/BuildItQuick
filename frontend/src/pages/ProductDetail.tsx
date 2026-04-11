@@ -21,6 +21,7 @@ import './product-detail.css';
 import toast from 'react-hot-toast';
 import { getFullImageUrl } from '../utils/imageUrl';
 import SEO from '../components/SEO';
+import OnDemandModal from '../components/OnDemandModal';
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams();
@@ -37,6 +38,7 @@ const ProductDetail: React.FC = () => {
   const [reviews, setReviews] = useState<any[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [selections, setSelections] = useState<Record<string, string>>({});
+  const [showOnDemandModal, setShowOnDemandModal] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -221,7 +223,7 @@ const ProductDetail: React.FC = () => {
           <main className="detail-main-info">
              {/* Metadata */}
              <div className="meta-stats-row">
-                <div className="delivery-mini"><Clock size={12} /> <span>{product.deliveryTime || '10 mins'}</span></div>
+                <div className={`delivery-mini ${product.deliveryTime === 'On Demand' ? 'on-demand' : ''}`}><Clock size={12} /> <span>{product.deliveryTime || '10 mins'}</span></div>
                 <div className="rating-mini">
                    <Star size={12} fill="#facc15" color="#facc15" /> 
                    <span>{(product.avgRating || 0).toFixed(1)}</span> 
@@ -252,15 +254,6 @@ const ProductDetail: React.FC = () => {
                </button>
              </div>
              <div className="prd-unit-label">{currentUnit}</div>
-
-             {/* highlights row */}
-             {/* <div className="highlights-detail-row">
-                <div className="highlight-mini-box">
-                   <span className="h-mini-label">TYPE</span>
-                   <span className="h-mini-value">{product.category || 'Standard'}</span>
-                </div>
-                
-             </div> */}
 
              {/* Multi-Attribute Variant Selector */}
              {Object.keys(attributeGroups).length > 0 && (
@@ -551,7 +544,11 @@ const ProductDetail: React.FC = () => {
 
              {/* Desktop Add to Cart */}
              <div className="desktop-add-container hide-mobile">
-                {cartItem ? (
+                {product.deliveryTime === 'On Demand' ? (
+                  <button className="f-add-btn desktop-add-btn on-demand" onClick={() => setShowOnDemandModal(true)}>
+                    Request Quote
+                  </button>
+                ) : cartItem ? (
                   <div className="f-qty-control desktop-qty">
                     <button onClick={() => addToCart(product, -1, currentVariantName)}><Minus size={20} /></button>
                     <span className="f-qty-val">{cartItem.quantity}</span>
@@ -588,7 +585,11 @@ const ProductDetail: React.FC = () => {
             <span className="f-tax">Inclusive of all taxes</span>
           </div>
          <div className="footer-action">
-            {cartItem ? (
+            {product.deliveryTime === 'On Demand' ? (
+              <button className="f-add-btn on-demand" onClick={() => setShowOnDemandModal(true)}>
+                Request Quote
+              </button>
+            ) : cartItem ? (
               <div className="f-qty-control">
                 <button onClick={() => addToCart(product, -1, currentVariantName)}><Minus size={20} /></button>
                 <span className="f-qty-val">{cartItem.quantity}</span>
@@ -601,6 +602,13 @@ const ProductDetail: React.FC = () => {
             )}
          </div>
       </footer>
+
+      <OnDemandModal 
+        isOpen={showOnDemandModal}
+        onClose={() => setShowOnDemandModal(false)}
+        product={product}
+        variant={selectedVariant}
+      />
     </div>
   );
 };

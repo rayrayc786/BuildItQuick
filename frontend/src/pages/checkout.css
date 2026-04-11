@@ -3,11 +3,13 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: 200px; /* Increased to avoid overlap under two footers */
+  padding-bottom: 200px;
+  /* Increased to avoid overlap under two footers */
 }
 
 /* Global Navigation Control for Checkout Page specifically */
 @media (max-width: 850px) {
+
   /* Set standard layout for mobile header */
   .checkout-header-sticky {
     padding-top: 1rem;
@@ -25,6 +27,7 @@
 }
 
 @media (min-width: 851px) {
+
   /* Selectively hide the bottom navigation when on the checkout page on desktop */
   :has(.blinkit-checkout-page) .landing-footer {
     display: none !important;
@@ -40,7 +43,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
   border: 1px solid #f1f5f9;
   cursor: pointer;
   transition: all 0.2s;
@@ -94,9 +97,8 @@
   color: #1e293b;
   font-weight: 700;
   margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  line-height: 1.4;
 }
 
 .divider-dot {
@@ -135,7 +137,7 @@
   background: #ffffff;
   border-radius: 12px;
   padding: 1.25rem;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
   border: 1px solid #f1f5f9;
 }
 
@@ -181,7 +183,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   border: none;
 }
 
@@ -245,7 +247,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
   border: 1px solid #f1f5f9;
   cursor: pointer;
 }
@@ -307,8 +309,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.6);
-  z-index: 99999; /* Highest priority to cover everything */
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 99999;
+  /* Highest priority to cover everything */
   display: flex;
   align-items: flex-end;
 }
@@ -445,6 +448,22 @@
   line-height: 1.4;
 }
 
+.addr-edit-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: color 0.2s;
+}
+
+.addr-edit-action:hover {
+  color: #16a34a;
+}
+
 .radio-outer {
   width: 20px;
   height: 20px;
@@ -471,7 +490,8 @@
 }
 
 /* Map confirm / Form Screens */
-.map-confirm-screen, .address-form-screen {
+.map-confirm-screen,
+.address-form-screen {
   position: fixed;
   top: 0;
   left: 0;
@@ -518,13 +538,20 @@
 }
 
 @keyframes pulse {
-  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
 }
 
 .map-bottom-sheet {
   padding: 1.5rem;
-  box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.05);
 }
 
 .detected-addr-box {
@@ -533,7 +560,9 @@
   margin-bottom: 1.5rem;
 }
 
-.yellow-pin { color: #FFEA00; }
+.yellow-pin {
+  color: #FFEA00;
+}
 
 .btn-input-complete {
   width: 100%;
@@ -582,7 +611,7 @@
 .toggle-btn.active {
   background: white;
   color: #000;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .input-group {
@@ -592,7 +621,8 @@
   margin-bottom: 2rem;
 }
 
-.input-group input, .input-group textarea {
+.input-group input,
+.input-group textarea {
   padding: 1rem;
   border: 1.5px solid #e2e8f0;
   border-radius: 12px;
@@ -601,7 +631,8 @@
   outline: none;
 }
 
-.input-group input:focus, .input-group textarea:focus {
+.input-group input:focus,
+.input-group textarea:focus {
   border-color: #FFEA00;
 }
 
@@ -669,7 +700,7 @@
   transform: translate(-50%, -100%);
   z-index: 1000;
   pointer-events: none;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
 .map-placeholder.dynamic {
@@ -700,7 +731,7 @@
   border-radius: 50%;
   background: white;
   border: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -711,7 +742,7 @@
 
 .locate-me-fab:active {
   transform: scale(0.95);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Transactional Sticky Footer for Mobile */
@@ -726,7 +757,7 @@
   flex-direction: column;
   padding: 0.75rem 1rem;
   border-top: 1px solid #f1f5f9;
-  box-shadow: 0 -10px 40px rgba(0,0,0,0.05);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.05);
 }
 
 .checkout-pay-bar {
@@ -880,6 +911,11 @@
   border: 1px solid #e2e8f0;
 }
 
+.footer-action-buttons-mobile .cod-pay {
+  background: #000;
+  color: #FFEA00;
+}
+
 .footer-action-buttons-mobile .checkout-place-btn:active {
   transform: scale(0.96);
 }
@@ -899,7 +935,10 @@
     padding: 0 2rem;
   }
 
-  .checkout-user-pod, .delivery-slot-card, .gstin-entry-row, .policy-expandable {
+  .checkout-user-pod,
+  .delivery-slot-card,
+  .gstin-entry-row,
+  .policy-expandable {
     margin-left: 0;
     margin-right: 0;
   }
@@ -940,7 +979,7 @@
   align-items: center;
   gap: 12px;
   padding: 0 15px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   border: 1px solid #e2e8f0;
 }
 
@@ -997,8 +1036,15 @@
 }
 
 @keyframes popupScale {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .popup-timer-circle {

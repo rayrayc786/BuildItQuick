@@ -53,6 +53,7 @@ const ProductSchema = new mongoose.Schema({
   deliveryTime: { type: String },
   returns: { type: String },
   logisticsRule: { type: String },
+  logisticsCategory: { type: String, enum: ['Light', 'Medium', 'Heavy'], default: 'Light' },
   status: { type: String },
   
   variants: [VariantSchema],

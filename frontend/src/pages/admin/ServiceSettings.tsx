@@ -4,11 +4,36 @@ import { Power, Save, AlertTriangle, Clock, CheckCircle, XCircle, Calendar, Truc
 import toast from 'react-hot-toast';
 import { useSettings } from '../../contexts/SettingsContext';
 
+interface LogisticsRate {
+  rate: number;
+  mode: string;
+}
+
+interface Settings {
+  isServiceEnabled: boolean;
+  offlineMessage: string;
+  useOperatingHours: boolean;
+  serviceStartTime: string;
+  serviceEndTime: string;
+  deliveryCharge: number;
+  freeDeliveryThreshold: number;
+  platformFee: number;
+  isCodEnabled: boolean;
+  isPartPaymentEnabled: boolean;
+  isFullPaymentEnabled: boolean;
+  partPaymentPercentage: number;
+  logisticsRates: {
+    light: LogisticsRate;
+    medium: LogisticsRate;
+    heavy: LogisticsRate;
+  };
+}
+
 const ServiceSettings: React.FC = () => {
   const { refreshSettings, isCurrentlyEnabled } = useSettings();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<Settings>({
     isServiceEnabled: true,
     offlineMessage: "",
     useOperatingHours: false,
@@ -16,7 +41,16 @@ const ServiceSettings: React.FC = () => {
     serviceEndTime: "21:00",
     deliveryCharge: 150,
     freeDeliveryThreshold: 5000,
-    platformFee: 15
+    platformFee: 15,
+    isCodEnabled: true,
+    isPartPaymentEnabled: true,
+    isFullPaymentEnabled: true,
+    partPaymentPercentage: 50,
+    logisticsRates: {
+      light: { rate: 50, mode: "Bike" },
+      medium: { rate: 150, mode: "Three Wheeler" },
+      heavy: { rate: 500, mode: "Truck" }
+    }
   });
 
   const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000') + '/api';
@@ -33,7 +67,16 @@ const ServiceSettings: React.FC = () => {
           serviceEndTime: data.serviceEndTime ?? "21:00",
           deliveryCharge: data.deliveryCharge ?? 150,
           freeDeliveryThreshold: data.freeDeliveryThreshold ?? 5000,
-          platformFee: data.platformFee ?? 15
+          platformFee: data.platformFee ?? 15,
+          isCodEnabled: data.isCodEnabled ?? true,
+          isPartPaymentEnabled: data.isPartPaymentEnabled ?? true,
+          isFullPaymentEnabled: data.isFullPaymentEnabled ?? true,
+          partPaymentPercentage: data.partPaymentPercentage ?? 50,
+          logisticsRates: data.logisticsRates ?? {
+            light: { rate: 50, mode: "Bike" },
+            medium: { rate: 150, mode: "Three Wheeler" },
+            heavy: { rate: 500, mode: "Truck" }
+          }
         });
       } catch (err) {
         toast.error('Failed to load settings');
@@ -332,6 +375,155 @@ const ServiceSettings: React.FC = () => {
             onChange={(e) => setSettings({ ...settings, offlineMessage: e.target.value })}
             style={{ width: '100%', minHeight: '100px' }}
           />
+        </div>
+
+        <hr style={{ border: '0', borderTop: '1px solid #f1f5f9', margin: '2rem 0' }} />
+
+        {/* Payment Methods Section */}
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <CreditCard size={24} color="#000" /> Payment Visibility (Checkout)
+        </h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1rem' }}>
+          <label style={{ 
+            display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', 
+            background: '#f8fafc', borderRadius: '0.75rem', cursor: 'pointer', border: '1px solid #e2e8f0' 
+          }}>
+            <input 
+              type="checkbox" 
+              checked={settings.isCodEnabled}
+              onChange={(e) => setSettings({ ...settings, isCodEnabled: e.target.checked })}
+              style={{ width: '20px', height: '20px' }}
+            />
+            <div>
+              <span style={{ fontWeight: 800, display: 'block' }}>Enable Cash on Delivery (COD)</span>
+              <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Allow users to pay upon arrival</span>
+            </div>
+          </label>
+
+          <label style={{ 
+            display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', 
+            background: '#f8fafc', borderRadius: '0.75rem', cursor: 'pointer', border: '1px solid #e2e8f0' 
+          }}>
+            <input 
+              type="checkbox" 
+              checked={settings.isFullPaymentEnabled}
+              onChange={(e) => setSettings({ ...settings, isFullPaymentEnabled: e.target.checked })}
+              style={{ width: '20px', height: '20px' }}
+            />
+            <div>
+              <span style={{ fontWeight: 800, display: 'block' }}>Enable Full Payment</span>
+              <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Allow 100% upfront online payment</span>
+            </div>
+          </label>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+          <label style={{ 
+            display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', 
+            background: settings.isPartPaymentEnabled ? '#eff6ff' : '#f8fafc', 
+            borderRadius: '1rem', cursor: 'pointer', border: settings.isPartPaymentEnabled ? '1px solid #3b82f6' : '1px solid #e2e8f0' 
+          }}>
+            <input 
+              type="checkbox" 
+              checked={settings.isPartPaymentEnabled}
+              onChange={(e) => setSettings({ ...settings, isPartPaymentEnabled: e.target.checked })}
+              style={{ width: '24px', height: '24px' }}
+            />
+            <div style={{ flex: 1 }}>
+              <span style={{ fontWeight: 800, display: 'block', fontSize: '1rem' }}>Enable Split/Part Payment</span>
+              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Allow users to pay a percentage now and rest on delivery</span>
+            </div>
+            
+            {settings.isPartPaymentEnabled && (
+              <div style={{ minWidth: '140px' }} onClick={(e) => e.stopPropagation()}>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input 
+                    type="number" 
+                    value={settings.partPaymentPercentage} 
+                    min="1"
+                    max="99"
+                    onChange={(e) => setSettings({ ...settings, partPaymentPercentage: Number(e.target.value) })}
+                    style={{ 
+                      width: '100%',
+                      padding: '0.75rem 2.5rem 0.75rem 1rem', 
+                      textAlign: 'center', 
+                      fontWeight: 900,
+                      fontSize: '1.1rem',
+                      borderRadius: '0.75rem',
+                      border: '2px solid #3b82f6',
+                      background: 'white',
+                      outline: 'none',
+                      color: '#1e40af'
+                    }}
+                  />
+                  <span style={{ 
+                    position: 'absolute', 
+                    right: '15px', 
+                    fontWeight: 900, 
+                    color: '#3b82f6',
+                    fontSize: '1.1rem'
+                  }}>%</span>
+                </div>
+                <p style={{ fontSize: '0.7rem', color: '#3b82f6', marginTop: '6px', textAlign: 'center', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Advance Amount
+                </p>
+              </div>
+            )}
+          </label>
+        </div>
+
+        <hr style={{ border: '0', borderTop: '1px solid #f1f5f9', margin: '2rem 0' }} />
+
+        {/* Logistics Rules Section */}
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <Truck size={24} color="#000" /> Logistics Categories & Rates
+        </h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', marginBottom: '1rem' }}>
+          {['light', 'medium', 'heavy'].map((cat) => (
+            <div key={cat} style={{ 
+              background: '#f8fafc', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid #e2e8f0',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem'
+            }}>
+              <div style={{ flex: 1 }}>
+                <span style={{ fontWeight: 900, textTransform: 'uppercase', color: '#1e293b', fontSize: '1rem', display: 'block' }}>
+                  {cat} CATEGORY
+                </span>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Applied when cart has {cat} items</span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', flex: 2 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', marginBottom: '4px', display: 'block' }}>RATE (₹)</label>
+                  <input 
+                    type="number"
+                    value={(settings.logisticsRates as any)[cat].rate}
+                    onChange={(e) => {
+                      const newRates = { ...settings.logisticsRates };
+                      (newRates as any)[cat].rate = Number(e.target.value);
+                      setSettings({ ...settings, logisticsRates: newRates as any });
+                    }}
+                    style={{ fontWeight: 800, width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1' }}
+                  />
+                </div>
+                <div style={{ flex: 1.5 }}>
+                  <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', marginBottom: '4px', display: 'block' }}>DELIVERY MODE</label>
+                  <input 
+                    type="text"
+                    placeholder="e.g. Bike, Truck"
+                    value={(settings.logisticsRates as any)[cat].mode}
+                    onChange={(e) => {
+                      const newRates = { ...settings.logisticsRates };
+                      (newRates as any)[cat].mode = e.target.value;
+                      setSettings({ ...settings, logisticsRates: newRates as any });
+                    }}
+                    style={{ fontWeight: 800, width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1' }}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         <hr style={{ border: '0', borderTop: '1px solid #f1f5f9', margin: '2rem 0' }} />

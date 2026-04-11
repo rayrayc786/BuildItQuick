@@ -6,7 +6,9 @@ const OfferSchema = new mongoose.Schema({
   discount: { type: String },
   imageUrl: { type: String },
   isActive: { type: Boolean, default: true },
-  link: { type: String } // Optional: where it redirects to
+  link: { type: String }, // Optional: where it redirects to
+  categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
+  subCategories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'SubCategory' }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Offer', OfferSchema);

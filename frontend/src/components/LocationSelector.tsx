@@ -120,12 +120,14 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ searchNode }) => {
           </Link>
         </div>
 
-        {searchNode || (
-          <div className="search-bar-landing" onClick={() => navigate('/search')}>
-            <input type="text" placeholder="Search your product" readOnly />
-            <Mic size={20} className="mic-icon-landing" />
-          </div>
-        )}
+        <div className="search-row-mobile">
+          {searchNode || (
+            <div className="search-bar-landing" onClick={() => navigate('/search')}>
+              <input type="text" placeholder="Search your product" readOnly />
+              <Mic size={20} className="mic-icon-landing" />
+            </div>
+          )}
+        </div>
       </div>
 
       <LocationModal 

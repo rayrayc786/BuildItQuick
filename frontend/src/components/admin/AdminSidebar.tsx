@@ -42,6 +42,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose }) => {
         { icon: <ShoppingBag size={18} />, label: 'Orders', path: '/admin?tab=actions&sub=orders' },
         { icon: <Users size={18} />, label: 'Users', path: '/admin?tab=actions&sub=users' },
         { icon: <Image size={18} />, label: 'User Material Requests', path: '/admin?tab=actions&sub=userRequests' },
+        { icon: <ShoppingBag size={18} />, label: 'On-Demand Orders', path: '/admin?tab=actions&sub=onDemandRequests' },
         { icon: <Search size={18} />, label: 'Search History', path: '/admin?tab=actions&sub=searchLogs' },
         { icon: <MessageSquare size={18} />, label: 'Reviews', path: '/admin?tab=actions&sub=reviews' },
         // { icon: <ClipboardList size={18} />, label: 'Support Tickets', path: '/admin?tab=actions&sub=tickets' },

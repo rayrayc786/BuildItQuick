@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, RotateCcw, ShoppingCart, Headphones, Heart } from 'lucide-react';
+import { Home, RotateCcw, ShoppingCart, Headphones, ShoppingBag } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import './footer.css';
 
@@ -23,7 +23,7 @@ const Footer: React.FC = () => {
         <span>Repeat</span>
       </Link>
       <Link to="/products" className={`footer-item ${isActive('/products') ? 'active' : ''}`}>
-        <Heart size={22} />
+        <ShoppingBag size={22} />
         <span>Shop</span>
       </Link>
       <Link to="/cart" className={`footer-item ${isActive('/cart') ? 'active' : ''}`}>

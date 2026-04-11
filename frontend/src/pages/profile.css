@@ -85,7 +85,9 @@
   transition: transform 0.1s;
 }
 
-.quick-action-item:active { transform: scale(0.95); }
+.quick-action-item:active {
+  transform: scale(0.95);
+}
 
 .qa-icon-box {
   width: 54px;
@@ -169,7 +171,9 @@
   transition: background 0.1s;
 }
 
-.list-option-row:active { background: #f9fafb; }
+.list-option-row:active {
+  background: #f9fafb;
+}
 
 .opt-label-box {
   display: flex;
@@ -201,28 +205,35 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   z-index: 2000;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
+  padding: 1rem;
 }
 
 .address-manager-drawer {
   background: white;
   width: 100%;
   max-width: 600px;
-  border-radius: 20px 20px 0 0;
+  border-radius: 24px;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
   animation: slideDrawerUp 0.3s ease-out;
   padding: 1.5rem;
+  padding-bottom: 2rem;
 }
 
 @keyframes slideDrawerUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
 }
 
 .drawer-header {
@@ -343,4 +354,169 @@
 
 .add-address-full-btn:active {
   opacity: 0.8;
+}
+
+.drawer-footer-actions {
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.addr-phone {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Material Requests Premium Styling */
+.requests-list-container {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0.5rem 0.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-request-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border-radius: 18px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: slideInItem 0.4s ease-out backwards;
+}
+
+@keyframes slideInItem {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.profile-request-card:active {
+  transform: scale(0.98);
+}
+
+.req-img-wrapper {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f8fafc;
+  flex-shrink: 0;
+  border: 1px solid #f1f5f9;
+}
+
+.req-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.req-content-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.req-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.req-date-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.req-status-pill {
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.status-pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.status-cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-delivered {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-default {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.req-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 4px 0 8px 0;
+}
+
+.revoke-request-btn {
+  font-size: 0.8rem;
+  color: #ef4444;
+  background: #fef2f2;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  width: fit-content;
+  transition: all 0.2s;
+}
+
+.revoke-request-btn:hover {
+  background: #fee2e2;
+}
+
+.loading-requests-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  gap: 1rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .address-manager-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .address-manager-drawer {
+    border-radius: 24px 24px 0 0;
+    max-height: 92vh;
+    padding-bottom: 6rem;
+  }
 }

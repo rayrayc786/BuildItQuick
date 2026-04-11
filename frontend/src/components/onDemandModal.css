@@ -1,0 +1,249 @@
+.on-demand-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 5000;
+  backdrop-filter: blur(2px);
+  padding: env(safe-area-inset-top) 0 0 0;
+}
+
+@media (min-width: 600px) {
+  .on-demand-overlay {
+    align-items: center;
+    padding: 2rem;
+  }
+}
+
+.on-demand-content {
+  background: white;
+  width: 100%;
+  max-width: 480px;
+  border-radius: 24px 24px 0 0;
+  padding: 1.5rem;
+  animation: slideDrawerUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+}
+
+@media (min-width: 600px) {
+  .on-demand-content {
+    border-radius: 28px;
+    animation: modalAppear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+}
+
+@keyframes modalAppear {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slideDrawerUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.on-demand-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.header-info h3 {
+  font-size: 1.4rem;
+  font-weight: 900;
+  margin: 0;
+  color: #1e293b;
+}
+
+.header-info p {
+  margin: 4px 0 8px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.variant-tag {
+  background: #f1f5f9;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.on-demand-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.request-section label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.quantity-control-large {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 8px;
+}
+
+.quantity-control-large button {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: none;
+  background: white;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  cursor: pointer;
+}
+
+.qty-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #1e293b;
+  width: 60px;
+}
+
+.qty-input::-webkit-inner-spin-button,
+.qty-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.urgency-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.urgency-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  border-radius: 16px;
+  border: 2px solid #f1f5f9;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.urgency-btn.active {
+  border-color: #000;
+  background: #000;
+  color: white;
+}
+
+.opt-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1e293b;
+}
+
+.urgency-btn.active .opt-icon {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.urgency-btn span {
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.info-notice {
+  background: #fffbeb;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #fef3c7;
+}
+
+.info-notice p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #92400e;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.submit-request-btn {
+  background: #000;
+  color: white;
+  border: none;
+  width: 100%;
+  height: 64px;
+  border-radius: 18px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.submit-request-btn:active {
+  transform: scale(0.98);
+}
+
+.success-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.success-icon-wrapper {
+  margin-bottom: 1.5rem;
+  animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+.success-state h4 {
+  font-size: 1.5rem;
+  font-weight: 900;
+  margin: 0 0 12px;
+}
+
+.success-state p {
+  color: #64748b;
+  font-weight: 600;
+  max-width: 250px;
+}

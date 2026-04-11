@@ -6,6 +6,7 @@ import {
   Receipt, 
   ChevronDown,
   Plus,
+  Edit3,
   Clock,
   MapPin,
   Mic,
@@ -53,7 +54,7 @@ const Checkout: React.FC = () => {
   const [showPolicy, setShowPolicy] = useState(false);
   const [showSplitPopup, setShowSplitPopup] = useState(false);
   const [countdown, setCountdown] = useState(5);
-  const [, setPendingMode] = useState<'full' | 'partial' | null>(null);
+  const [editingAddrId, setEditingAddrId] = useState<string | null>(null);
 
   const [addressData, setAddressData] = useState({
      nickname: '',
@@ -74,10 +75,30 @@ const Checkout: React.FC = () => {
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+  const getLogisticsInfo = () => {
+    let maxCat: 'light' | 'medium' | 'heavy' = 'light';
+    cart.forEach(item => {
+      const itemCat = String(item.product.logisticsCategory || 'Light').toLowerCase();
+      if (itemCat === 'heavy') maxCat = 'heavy';
+      else if (itemCat === 'medium' && maxCat !== 'heavy') maxCat = 'medium';
+    });
+    
+    // Safety fallback to old deliveryCharge if new structure missing
+    const rates = settings.logisticsRates || {
+      light: { rate: settings.deliveryCharge || 50, mode: "Bike" },
+      medium: { rate: settings.deliveryCharge || 50, mode: "Bike" },
+      heavy: { rate: settings.deliveryCharge || 50, mode: "Bike" }
+    };
+    
+    return (rates as any)[maxCat] || { rate: 50, mode: "Bike" };
+  };
+
+  const logisticsInfo = getLogisticsInfo();
   const itemsTotal = totalAmount;
   const mrpTotal = cart.reduce((acc, item) => acc + (item.product.mrp || item.product.price) * item.quantity, 0);
   const savings = mrpTotal - itemsTotal;
-  const deliveryCharge = itemsTotal > settings.freeDeliveryThreshold ? 0 : settings.deliveryCharge;
+  const deliveryCharge = itemsTotal > settings.freeDeliveryThreshold ? 0 : logisticsInfo.rate;
+  const deliveryMode = logisticsInfo.mode;
   const handlingCharge = settings.platformFee;
   const grandTotal = itemsTotal + deliveryCharge + handlingCharge;
 
@@ -129,7 +150,6 @@ const Checkout: React.FC = () => {
 
     if (mode === 'partial') {
       setCountdown(5);
-      setPendingMode('partial');
       setShowSplitPopup(true);
     } else {
       startPaymentProcess('full');
@@ -147,7 +167,7 @@ const Checkout: React.FC = () => {
       return;
     }
 
-    const payAmount = mode === 'partial' ? Math.round(grandTotal / 2) : grandTotal;
+    const payAmount = mode === 'partial' ? Math.round(grandTotal * (settings.partPaymentPercentage / 100)) : grandTotal;
 
     try {
       const { data: orderData } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/orders/razorpay/create-order`, {
@@ -161,7 +181,7 @@ const Checkout: React.FC = () => {
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'MatAll',
-        description: mode === 'partial' ? 'Advance Payment (50%)' : 'Full Payment',
+        description: mode === 'partial' ? `Advance Payment (${settings.partPaymentPercentage}%)` : 'Full Payment',
         order_id: orderData.id,
         handler: async function (response: any) {
           try {
@@ -173,7 +193,7 @@ const Checkout: React.FC = () => {
              
              toast.success('Payment Verified!');
              await finalizeOrder(
-               mode === 'partial' ? 'Partial Payment (50%)' : 'Online Payment', 
+               mode === 'partial' ? `Partial Payment (${settings.partPaymentPercentage}%)` : 'Online Payment', 
                response.razorpay_payment_id,
                payAmount
              );
@@ -184,7 +204,7 @@ const Checkout: React.FC = () => {
         prefill: {
           name: user.fullName || 'Guest',
           email: user.email || 'customer@example.com',
-          contact: user.phoneNumber || '9999999999'
+          contact: user.phoneNumber || ''
         },
         theme: {
           color: '#FFEA00'
@@ -286,6 +306,32 @@ const Checkout: React.FC = () => {
                   <span className="addr-tag">{addr.type}</span>
                 </div>
                 <p className="addr-text-full">{addr.addressText}</p>
+                <div 
+                  className="addr-edit-action" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingAddrId(addr._id || null);
+                    // Parse address if possible or just use the text
+                    setAddressData({
+                      ...addressData,
+                      nickname: addr.name,
+                      house: '', 
+                      floor: '',
+                      tower: '',
+                      landmark: '',
+                      directions: '',
+                      recipientName: addr.recipientName || '',
+                      recipientPhone: addr.recipientPhone || '',
+                      pincode: (addr as any).pincode || '',
+                      city: (addr as any).city || '',
+                      state: (addr as any).state || '',
+                      country: (addr as any).country || 'India',
+                    });
+                    setStep('address-form');
+                  }}
+                >
+                  <Edit3 size={14} /> Edit Address
+                </div>
               </div>
               <div className="addr-radio">
                 <div className={`radio-outer ${selectedAddress === addr ? 'checked' : ''}`}>
@@ -334,7 +380,7 @@ const Checkout: React.FC = () => {
         <button className="prompt-btn btn-yellow" onClick={() => setStep('map-confirm')}>
           I am not at the delivery location
         </button>
-        <button className="prompt-btn btn-black" onClick={() => setStep('map-confirm')}>
+        <button className="prompt-btn btn-black" onClick={() => { handleUseCurrentLocation(); setStep('map-confirm'); }}>
           I am at the delivery location
         </button>
         
@@ -474,7 +520,7 @@ const Checkout: React.FC = () => {
         {isLoaded && mapCenter ? (
           <Map
             style={{ width: '100%', height: '100%' }}
-            defaultCenter={mapCenter}
+            center={mapCenter}
             defaultZoom={16}
             onCameraChanged={handleMapMoveEnd}
             mapId={import.meta.env.VITE_GOOGLE_MAP_ID}
@@ -648,6 +694,7 @@ const Checkout: React.FC = () => {
 
         <button className="btn-input-complete" onClick={() => {
            const finalAddr = {
+              _id: editingAddrId || undefined,
               name: addressData.nickname || 'Unknown',
               addressText: `${addressData.house ? addressData.house + ', ' : ''}${addressData.floor ? 'Floor ' + addressData.floor + ', ' : ''}${fullAddress}`,
               fullAddress: fullAddress,
@@ -667,7 +714,13 @@ const Checkout: React.FC = () => {
            // Persist address to user profile
            const token = localStorage.getItem('token');
            if (token) {
-              axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/profile/jobsites`, {
+              const apiPath = editingAddrId 
+                ? `${import.meta.env.VITE_API_BASE_URL}/api/auth/profile/jobsites/${editingAddrId}`
+                : `${import.meta.env.VITE_API_BASE_URL}/api/auth/profile/jobsites`;
+              
+              const method = editingAddrId ? 'put' : 'post';
+
+              axios[method](apiPath, {
                  name: finalAddr.name,
                  addressText: finalAddr.fullAddress,
                  pincode: finalAddr.pincode,
@@ -682,10 +735,13 @@ const Checkout: React.FC = () => {
                  },
                  contactPerson: finalAddr.recipientName,
                  contactPhone: finalAddr.recipientPhone
+              }).then(() => {
+                // Refresh local addresses to show updated one next time
+                setEditingAddrId(null);
               }).catch(err => console.error('Failed to save address to profile:', err));
            }
 
-           toast.success('Location confirmed!');
+           toast.success(editingAddrId ? 'Address updated!' : 'Location confirmed!');
         }}>
           Save & Continue
         </button>
@@ -721,8 +777,7 @@ const Checkout: React.FC = () => {
                 <p className="pod-label-top">Order for</p>
                 <div className="pod-main-text">
                   <strong>{user.fullName || 'Guest'}</strong>
-                  <span className="divider-dot">•</span>
-                  <span>{user.phoneNumber || '9999999999'}</span>
+                  <span>{user.phoneNumber || ''}</span>
                 </div>
               </div>
               <button className="pod-change-btn" onClick={() => setStep('address-list')}>Change</button>
@@ -768,7 +823,7 @@ const Checkout: React.FC = () => {
                   <span className="bill-val">₹{totalGst.toFixed(2)}</span>
                 </div>
                 <div className="bill-row-checkout">
-                  <span>Delivery Charge</span>
+                  <span>Delivery Charge (mode: {deliveryMode})</span>
                   <span className="bill-val">{deliveryCharge > 0 ? `₹${deliveryCharge.toFixed(2)}` : <span className="free">FREE</span>}</span>
                 </div>
                 <div className="bill-row-checkout">
@@ -789,44 +844,72 @@ const Checkout: React.FC = () => {
               </div>
             )}
 
-             <div className="desktop-order-actions mt-4">
+             <div className="desktop-order-actions mt-4" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {!settings.isServiceEnabled && (
                   <div className="offline-warning-card" style={{ background: '#fef2f2', border: '1px solid #fee2e2', padding: '15px', borderRadius: '12px', marginBottom: '15px', color: '#991b1b', fontSize: '0.9rem', fontWeight: '600', textAlign: 'center' }}>
                     ⚠️ {settings.offlineMessage}
                   </div>
                 )}
-               <button className={`final-place-btn-desktop ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('full')} disabled={loading || !settings.isServiceEnabled}>
-                  {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Pay online - Full 100% now • ₹${grandTotal.toFixed(2)}`}
-               </button>
-               <button className={`final-place-btn-desktop ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('partial')} disabled={loading || !settings.isServiceEnabled} style={{marginTop: '10px', background: !settings.isServiceEnabled ? '#f1f5f9' : '#DEDEDE', color: '#000'}}>
-                  {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Split Payment – 50% now and 50% on order delivery • ₹${Math.round(grandTotal / 2).toFixed(2)}`}
-               </button>
-            </div>
+                
+                {settings.isFullPaymentEnabled && (
+                  <button className={`final-place-btn-desktop ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('full')} disabled={loading || !settings.isServiceEnabled}>
+                      {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Pay online - Full 100% now • ₹${grandTotal.toFixed(2)}`}
+                  </button>
+                )}
+
+                {settings.isPartPaymentEnabled && (
+                  <button className={`final-place-btn-desktop ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('partial')} disabled={loading || !settings.isServiceEnabled} style={{ background: !settings.isServiceEnabled ? '#f1f5f9' : '#DEDEDE', color: '#000' }}>
+                      {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Split Payment – ${settings.partPaymentPercentage}% now and ${100 - settings.partPaymentPercentage}% on delivery • ₹${Math.round(grandTotal * (settings.partPaymentPercentage / 100)).toFixed(2)}`}
+                  </button>
+                )}
+
+                {settings.isCodEnabled && (
+                  <button className={`final-place-btn-desktop ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => finalizeOrder('Cash on Delivery', null, 0)} disabled={loading || !settings.isServiceEnabled} style={{ background: '#000', color: '#FFEA00' }}>
+                      {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Cash on Delivery (COD) – Pay ₹${grandTotal.toFixed(2)} at home`}
+                  </button>
+                )}
+             </div>
           </div>
         </div>
       </main>
 
       <footer className="checkout-footer-sticky-final">
         <div className="footer-action-buttons-mobile">
-          <button className={`checkout-place-btn full-pay ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('full')} disabled={loading || !settings.isServiceEnabled}>
-             <div className="btn-p-info">
-                <span className="p-val">₹{grandTotal.toFixed(2)}</span>
-                <span className="p-lbl">100% NOW</span>
-             </div>
-             <div className="btn-p-main">
-                {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Offline' : 'Pay Online'}
-             </div>
-          </button>
+          {settings.isFullPaymentEnabled && (
+            <button className={`checkout-place-btn full-pay ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('full')} disabled={loading || !settings.isServiceEnabled}>
+              <div className="btn-p-info">
+                  <span className="p-val">₹{grandTotal.toFixed(2)}</span>
+                  <span className="p-lbl">100% NOW</span>
+              </div>
+              <div className="btn-p-main">
+                  {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Offline' : 'Pay Online'}
+              </div>
+            </button>
+          )}
           
-          <button className={`checkout-place-btn partial-pay ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('partial')} disabled={loading || !settings.isServiceEnabled}>
-             <div className="btn-p-info">
-                <span className="p-val">₹{Math.round(grandTotal / 2).toFixed(2)}</span>
-                <span className="p-lbl">50% SPLIT</span>
-             </div>
-             <div className="btn-p-main">
-                {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Offline' : 'Split Payment'}
-             </div>
-          </button>
+          {settings.isPartPaymentEnabled && (
+            <button className={`checkout-place-btn partial-pay ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('partial')} disabled={loading || !settings.isServiceEnabled}>
+              <div className="btn-p-info">
+                  <span className="p-val">₹{Math.round(grandTotal * (settings.partPaymentPercentage / 100)).toFixed(2)}</span>
+                  <span className="p-lbl">{settings.partPaymentPercentage}% SPLIT</span>
+              </div>
+              <div className="btn-p-main">
+                  {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Offline' : 'Split Payment'}
+              </div>
+            </button>
+          )}
+
+          {settings.isCodEnabled && (
+            <button className={`checkout-place-btn cod-pay ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => finalizeOrder('Cash on Delivery', null, 0)} disabled={loading || !settings.isServiceEnabled} style={{ background: '#000', color: '#fff' }}>
+              <div className="btn-p-info">
+                  <span className="p-val">₹{grandTotal.toFixed(2)}</span>
+                  <span className="p-lbl">ON DELIVERY</span>
+              </div>
+              <div className="btn-p-main">
+                  {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Offline' : 'COD'}
+              </div>
+            </button>
+          )}
         </div>
       </footer>
 

@@ -182,16 +182,11 @@
   border: none;
   color: white;
   padding: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
 }
 
-.list-qty-val {
-  font-size: 0.85rem;
-  font-weight: 800;
-  margin: 0 4px;
+.list-request-btn:active {
+  transform: scale(0.95);
+  box-shadow: none;
 }
 
 /* Options/Variants text row */
@@ -261,16 +256,17 @@
 /* 4. Product Name */
 .list-product-name {
   font-size: 0.9rem;
-  line-height: 1.4;
+  line-height: 1.35;
   color: #1e293b;
   font-weight: 600;
   margin-bottom: 12px;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  height: 2.5rem;
+  height: auto;
+  min-height: 3.8rem; /* Sufficient for 3 lines, keeps alignment */
 }
 
 .brand-bold {
@@ -545,7 +541,7 @@
 @media (max-width: 640px) {
   .blinkit-list-card {
     border-radius: 16px;
-    padding: 10px;
+    padding: 5px;
     min-height: auto;
   }
 
@@ -560,4 +556,28 @@
   .list-product-name {
     font-size: 0.85rem;
   }
+}
+
+.list-delivery-time.on-demand {
+  background: #facc15;
+  color: #000;
+  border-color: #eab308;
+}
+
+.list-request-btn {
+  background: #000;
+  color: #fff;
+  border: 1px solid #000;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.list-request-btn:active {
+  transform: scale(0.95);
+  box-shadow: none;
 }
