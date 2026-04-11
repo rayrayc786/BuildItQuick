@@ -3,9 +3,11 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const UserRequest = require('../models/UserRequest');
 const User = require('../models/User');
+const MissingProduct = require('../models/MissingProduct');
 const auth = require('../middleware/auth');
 const fs = require('fs');
 const path = require('path');
+const emailService = require('../services/emailService');
 
 router.post('/', async (req, res) => {
   try {
@@ -150,6 +152,48 @@ router.patch('/:id/status', async (req, res) => {
     res.json({ success: true, request });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update status' });
+  }
+});
+
+router.post('/report-missing-product', async (req, res) => {
+  try {
+    const { searchTerm, userId, userName, userPhone, userEmail } = req.body;
+
+    if (!searchTerm) {
+      return res.status(400).json({ error: 'Search term is required.' });
+    }
+
+    // Save to database
+    const missingProd = new MissingProduct({
+      userId: userId || null,
+      userName: userName || 'Unknown User',
+      userPhone: userPhone || '',
+      userEmail: userEmail || '',
+      searchTerm
+    });
+
+    await missingProd.save();
+
+    // Notify admin via socket
+    const io = req.app.get('socketio');
+    if (io) {
+      io.of('/admin').emit('new-missing-product', missingProd);
+    }
+
+    // Send actual email alert
+    await emailService.sendMissingProductEmail({
+      searchTerm,
+      userName: userName || 'Unknown User',
+      userPhone: userPhone || 'N/A',
+      userEmail: userEmail || 'N/A'
+    });
+
+    console.log(`[EMAIL ALERT] Search for "${searchTerm}" returned no results. Alert sent to configured recipients.`);
+
+    res.status(201).json({ success: true, message: 'Report submitted' });
+  } catch (error) {
+    console.error('Error reporting missing product:', error);
+    res.status(500).json({ error: 'Failed to report missing product' });
   }
 });
 

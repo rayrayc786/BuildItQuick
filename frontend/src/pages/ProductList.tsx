@@ -74,6 +74,36 @@ const ProductList: React.FC = () => {
         const searchUrl = `${import.meta.env.VITE_API_BASE_URL}/api/products${location.search}`;
         const { data } = await axios.get(searchUrl);
         setProducts(data);
+        
+        // If it's a search query and results are empty, report to backend
+        if (searchTerm && data.length === 0) {
+          const userStr = localStorage.getItem('user');
+          let userData = {
+            searchTerm,
+            userName: 'Unknown User',
+            userId: null,
+            userPhone: '',
+            userEmail: ''
+          };
+
+          if (userStr) {
+            try {
+              const user = JSON.parse(userStr);
+              userData = {
+                searchTerm,
+                userName: user.fullName || user.name || 'Unknown User',
+                userId: user._id || user.id || null,
+                userPhone: user.phoneNumber || user.phone || '',
+                userEmail: user.email || ''
+              };
+            } catch (e) {
+              console.error('Failed to parse user for reporting:', e);
+            }
+          }
+
+          axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user-requests/report-missing-product`, userData)
+            .catch(err => console.error('Failed to report missing product:', err));
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -81,7 +111,7 @@ const ProductList: React.FC = () => {
       }
     };
     fetchProducts();
-  }, [location.search]);
+  }, [location.search, searchTerm]);
 
   // Scroll results area back to top when brand changes
   useEffect(() => {

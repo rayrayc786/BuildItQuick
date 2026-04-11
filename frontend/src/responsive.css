@@ -13,7 +13,7 @@
   width: 100%;
   max-width: var(--desktop-max-width);
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 10%; /* Increased from 1.5rem for more side whitespace */
   box-sizing: border-box;
 }
 
@@ -28,7 +28,7 @@
   .standard-navbar {
     max-width: var(--desktop-max-width);
     margin: 0 auto;
-    padding: 1rem 1.5rem;
+    padding: 1rem 4%; /* Unified padding with main content */
   }
 
   .nav-toggle {

@@ -23,6 +23,7 @@ import './profile.css';
 import SEO from '../components/SEO';
 import LocationModal from '../components/LocationModal';
 import { customerSocket } from '../socket';
+import { getFullImageUrl } from '../utils/imageUrl';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -300,7 +301,13 @@ const Profile: React.FC = () => {
                         return (
                           <div key={req._id} className="profile-request-card" style={{ animationDelay: `${index * 0.05}s` }}>
                             <div className="req-img-wrapper">
-                              <img src={req.imageUrl.startsWith('http') ? req.imageUrl : `${import.meta.env.VITE_API_BASE_URL}/api${req.imageUrl}`} alt="Material" />
+                              <img 
+                                src={getFullImageUrl(req.imageUrl)} 
+                                alt="Material" 
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=200';
+                                }}
+                              />
                             </div>
                             <div className="req-content-main">
                               <div className="req-card-top">
@@ -373,10 +380,10 @@ const Profile: React.FC = () => {
                           >
                             <div className="req-img-wrapper">
                               <img 
-                                src={req.productId?.imageUrl?.startsWith('http') ? req.productId.imageUrl : `${import.meta.env.VITE_API_BASE_URL}/api/admin/products/image/${req.productId?.imageUrl?.split('/').pop()}`} 
+                                src={getFullImageUrl(req.productId?.imageUrl)} 
                                 alt="Product" 
                                 onError={(e) => {
-                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=100';
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=200';
                                 }}
                               />
                             </div>
@@ -431,7 +438,7 @@ const Profile: React.FC = () => {
                     <div className="od-detail-hero" style={{ textAlign: 'center', marginBottom: '1.5rem', background: '#f8fafc', padding: '1.5rem', borderRadius: '20px' }}>
                       <div className="od-detail-img" style={{ width: '100px', height: '100px', margin: '0 auto 1rem', borderRadius: '15px', overflow: 'hidden', border: '2px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                         <img 
-                          src={selectedOnDemand.productId?.imageUrl?.startsWith('http') ? selectedOnDemand.productId.imageUrl : `${import.meta.env.VITE_API_BASE_URL}/api/admin/products/image/${selectedOnDemand.productId?.imageUrl?.split('/').pop()}`} 
+                          src={getFullImageUrl(selectedOnDemand.productId?.imageUrl)} 
                           alt="" 
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=200'; }}

@@ -258,9 +258,11 @@ const SKUManager: React.FC = () => {
 
   const handleTogglePopular = async (id: string) => {
     try {
+      const currentSku = skus.find(s => s._id === id);
+      const newState = !currentSku?.isPopular;
       await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/products/${id}/toggle-popular`);
       fetchSKUs();
-      toast.success('Product status updated');
+      toast.success(newState ? 'Marked as Popular Demand' : 'Removed from Popular Demand');
     } catch (err) {
       console.error(err);
       toast.error('Failed to update product status');
@@ -269,9 +271,11 @@ const SKUManager: React.FC = () => {
 
   const handleToggleActive = async (id: string) => {
     try {
+      const currentSku = skus.find(s => s._id === id);
+      const newState = !currentSku?.isActive;
       await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/products/${id}/toggle-active`);
       fetchSKUs();
-      toast.success('Visibility updated');
+      toast.success(newState ? 'Item is now visible on Store' : 'Item is now hidden from Store');
     } catch (err) {
       console.error(err);
       toast.error('Failed to update visibility');

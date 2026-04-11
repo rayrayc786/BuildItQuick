@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { CartProvider } from './contexts/CartContext';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
+import { LocationProvider } from './contexts/LocationContext';
 import { Toaster } from 'react-hot-toast';
 import { Menu, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -327,7 +328,9 @@ const App: React.FC = () => {
           <APIProvider 
             apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""} 
           >
-            <AppContent />
+            <LocationProvider>
+              <AppContent />
+            </LocationProvider>
           </APIProvider>
         </Router>
       </CartProvider>

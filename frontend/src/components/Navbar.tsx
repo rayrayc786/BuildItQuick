@@ -4,6 +4,7 @@ import { Search, ShoppingCart, User, LayoutDashboard, LogOut, ClipboardList, Men
 import axios from 'axios';
 
 import { useCart } from '../contexts/CartContext';
+import { useLocationContext } from '../contexts/LocationContext';
 import AISearch from './AISearch';
 import LocationSelector from './LocationSelector';
 import './navbar.css';
@@ -294,46 +295,17 @@ const Navbar: React.FC = () => {
 };
 
 const LocationSelectorInNav = ({ isBlinkitStyle }: { isBlinkitStyle?: boolean }) => {
-  const [address, setAddress] = useState<string>('Detecting...');
+  const { location, setLocation } = useLocationContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const isLoggedIn = !!localStorage.getItem('token');
 
-  useEffect(() => {
-    if (isLoggedIn && user.jobsites && user.jobsites.length > 0) {
-      setAddress(user.jobsites[0].addressText);
-    } else {
-      detectLocation();
-    }
-  }, [isLoggedIn]);
+  const displayAddress = location?.address || 'Detecting...';
 
-  const detectLocation = () => {
-    if (!navigator.geolocation) {
-      setAddress('Provide Location');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const { data } = await axios.get(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-          );
-          const addressData = data.address;
-          const conciseAddr = addressData.suburb || addressData.neighbourhood || addressData.city_district || addressData.town || addressData.city;
-          const fullAddress = conciseAddr ? `${conciseAddr}, ${addressData.city || addressData.state || ''}` : data.display_name;
-          setAddress(fullAddress);
-        } catch (err) {
-          console.error('Reverse geocoding failed:', err);
-          setAddress(`Location at ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-        }
-      },
-      (error) => {
-        console.error('Geolocation error:', error);
-        setAddress('Provide Location');
-      }
-    );
+  const handleSelectAddress = (addr: string, coords: [number, number]) => {
+    setLocation({
+      address: addr,
+      coords: { lat: coords[1], lng: coords[0] },
+      isServiceable: true // Assuming manually selected are serviceable or checked in modal
+    });
   };
 
   if (isBlinkitStyle) {
@@ -341,14 +313,14 @@ const LocationSelectorInNav = ({ isBlinkitStyle }: { isBlinkitStyle?: boolean })
       <div className="delivery-info-container" onClick={() => setIsModalOpen(true)}>
         <span className="delivery-title">Delivery in 60 minutes</span>
         <div className="delivery-address-wrapper">
-          <span className="delivery-address">{address}</span>
+          <span className="delivery-address">{displayAddress}</span>
           <ChevronDown size={14} />
         </div>
         <LocationModal 
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
-          onSelectAddress={(addr) => setAddress(addr)}
-          currentAddress={address}
+          onSelectAddress={handleSelectAddress}
+          currentAddress={displayAddress}
         />
       </div>
     );
@@ -357,13 +329,13 @@ const LocationSelectorInNav = ({ isBlinkitStyle }: { isBlinkitStyle?: boolean })
   return (
     <div className="location-nav-trigger" onClick={() => setIsModalOpen(true)}>
       <MapPin size={18} />
-      <span className="addr-nav-text">{address}</span>
+      <span className="addr-nav-text">{displayAddress}</span>
       <ChevronDown size={14} />
       <LocationModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        onSelectAddress={(addr) => setAddress(addr)}
-        currentAddress={address}
+        onSelectAddress={handleSelectAddress}
+        currentAddress={displayAddress}
       />
     </div>
   );

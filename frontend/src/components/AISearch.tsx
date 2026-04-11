@@ -17,6 +17,9 @@ const AISearch: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
+    (window as any).openAISearchModal = () => setShowModal(true);
+    (window as any).startVoiceSearchGlobal = startVoiceSearch;
+    
     const searchParams = new URLSearchParams(location.search);
     if (searchParams.get('openUpload') === 'true') {
       const token = localStorage.getItem('token');
@@ -25,6 +28,10 @@ const AISearch: React.FC = () => {
         navigate(location.pathname, { replace: true });
       }
     }
+    return () => {
+      delete (window as any).openAISearchModal;
+      delete (window as any).startVoiceSearchGlobal;
+    };
   }, [location, navigate]);
 
   const requireLogin = () => {
@@ -50,6 +57,8 @@ const AISearch: React.FC = () => {
     }
   };
 
+  const recognitionRef = useRef<any>(null);
+
   const startVoiceSearch = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -57,15 +66,61 @@ const AISearch: React.FC = () => {
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.onstart = () => setIsRecording(true);
-    recognition.onend = () => setIsRecording(false);
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      navigate(`/products?search=${transcript}`);
-    };
-    recognition.start();
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      
+      recognition.lang = 'en-IN';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+        toast.success("Listening...", { id: 'voice-search-toast' });
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+        recognitionRef.current = null;
+      };
+
+      recognition.onerror = (event: any) => {
+        setIsRecording(false);
+        recognitionRef.current = null;
+        console.error('Speech recognition error:', event.error);
+        
+        if (event.error === 'not-allowed') {
+          toast.error("Microphone access denied. Please enable it in settings.");
+        } else if (event.error === 'network') {
+          toast.error("Network error occurred. Please check your connection.");
+        } else if (event.error === 'no-speech') {
+          toast.error("No speech detected. Please try again.");
+        } else {
+          toast.error(`Error: ${event.error}`);
+        }
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        toast.success(`Searching for: ${transcript}`, { id: 'voice-search-toast' });
+        setTimeout(() => {
+          navigate(`/products?search=${encodeURIComponent(transcript)}`);
+        }, 500);
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error('Speech recognition exception:', err);
+      setIsRecording(false);
+      toast.error("Could not start voice search.");
+    }
   };
 
   const handleFileUploadClick = () => {
@@ -171,7 +226,7 @@ const AISearch: React.FC = () => {
 
   return (
     <>
-      <div className="ai-search-container">
+      <div className="ai-search-hidden-container" style={{ display: 'none' }}>
         <div className="ai-search-triggers">
           <button type="button" onClick={startVoiceSearch} className={`ai-trigger ${isRecording ? 'pulse' : ''}`}>
             <Mic size={18} />

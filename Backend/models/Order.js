@@ -27,7 +27,7 @@ const OrderSchema = new mongoose.Schema({
   
   supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier' },
   riderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  paymentMethod: { type: String, enum: ['upi', 'credit', 'bank', 'COD', 'Online Payment', 'Online Payment (Full)', 'Partial Payment (50%)'], default: 'COD' },
+  paymentMethod: { type: String, default: 'COD' },
   paymentReference: { type: String },
   proofImageUrl: { type: String },
 

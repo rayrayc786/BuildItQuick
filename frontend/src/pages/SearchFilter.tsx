@@ -62,6 +62,8 @@ const SearchFilter: React.FC = () => {
     }
   }, [searchTerm, baseSuggestions]);
 
+  const recognitionRef = React.useRef<any>(null);
+
   const handleVoiceSearch = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -69,23 +71,63 @@ const SearchFilter: React.FC = () => {
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-IN';
-    recognition.interimResults = false;
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+    }
 
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setSearchTerm(transcript);
-      // Automatically search after a short delay
-      setTimeout(() => {
-        navigate(`/products?search=${encodeURIComponent(transcript)}`);
-      }, 500);
-    };
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      
+      recognition.lang = 'en-IN';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
 
-    recognition.start();
+      recognition.onstart = () => {
+        setIsListening(true);
+        toast.success("Listening...", { id: 'voice-search-toast' });
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        recognitionRef.current = null;
+      };
+
+      recognition.onerror = (event: any) => {
+        setIsListening(false);
+        recognitionRef.current = null;
+        console.error('Speech recognition error:', event.error);
+        
+        if (event.error === 'not-allowed') {
+          toast.error("Microphone access denied. Please enable it in settings.");
+        } else if (event.error === 'network') {
+          toast.error("Network error occurred. Please check your connection.");
+        } else if (event.error === 'no-speech') {
+          toast.error("No speech detected. Please try again.");
+        } else {
+          toast.error(`Error: ${event.error}`);
+        }
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setSearchTerm(transcript);
+        toast.success(`Searching for: ${transcript}`, { id: 'voice-search-toast' });
+        
+        setTimeout(() => {
+          navigate(`/products?search=${encodeURIComponent(transcript)}`);
+        }, 800);
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error('Speech recognition exception:', err);
+      setIsListening(false);
+      toast.error("Could not start voice search.");
+    }
   };
 
   const handleSubmitRequirement = () => {

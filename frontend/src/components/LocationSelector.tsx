@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, User, Loader2, Mic } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import LocationModal from './LocationModal';
+import { useLocationContext } from '../contexts/LocationContext';
 import logoImg from '../assets/logo.jpeg';
 import './locationSelector.css';
 
@@ -11,58 +12,14 @@ interface LocationSelectorProps {
 }
 
 const LocationSelector: React.FC<LocationSelectorProps> = ({ searchNode }) => {
-  const [address, setAddress] = useState<string>('Detecting location...');
-  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const { location, setLocation, isLocating } = useLocationContext();
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isLoggedIn = !!localStorage.getItem('token');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (isLoggedIn && user.jobsites && user.jobsites.length > 0) {
-      setAddress(user.jobsites[0].addressText);
-    } else {
-      detectLocation();
-    }
-  }, [isLoggedIn]);
-
-  const detectLocation = () => {
-    if (!navigator.geolocation) {
-      setAddress('Geolocation not supported');
-      return;
-    }
-
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const { data } = await axios.get(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-          );
-          const addressData = data.address;
-          const conciseAddr = addressData.suburb || addressData.neighbourhood || addressData.city_district || addressData.town || addressData.city;
-          const fullAddress = conciseAddr ? `${conciseAddr}, ${addressData.city || addressData.state || ''}` : data.display_name;
-          setAddress(fullAddress);
-
-          if (isLoggedIn && (!user.jobsites || user.jobsites.length === 0)) {
-            updateBackendAddress(fullAddress, [longitude, latitude]);
-          }
-        } catch (err) {
-          console.error('Reverse geocoding failed:', err);
-          setAddress(`Location at ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-        } finally {
-          setIsLocating(false);
-        }
-      },
-      (error) => {
-        console.error('Geolocation error:', error);
-        setAddress('Location access denied');
-        setIsLocating(false);
-      }
-    );
-  };
+  const displayAddress = location?.address || 'Detecting location...';
 
   const updateBackendAddress = async (addrText: string, coords: [number, number]) => {
     try {
@@ -90,7 +47,11 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ searchNode }) => {
   };
 
   const handleSelectAddress = (addrText: string, coords: [number, number]) => {
-    setAddress(addrText);
+    setLocation({
+      address: addrText,
+      coords: { lat: coords[1], lng: coords[0] },
+      isServiceable: true
+    });
     if (isLoggedIn) {
       updateBackendAddress(addrText, coords);
     }
@@ -105,7 +66,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ searchNode }) => {
             <div className="location-wrapper">
               <span className="delivery-time-mobile">Delivery in 60 minutes</span>
               <div className="location-section-landing" onClick={() => setIsModalOpen(true)}>
-                <span className="addr-landing">{address}</span>
+                <span className="addr-landing">{displayAddress}</span>
                 {isLocating ? (
                   <Loader2 size={14} className="animate-spin" />
                 ) : (
@@ -134,7 +95,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ searchNode }) => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSelectAddress={handleSelectAddress}
-        currentAddress={address}
+        currentAddress={displayAddress}
       />
     </>
   );

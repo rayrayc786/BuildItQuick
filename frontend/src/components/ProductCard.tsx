@@ -292,7 +292,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                     </div>
                     
                     <div className="v-item-right">
-                      {vCartItem ? (
+                      {product.deliveryTime === 'On Demand' ? (
+                        <button 
+                          className="list-request-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedVariant(v);
+                            setShowVariantModal(false);
+                            setShowOnDemandModal(true);
+                          }}
+                        >
+                          REQUEST
+                        </button>
+                      ) : vCartItem ? (
                         <div className="list-qty-control" onClick={e => e.stopPropagation()}>
                           <button onClick={(e) => { e.stopPropagation(); addToCart(product, -1, v.name); }} aria-label="Decrease quantity"><Minus size={14} strokeWidth={3} /></button>
                           <span className="list-qty-val">{vCartItem.quantity}</span>

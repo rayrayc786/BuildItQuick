@@ -160,6 +160,10 @@ customerNamespace.on('connection', (socket) => {
   }
 });
 
+// Initialize Cron Jobs
+const { initCronJobs } = require('./services/cronService');
+initCronJobs();
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`MatAll server running on port ${PORT}`);

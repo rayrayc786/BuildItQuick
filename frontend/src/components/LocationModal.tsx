@@ -187,7 +187,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
       return true;
     } catch (err) {
       console.error('Serviceability check failed', err);
-      return true; 
+      return false; 
     }
   };
 
@@ -206,7 +206,6 @@ const LocationModal: React.FC<LocationModalProps> = ({
 
             if (!isServiceableResult) {
                 setSelectedAddress('');
-                setSearchTerm('Oops, we do not serve this area currently. We will be live soon and keep you informed');
                 setIsServiceable(false);
                 return;
             }
@@ -243,7 +242,6 @@ const LocationModal: React.FC<LocationModalProps> = ({
 
             if (!isServiceableResult) {
               setSelectedAddress('');
-              setSearchTerm('Oops, we do not serve this area currently. We will be live soon and keep you informed');
               setIsServiceable(false);
               return;
             }
@@ -280,7 +278,6 @@ const LocationModal: React.FC<LocationModalProps> = ({
               setIsLocating(false);
               setIsServiceable(false);
               setSelectedAddress('');
-              setSearchTerm('Oops, we do not serve this area currently. We will be live soon and keep you informed');
               return;
             }
 
@@ -308,8 +305,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
 
 
   const confirmLocation = () => {
-    onSelectAddress(selectedAddress || searchTerm, [mapCenter.lng, mapCenter.lat]);
-    onClose();
+    setShowAddForm(true);
   };
 
   const handleAddAddress = async (e: React.FormEvent) => {
@@ -396,7 +392,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
                     </div>
                     {isLoggedIn && user.jobsites?.length > 0 ? (
                       user.jobsites.map((site: any, idx: number) => (
-                        <div key={idx} className="saved-addr-mini" onClick={() => onSelectAddress(site.addressText, site.location.coordinates)}>
+                        <div key={idx} className="saved-addr-mini" onClick={() => { onSelectAddress(site.addressText, site.location.coordinates); onClose(); }}>
                           <div className="addr-icon-small">
                              {site.addressType === 'Home' ? <Home size={16}/> : <MapIcon size={16}/>}
                           </div>

@@ -1,5 +1,8 @@
 const Product = require('../models/Product');
+const User = require('../models/User');
+const MissingProduct = require('../models/MissingProduct');
 const SearchLog = require('../models/SearchLog');
+const emailService = require('../services/emailService');
 const fs = require('fs');
 const path = require('path');
 const Brand = require('../models/Brand');
@@ -250,8 +253,44 @@ exports.getAllProducts = async (req, res) => {
           ip: req.ip || req.connection.remoteAddress,
           user: req.user ? req.user.id || req.user._id : null
         });
+
+        // If no products found, send instant email notification
+        if (products.length === 0) {
+          let userData = { 
+            searchTerm: search, 
+            userName: 'Guest', 
+            userPhone: 'N/A', 
+            userEmail: 'N/A' 
+          };
+
+          if (req.user) {
+            const user = await User.findById(req.user.id || req.user._id).lean();
+            if (user) {
+              userData.userName = user.fullName || 'User';
+              userData.userPhone = user.phoneNumber || 'N/A';
+              userData.userEmail = user.email || 'N/A';
+            }
+          }
+
+          // Save to MissingProduct collection for admin dashboard
+          try {
+            await MissingProduct.create({
+              userId: req.user ? (req.user.id || req.user._id) : null,
+              userName: userData.userName,
+              userPhone: userData.userPhone,
+              userEmail: userData.userEmail,
+              searchTerm: search
+            });
+          } catch (missingErr) {
+            console.error('Error saving missing product record:', missingErr);
+          }
+
+          // Send Email
+          await emailService.sendMissingProductEmail(userData);
+          console.log(`Instant Alert: Search for "${search}" returned 0 results. Email sent to configured recipients.`);
+        }
       } catch (logErr) {
-        console.error('Error logging search:', logErr);
+        console.error('Error logging search or sending alert:', logErr);
       }
     }
     const hydrated = products.map(p => {

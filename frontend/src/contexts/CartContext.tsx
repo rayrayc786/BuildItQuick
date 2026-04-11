@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 interface Product {
@@ -67,9 +67,33 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const savedCart = localStorage.getItem('cart');
+      return savedCart ? JSON.parse(savedCart) : [];
+    } catch (error) {
+      console.error('Failed to load cart from localStorage:', error);
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('cart', JSON.stringify(cart));
+    } catch (error) {
+      console.error('Failed to save cart to localStorage:', error);
+    }
+  }, [cart]);
 
   const addToCart = (product: Product, quantity: number = 1, variantName?: string) => {
+    if (product.deliveryTime === 'On Demand' && quantity > 0) {
+      toast.error('This product is only available on demand. Please use Request on Demand.', {
+        id: 'on-demand-error',
+        duration: 3000
+      });
+      return;
+    }
+
     if (quantity > 0) {
       toast.success(`${product.name} added to cart`, {
         id: 'cart-toast',
@@ -79,16 +103,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setCart(prev => {
       const existing = prev.find(item => 
-        item.product._id === product._id && item.selectedVariant === variantName
+        String(item.product._id) === String(product._id) && item.selectedVariant === variantName
       );
       
       if (existing) {
         const newQty = existing.quantity + quantity;
         if (newQty <= 0) {
-          return prev.filter(item => !(item.product._id === product._id && item.selectedVariant === variantName));
+          return prev.filter(item => !(String(item.product._id) === String(product._id) && item.selectedVariant === variantName));
         }
         return prev.map(item => 
-          (item.product._id === product._id && item.selectedVariant === variantName)
+          (String(item.product._id) === String(product._id) && item.selectedVariant === variantName)
             ? { ...item, quantity: newQty } 
             : item
         );
@@ -98,7 +122,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const removeFromCart = (productId: string, variantName?: string) => {
-    setCart(prev => prev.filter(item => !(item.product._id === productId && item.selectedVariant === variantName)));
+    setCart(prev => prev.filter(item => !(String(item.product._id) === String(productId) && item.selectedVariant === variantName)));
   };
 
   const clearCart = () => setCart([]);

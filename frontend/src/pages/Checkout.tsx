@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { useLocationContext } from '../contexts/LocationContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Map, AdvancedMarker, useApiIsLoaded, useMapsLibrary } from '@vis.gl/react-google-maps';
@@ -36,6 +37,7 @@ const Checkout: React.FC = () => {
   
   const { cart, clearCart, totalAmount, totalGst } = useCart();
   const { settings } = useSettings();
+  const { location: globalLocation, setLocation: setGlobalLocation } = useLocationContext();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'checkout' | 'address-list' | 'location-ask' | 'map-confirm' | 'address-form'>('checkout');
@@ -123,7 +125,24 @@ const Checkout: React.FC = () => {
 
     if (user.jobsites) {
       setAddresses(user.jobsites);
-      if (user.jobsites.length > 0) setSelectedAddress(user.jobsites[0]);
+      
+      // NEW LOGIC: Try to find a jobsite that matches the global selection
+      if (globalLocation) {
+        const matchingJobsite = user.jobsites.find((s: any) => s.addressText === globalLocation.address);
+        if (matchingJobsite) {
+          setSelectedAddress(matchingJobsite);
+        } else {
+          // Fallback to global location even if not saved as jobsite (as a temporary address)
+          setSelectedAddress({
+            name: 'Selected Location',
+            addressText: globalLocation.address,
+            type: 'Other',
+            location: { type: 'Point', coordinates: [globalLocation.coords.lng, globalLocation.coords.lat] }
+          } as any);
+        }
+      } else if (user.jobsites.length > 0) {
+        setSelectedAddress(user.jobsites[0]);
+      }
     }
   }, []);
 
@@ -142,6 +161,12 @@ const Checkout: React.FC = () => {
       toast.error(settings.offlineMessage || "Service is currently offline.");
       return;
     }
+    const hasOnDemand = cart.some(item => item.product.deliveryTime === 'On Demand');
+    if (hasOnDemand) {
+      toast.error('Some items in your cart are only available on demand. Please remove them to proceed with online buying.');
+      return;
+    }
+
     if (!selectedAddress) {
       toast.error('Please select a delivery address');
       setStep('address-list');
@@ -191,9 +216,11 @@ const Checkout: React.FC = () => {
                razorpay_signature: response.razorpay_signature
              }, { headers: { Authorization: `Bearer ${token}` } });
              
-             toast.success('Payment Verified!');
+              toast.success('Payment Verified!');
+             const finalPaymentMethod = mode === 'partial' ? `Partial Payment (${settings.partPaymentPercentage}%)` : 'Online Payment';
+             
              await finalizeOrder(
-               mode === 'partial' ? `Partial Payment (${settings.partPaymentPercentage}%)` : 'Online Payment', 
+               finalPaymentMethod, 
                response.razorpay_payment_id,
                payAmount
              );
@@ -230,6 +257,18 @@ const Checkout: React.FC = () => {
   };
 
   const finalizeOrder = async (paymentMethod: string, paymentRef: string | null, paidAmount: number) => {
+    const hasOnDemand = cart.some(item => item.product.deliveryTime === 'On Demand');
+    if (hasOnDemand) {
+      toast.error('Some items in your cart are only available on demand. Please remove them to proceed.');
+      return;
+    }
+
+    if (!selectedAddress) {
+      toast.error('Please select a delivery address first');
+      setStep('address-list');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       const orderData = {
@@ -238,15 +277,26 @@ const Checkout: React.FC = () => {
           quantity: item.quantity,
           price: item.product.variants?.find((v: any) => v.name === item.selectedVariant)?.pricing?.salePrice || item.product.salePrice || item.product.price || 0,
           taxRate: item.product.variants?.find((v: any) => v.name === item.selectedVariant)?.pricing?.gst || (item.product as any).gst || (item.product.variants?.[0]?.pricing?.gst) || 18,
-          selectedVariant: item.selectedVariant
+          selectedVariant: item.selectedVariant,
+          // Ensuring consistency with required fields
+          totalWeight: 0,
+          totalVolume: 0
         })),
         totalAmount: grandTotal,
         totalTaxAmount: totalGst,
         totalBaseAmount: totalAmount - totalGst,
         paidAmount: paidAmount,
-        shippingAddress: selectedAddress?.addressText || 'Unknown',
         paymentMethod: paymentMethod,
-        paymentReference: paymentRef
+        paymentReference: paymentRef,
+        deliveryAddress: {
+          name: selectedAddress.name || 'Site',
+          fullAddress: selectedAddress.addressText || 'N/A',
+          pincode: (selectedAddress as any).pincode || '',
+          city: (selectedAddress as any).city || '',
+          state: (selectedAddress as any).state || '',
+          country: (selectedAddress as any).country || 'India',
+          location: (selectedAddress as any).location || { type: 'Point', coordinates: [0, 0] }
+        }
       };
 
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/orders`, orderData, {
@@ -298,7 +348,15 @@ const Checkout: React.FC = () => {
             <div 
               key={idx} 
               className={`address-item-card ${selectedAddress === addr ? 'selected' : ''}`}
-              onClick={() => { setSelectedAddress(addr); setStep('checkout'); }}
+              onClick={() => { 
+                setSelectedAddress(addr); 
+                setGlobalLocation({
+                  address: addr.addressText,
+                  coords: (addr as any).location?.coordinates ? { lat: (addr as any).location.coordinates[1], lng: (addr as any).location.coordinates[0] } : { lat: 0, lng: 0 },
+                  isServiceable: true
+                });
+                setStep('checkout'); 
+              }}
             >
               <div className="addr-main">
                 <div className="addr-title-row">
@@ -415,7 +473,7 @@ const Checkout: React.FC = () => {
       return true;
     } catch (err) {
       console.error('Serviceability check failed', err);
-      return true; 
+      return false; 
     }
   };
 
@@ -868,7 +926,7 @@ const Checkout: React.FC = () => {
                 )}
 
                 {settings.isCodEnabled && (
-                  <button className={`final-place-btn-desktop ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => finalizeOrder('Cash on Delivery', null, 0)} disabled={loading || !settings.isServiceEnabled} style={{ background: '#000', color: '#FFEA00' }}>
+                  <button className={`final-place-btn-desktop ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => finalizeOrder('COD', null, 0)} disabled={loading || !settings.isServiceEnabled} style={{ background: '#000', color: '#FFEA00' }}>
                       {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Cash on Delivery (COD) – Pay ₹${grandTotal.toFixed(2)} at home`}
                   </button>
                 )}
@@ -904,7 +962,7 @@ const Checkout: React.FC = () => {
           )}
 
           {settings.isCodEnabled && (
-            <button className={`checkout-place-btn cod-pay ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => finalizeOrder('Cash on Delivery', null, 0)} disabled={loading || !settings.isServiceEnabled} style={{ background: '#000', color: '#fff' }}>
+            <button className={`checkout-place-btn cod-pay ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => finalizeOrder('COD', null, 0)} disabled={loading || !settings.isServiceEnabled} style={{ background: '#000', color: '#fff' }}>
               <div className="btn-p-info">
                   <span className="p-val">₹{grandTotal.toFixed(2)}</span>
                   <span className="p-lbl">ON DELIVERY</span>
