@@ -95,6 +95,8 @@ const LocationModal: React.FC<LocationModalProps> = ({
             setSelectedAddress(initialData.addressText || '');
         } else {
             // New Mode - RESET
+            // We only initialize from globalLocation if we haven't already started a selection
+            // or if we are just opening the modal.
             setStep(1);
             setShowAddForm(false);
             setNewAddrName('');
@@ -121,7 +123,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
         document.body.style.overflow = 'unset';
     }
     return () => { document.body.style.overflow = 'unset'; };
-  }, [isOpen, initialData, currentAddress, globalLocation]);
+  }, [isOpen, initialData, currentAddress]); // Removed globalLocation to stop background resets
 
   useEffect(() => {
     if (!searchTerm) {
@@ -210,7 +212,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
 
     try {
       const query = pincode || city;
-      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/check-serviceability/${encodeURIComponent(query)}`);
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/location/check-serviceability/${encodeURIComponent(query)}`);
       
       if (!data.serviceable) {
         toast.error(`Oops, we do not serve this area currently. We will be live soon and keep you informed`, {
@@ -222,6 +224,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
       return true;
     } catch (err) {
       console.error('Serviceability check failed', err);
+      toast.error("Area check currently unavailable. Please try again.");
       return false; 
     }
   };
@@ -316,53 +319,83 @@ const LocationModal: React.FC<LocationModalProps> = ({
       toast.error('Geolocation not supported');
       return;
     }
+    
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const { latitude, longitude } = pos.coords;
-      setMapCenter({ lat: latitude, lng: longitude });
-      
-      const match = findMatchingSavedAddress(latitude, longitude);
-      if (match) {
-        setIsServiceable(true);
-        setSelectedAddress(match.addressText);
-        setSearchTerm(match.addressText);
-        setIsLocating(false);
-        onSelectAddress(match.addressText, [longitude, latitude]);
-        onClose();
-        return;
-      }
-
-      if (geocodingLibrary) {
-        const geocoder = new geocodingLibrary.Geocoder();
-        geocoder.geocode({ location: { lat: latitude, lng: longitude } }, async (results, status) => {
-          if (status === "OK" && results?.[0]) {
-            const isServiceableResult = await checkPincode(results);
-            if (!isServiceableResult) {
-              setIsLocating(false);
-              setIsServiceable(false);
-              setSelectedAddress('');
-              return;
-            }
-
-            const address = results[0].formatted_address;
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const newCenter = { lat: latitude, lng: longitude };
+          setMapCenter(newCenter);
+          
+          const match = findMatchingSavedAddress(latitude, longitude);
+          
+          if (match) {
             setIsServiceable(true);
-            setSelectedAddress(address);
-            setSearchTerm(address);
+            setSelectedAddress(match.addressText);
+            setSearchTerm(match.addressText);
             setIsLocating(false);
             
-            if (step === 1) {
-              setShowAddForm(true);
-            }
-          } else {
-            toast.error('Failed to get address');
-            setIsLocating(false);
+            // Give feedback that we found a match
+            toast.success(`Welcome back! Using your saved address: ${match.name}`, { icon: '📍' });
+            
+            // Instead of auto-closing, we select it and let the user see it on map
+            // If they want to close, they can click "Confirm Location" which will appear now
+            // or we can auto-close after a short delay for better UX
+            setTimeout(() => {
+                onSelectAddress(match.addressText, match.location.coordinates);
+                onClose();
+            }, 1000);
+            return;
           }
-        });
-      }
-    }, () => {
-      setIsLocating(false);
-      toast.error('Location access denied');
-    });
+
+          if (geocodingLibrary) {
+            const geocoder = new geocodingLibrary.Geocoder();
+            geocoder.geocode({ location: newCenter }, async (results, status) => {
+              if (status === "OK" && results?.[0]) {
+                const isServiceableResult = await checkPincode(results);
+                if (!isServiceableResult) {
+                  setIsLocating(false);
+                  setIsServiceable(false);
+                  setSelectedAddress('');
+                  return;
+                }
+
+                const address = results[0].formatted_address;
+                setIsServiceable(true);
+                setSelectedAddress(address);
+                setSearchTerm(address);
+                setIsLocating(false);
+                
+                // Show the address form so user can add details
+                setShowAddForm(true);
+              } else {
+                toast.error('Failed to get address from GPS');
+                setIsLocating(false);
+              }
+            });
+          } else {
+            // Fallback if geocoding library isn't ready
+            setIsLocating(false);
+            toast.error('Location service not ready. Please try again.');
+          }
+        } catch (err) {
+          console.error('Location detection error:', err);
+          setIsLocating(false);
+          toast.error('Error detecting location');
+        }
+      }, 
+      (err) => {
+        setIsLocating(false);
+        let msg = 'Could not detect location';
+        if (err.code === 1) msg = 'Location access denied. Please enable it in browser settings.';
+        else if (err.code === 2) msg = 'Location signal unavailable. Try moving to a better spot.';
+        else if (err.code === 3) msg = 'Location detection timed out. Please try again.';
+        
+        toast.error(msg, { duration: 5000 });
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
   };
 
 

@@ -6,13 +6,14 @@ export interface Location {
   address: string;
   coords: { lat: number; lng: number };
   isServiceable: boolean;
-  matchingJobsite?: any; // To store a linked saved address
+  matchingJobsite?: any;
+  isManual?: boolean; // Signal that user specifically chose this
 }
 
 interface LocationContextType {
   location: Location | null;
-  setLocation: (loc: Location) => void;
-  detectLocation: () => Promise<void>;
+  setLocation: (loc: Location, isManual?: boolean) => void;
+  detectLocation: (force?: boolean) => Promise<void>;
   isLocating: boolean;
   error: string | null;
 }
@@ -50,32 +51,23 @@ const findMatchingAddress = (lat: number, lng: number) => {
 };
 
 export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [location, setLocationState] = useState<Location | null>(() => {
-    const saved = localStorage.getItem('user_location');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [location, setLocationState] = useState<Location | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const geocodingLibrary = useMapsLibrary('geocoding');
 
-  const setLocation = (loc: Location) => {
-    // Before setting, check if it matches a saved address
-    const match = findMatchingAddress(loc.coords.lat, loc.coords.lng);
-    const finalLoc = { ...loc, matchingJobsite: match || loc.matchingJobsite };
-    
+  const setLocation = (loc: Location, isManual = false) => {
+    // If setting manually, we protect it from auto-background resets
+    const finalLoc = { ...loc, isManual };
     setLocationState(finalLoc);
-    localStorage.setItem('user_location', JSON.stringify(finalLoc));
   };
 
   const checkServiceability = async (pincode: string, city: string) => {
     try {
       const query = pincode || city;
       if (!query) return false;
-
-      const { data } = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/api/admin/check-serviceability/${encodeURIComponent(query)}`
-      );
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/location/check-serviceability/${encodeURIComponent(query)}`);
       return !!data.serviceable;
     } catch (err) {
       console.error('Serviceability check failed:', err);
@@ -85,21 +77,17 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const getAddressFromCoords = useCallback(async (lat: number, lng: number) => {
     if (!geocodingLibrary) return null;
-    
     const geocoder = new geocodingLibrary.Geocoder();
     try {
       const response = await geocoder.geocode({ location: { lat, lng } });
       if (response.results[0]) {
         const result = response.results[0];
         const address = result.formatted_address;
-        
         const pincodeComp = result.address_components.find((c: any) => c.types.includes('postal_code'));
         const cityComp = result.address_components.find((c: any) => c.types.includes('locality')) || 
                         result.address_components.find((c: any) => c.types.includes('administrative_area_level_2'));
-        
         const pincode = pincodeComp ? pincodeComp.long_name : '';
         const city = cityComp ? cityComp.long_name : '';
-
         const isServiceable = await checkServiceability(pincode, city);
         return { address, isServiceable };
       }
@@ -109,93 +97,101 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return null;
   }, [geocodingLibrary]);
 
-  const detectLocation = useCallback(async () => {
+  const detectLocation = useCallback(async (force = false) => {
     if (!navigator.geolocation) {
       setError('Geolocation not supported');
       return;
     }
 
     setIsLocating(true);
-    return new Promise<void>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          const result = await getAddressFromCoords(latitude, longitude);
-          if (result) {
-            const match = findMatchingAddress(latitude, longitude);
-            setLocation({
-              address: match ? match.addressText : result.address,
-              coords: { lat: latitude, lng: longitude },
-              isServiceable: result.isServiceable,
-              matchingJobsite: match
-            });
-          }
-          setIsLocating(false);
-          resolve();
-        },
-        (err) => {
-          setError(err.message);
-          setIsLocating(false);
-          reject(err);
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-      );
-    });
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const match = findMatchingAddress(latitude, longitude);
+        const result = await getAddressFromCoords(latitude, longitude);
+        
+        if (result) {
+          const finalLoc = {
+            address: match ? match.addressText : result.address,
+            coords: { lat: latitude, lng: longitude },
+            isServiceable: result.isServiceable,
+            matchingJobsite: match,
+            isManual: force // If forced, mark as manual
+          };
+          setLocationState(finalLoc);
+        }
+        setIsLocating(false);
+      },
+      (err) => {
+        setError(err.message);
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   }, [getAddressFromCoords]);
 
+  // Handle Startup Detection
+  useEffect(() => {
+    if (geocodingLibrary && !location) {
+      detectLocation();
+    }
+  }, [geocodingLibrary, detectLocation, location]);
+
+  // Handle Background Tracking
   useEffect(() => {
     if (!navigator.geolocation) return;
 
-    // Use a reference check or just local variable to avoid dependency loop
     const watchId = navigator.geolocation.watchPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        
-        // Find if this current spot in the background matches any saved jobsite
         const match = findMatchingAddress(latitude, longitude);
-        
+
         setLocationState((currentLoc: Location | null) => {
-            // Priority 1: If we found a saved jobsite match in the background
-            if (match) {
-                // Only update if it's different from what's currently set
-                if (!currentLoc || 
-                    currentLoc.matchingJobsite?._id !== match._id || 
-                    Math.abs(currentLoc.coords.lat - latitude) > 0.001) {
-                    
-                    const finalLoc = {
-                        address: match.addressText,
-                        coords: { lat: latitude, lng: longitude },
-                        isServiceable: true,
-                        matchingJobsite: match
-                    };
-                    localStorage.setItem('user_location', JSON.stringify(finalLoc));
-                    return finalLoc;
+            // STOP auto-switching if user manually picked an address
+            if (currentLoc?.isManual) return currentLoc;
+
+            if (currentLoc) {
+                const distToCurrent = calculateDistance(latitude, longitude, currentLoc.coords.lat, currentLoc.coords.lng);
+                
+                // If we match a jobsite now, update if it's different from current
+                if (match) {
+                    if (currentLoc.matchingJobsite?._id !== match._id) {
+                        const finalLoc = {
+                            address: match.addressText,
+                            coords: { lat: latitude, lng: longitude },
+                            isServiceable: true,
+                            matchingJobsite: match,
+                            isManual: false
+                        };
+                        return finalLoc;
+                    }
+                } 
+                
+                // If we moved > 200m and aren't at a jobsite, re-detect generic address
+                if (distToCurrent > 200 && !match) {
+                    // Trigger async geocode but don't block state return
+                    getAddressFromCoords(latitude, longitude).then(res => {
+                        if (res) {
+                            setLocationState({
+                                address: res.address,
+                                coords: { lat: latitude, lng: longitude },
+                                isServiceable: res.isServiceable,
+                                matchingJobsite: null,
+                                isManual: false
+                            });
+                        }
+                    });
                 }
-                return currentLoc;
             }
-
-            // Priority 2: If we don't have a match and NO manual location is set yet, detect generic address
-            if (!currentLoc) {
-                // We'll let the user manually trigger this or handle in a separate effect
-                // To avoid flickering, background watch should mostly look for saved matches
-                return currentLoc;
-            }
-
             return currentLoc;
         });
       },
-      (err) => console.warn('WatchPosition error:', err),
-      { enableHighAccuracy: true, distanceFilter: 10 } as any 
+      null,
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
-  }, []); // Remove getAddressFromCoords and location to stop the loop
-
-  useEffect(() => {
-    if (!location && geocodingLibrary) {
-      detectLocation();
-    }
-  }, [location, geocodingLibrary, detectLocation]);
+  }, [location, getAddressFromCoords]);
 
   return (
     <LocationContext.Provider value={{ location, setLocation, detectLocation, isLocating, error }}>

@@ -55,7 +55,8 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ searchNode }) => {
       address: addrText,
       coords: { lat: coords[1], lng: coords[0] },
       isServiceable: true
-    });
+    }, true); // Mark as manual selection
+    
     if (isLoggedIn) {
       updateBackendAddress(addrText, coords);
     }

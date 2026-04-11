@@ -376,60 +376,65 @@ const Checkout: React.FC = () => {
             <Plus size={18} /> Add New Address
           </button>
           
-          {addresses.map((addr, idx) => (
-            <div 
-              key={idx} 
-              className={`address-item-card ${selectedAddress === addr ? 'selected' : ''}`}
-              onClick={() => { 
-                setSelectedAddress(addr); 
-                setGlobalLocation({
-                  address: addr.addressText,
-                  coords: (addr as any).location?.coordinates ? { lat: (addr as any).location.coordinates[1], lng: (addr as any).location.coordinates[0] } : { lat: 0, lng: 0 },
-                  isServiceable: true
-                });
-                setStep('checkout'); 
-              }}
-            >
-              <div className="addr-main">
-                <div className="addr-title-row">
-                  <strong>{addr.name}</strong>
-                  <span className="addr-tag">{addr.type}</span>
+          {addresses.map((addr, idx) => {
+            const isSelected = selectedAddress?._id === addr._id || (selectedAddress?.addressText === addr.addressText && !!addr.addressText);
+            
+            return (
+              <div 
+                key={addr._id || idx} 
+                className={`address-item-card ${isSelected ? 'selected' : ''}`}
+                onClick={() => { 
+                  setSelectedAddress(addr); 
+                  setGlobalLocation({
+                    address: addr.addressText,
+                    coords: (addr as any).location?.coordinates ? { lat: (addr as any).location.coordinates[1], lng: (addr as any).location.coordinates[0] } : { lat: 0, lng: 0 },
+                    isServiceable: true,
+                    matchingJobsite: addr // IMPORTANT: Link the jobsite object
+                  }, true); // Mark as manual selection
+                  setStep('checkout'); 
+                }}
+              >
+                <div className="addr-main">
+                  <div className="addr-title-row">
+                    <strong>{addr.name}</strong>
+                    <span className="addr-tag">{addr.type}</span>
+                  </div>
+                  <p className="addr-text-full">{addr.addressText}</p>
+                  <div 
+                    className="addr-edit-action" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingAddrId(addr._id || null);
+                      // Form data populating logic...
+                      setAddressData({
+                        ...addressData,
+                        nickname: addr.name,
+                        house: '', 
+                        floor: '',
+                        tower: '',
+                        landmark: '',
+                        directions: '',
+                        recipientName: addr.recipientName || '',
+                        recipientPhone: addr.recipientPhone || '',
+                        pincode: (addr as any).pincode || '',
+                        city: (addr as any).city || '',
+                        state: (addr as any).state || '',
+                        country: (addr as any).country || 'India',
+                      });
+                      setStep('address-form');
+                    }}
+                  >
+                    <Edit3 size={14} /> Edit Address
+                  </div>
                 </div>
-                <p className="addr-text-full">{addr.addressText}</p>
-                <div 
-                  className="addr-edit-action" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingAddrId(addr._id || null);
-                    // Parse address if possible or just use the text
-                    setAddressData({
-                      ...addressData,
-                      nickname: addr.name,
-                      house: '', 
-                      floor: '',
-                      tower: '',
-                      landmark: '',
-                      directions: '',
-                      recipientName: addr.recipientName || '',
-                      recipientPhone: addr.recipientPhone || '',
-                      pincode: (addr as any).pincode || '',
-                      city: (addr as any).city || '',
-                      state: (addr as any).state || '',
-                      country: (addr as any).country || 'India',
-                    });
-                    setStep('address-form');
-                  }}
-                >
-                  <Edit3 size={14} /> Edit Address
+                <div className="addr-radio">
+                  <div className={`radio-outer ${isSelected ? 'checked' : ''}`}>
+                    <div className="radio-inner"></div>
+                  </div>
                 </div>
               </div>
-              <div className="addr-radio">
-                <div className={`radio-outer ${selectedAddress === addr ? 'checked' : ''}`}>
-                  <div className="radio-inner"></div>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {/* {cart.map((item, idx) => (
             <div 
               key={idx} 
@@ -494,7 +499,7 @@ const Checkout: React.FC = () => {
 
     try {
       const query = pincode || city;
-      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/check-serviceability/${encodeURIComponent(query)}`);
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/location/check-serviceability/${encodeURIComponent(query)}`);
       if (!data.serviceable) {
         toast.error(`Oops, we do not serve this area currently. We will be live soon and keep you informed`, {
           duration: 4000,
@@ -505,6 +510,7 @@ const Checkout: React.FC = () => {
       return true;
     } catch (err) {
       console.error('Serviceability check failed', err);
+      toast.error("Locality check currently unavailable.");
       return false; 
     }
   };

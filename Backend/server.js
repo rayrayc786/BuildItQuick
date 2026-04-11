@@ -117,6 +117,7 @@ const supplierRoutes = require('./routes/supplierRoutes');
 const userRequestRoutes = require('./routes/userRequestRoutes');
 const onDemandRoutes = require('./routes/onDemandRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const locationRoutes = require('./routes/locationRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -126,6 +127,7 @@ app.use('/api/supplier', supplierRoutes);
 app.use('/api/user-requests', userRequestRoutes);
 app.use('/api/on-demand', onDemandRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/location', locationRoutes);
 
 app.set('socketio', io);
 

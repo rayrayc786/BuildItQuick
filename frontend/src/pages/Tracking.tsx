@@ -366,7 +366,7 @@ const Tracking: React.FC = () => {
               <ChevronRight size={18} />
            </div>
 
-           <div 
+           {/* <div 
              className={`action-btn-row-prd ${activeAction === 'feedback' ? 'active' : ''}`}
              onClick={() => setActiveTab(activeAction === 'feedback' ? 'none' : 'feedback')}
            >
@@ -375,7 +375,7 @@ const Tracking: React.FC = () => {
                  <span>Help us improve</span>
               </div>
               <ChevronDown size={18} className={activeAction === 'feedback' ? 'rotate-180 transition-transform' : 'transition-transform'} />
-           </div>
+           </div> */}
         </div>
       </main>
     </div>

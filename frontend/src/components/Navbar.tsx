@@ -305,7 +305,7 @@ const LocationSelectorInNav = ({ isBlinkitStyle }: { isBlinkitStyle?: boolean })
       address: addr,
       coords: { lat: coords[1], lng: coords[0] },
       isServiceable: true // Assuming manually selected are serviceable or checked in modal
-    });
+    }, true); // Mark as manual selection
   };
 
   if (isBlinkitStyle) {
