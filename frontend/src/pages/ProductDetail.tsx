@@ -16,7 +16,6 @@ import {
   Clock
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
-import { useLocationContext } from '../contexts/LocationContext';
 import ProductCard from '../components/ProductCard';
 import './product-detail.css';
 import toast from 'react-hot-toast';
@@ -28,7 +27,6 @@ const ProductDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { cart, addToCart } = useCart();
-  const { location } = useLocationContext();
   
   const [product, setProduct] = useState<any>(null);
   const [similarProducts, setSimilarProducts] = useState<any[]>([]);
@@ -546,11 +544,7 @@ const ProductDetail: React.FC = () => {
 
              {/* Desktop Add to Cart */}
              <div className="desktop-add-container hide-mobile">
-                {location && !location.isServiceable ? (
-                   <button className="f-add-btn desktop-add-btn disabled" style={{ background: '#94a3b8' }} disabled>
-                     Currently Unavailable
-                   </button>
-                ) : product.deliveryTime === 'On Demand' ? (
+                {product.deliveryTime === 'On Demand' ? (
                   <button className="f-add-btn desktop-add-btn on-demand" onClick={() => setShowOnDemandModal(true)}>
                     Request Quote
                   </button>
@@ -591,11 +585,7 @@ const ProductDetail: React.FC = () => {
             <span className="f-tax">Inclusive of all taxes</span>
           </div>
          <div className="footer-action">
-            {location && !location.isServiceable ? (
-              <button className="f-add-btn disabled" style={{ background: '#94a3b8' }} disabled>
-                Unavailable
-              </button>
-            ) : product.deliveryTime === 'On Demand' ? (
+            {product.deliveryTime === 'On Demand' ? (
               <button className="f-add-btn on-demand" onClick={() => setShowOnDemandModal(true)}>
                 Request Quote
               </button>
