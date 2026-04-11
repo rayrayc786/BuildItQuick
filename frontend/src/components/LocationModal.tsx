@@ -132,11 +132,24 @@ const LocationModal: React.FC<LocationModalProps> = ({
                     new google.maps.LatLng(8.4, 68.7),
                     new google.maps.LatLng(37.0, 97.2)
                 ),
-                includedRegionCodes: ['in'],
-                includedPrimaryTypes: ['address', 'establishment']
+                includedRegionCodes: ['in']
             };
             const { suggestions: results } = await placesLibrary.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
-            setSuggestions(results || []);
+            
+            // Filter locally to only show specific locations that likely have a pincode
+            // We exclude generic localities/political boundaries.
+            const filtered = ((results as any) || []).filter((item: any) => {
+                const types = item?.placePrediction?.types || [];
+                return types.includes('address') || 
+                       types.includes('establishment') || 
+                       types.includes('point_of_interest') || 
+                       types.includes('premise') ||
+                       types.includes('school') ||
+                       types.includes('university') ||
+                       types.includes('sublocality') ||
+                       types.includes('postal_code');
+            });
+            setSuggestions(filtered);
         } catch (err) {
             console.error(err);
         } finally {
