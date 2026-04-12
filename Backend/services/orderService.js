@@ -32,16 +32,18 @@ const calculateOrderTotals = (items, settings = null) => {
   const mappedItems = items.map(item => {
     // unitPrice is considered BASE price
     const unitPrice = item.unitPrice || item.price || 0; 
-    const productId = item.productId || item.product;
+    const hydratedProduct = item.product;
+    const productId = hydratedProduct?._id || item.productId || item.product;
     const quantity = item.quantity || 1;
-    const weight = (item.totalWeight || 0);
-    const volume = (item.totalVolume || 0);
+    
+    // Fallback to product metadata for weight/volume if not in item
+    const weight = item.totalWeight || (hydratedProduct?.inventory?.unitWeight ? (hydratedProduct.inventory.unitWeight * quantity) / 1000 : 0);
+    const volume = item.totalVolume || 0;
 
     const totalTaxRate = item.taxRate || 18; // Default 18% GST
     
     const rowBaseTotal = unitPrice * quantity;
     const rowTaxTotal = rowBaseTotal * (totalTaxRate / 100);
-    const rowTotal = rowBaseTotal + rowTaxTotal;
 
     totalWeight += weight;
     totalVolume += volume;
@@ -59,7 +61,7 @@ const calculateOrderTotals = (items, settings = null) => {
       sgstAmount: rowTaxTotal / 2,
       totalWeight: weight,
       totalVolume: volume,
-      category: item.category || 'General'
+      category: item.category || hydratedProduct?.category || 'General'
     };
   });
 

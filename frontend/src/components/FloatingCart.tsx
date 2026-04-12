@@ -46,7 +46,7 @@ const FloatingCart: React.FC = () => {
       </div>
       <div className="cart-pill-text">
         <h5>View cart</h5>
-        <p>{totalCartCount} item{totalCartCount > 1 ? 's' : ''} • ₹{totalCartAmount}</p>
+        <p>{totalCartCount} item{totalCartCount > 1 ? 's' : ''} • ₹{totalCartAmount.toFixed(2)}</p>
       </div>
       <ChevronRight size={18} />
     </div>

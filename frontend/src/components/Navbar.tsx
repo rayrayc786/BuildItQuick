@@ -144,7 +144,7 @@ const Navbar: React.FC = () => {
                   <span className="s-brand">{s.brand}</span>
                   <span className="s-name">{s.productName || s.name}</span>
                 </div>
-                <span className="s-price">₹{Number(s.pricing?.salePrice || s.price || 0)}</span>
+                <span className="s-price">₹{Number(s.pricing?.salePrice || s.price || 0).toFixed(2)}</span>
               </div>
             ))}
           </div>
@@ -279,7 +279,7 @@ const Navbar: React.FC = () => {
               </div>
               {isDesktop && cartCount > 0 && (
                 <div className="cart-info-desktop">
-                  <span className="cart-total-text">₹{totalAmount}</span>
+                  <span className="cart-total-text">₹{totalAmount.toFixed(2)}</span>
                   <span className="cart-label-text">VIEW CART</span>
                 </div>
               )}

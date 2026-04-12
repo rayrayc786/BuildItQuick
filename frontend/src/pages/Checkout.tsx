@@ -29,7 +29,7 @@ interface Address {
 
 const Checkout: React.FC = () => {
   
-  const { cart, clearCart, totalAmount, totalGst } = useCart();
+  const { cart, clearCart, totalAmount, totalGst, totalWeight: cartWeight, totalVolume: cartVolume } = useCart();
   const { settings } = useSettings();
   const { location: globalLocation, setLocation: setGlobalLocation } = useLocationContext();
   const navigate = useNavigate();
@@ -249,19 +249,25 @@ const Checkout: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const orderData = {
-        items: cart.map(item => ({
-          product: item.product._id,
-          quantity: item.quantity,
-          price: item.product.variants?.find((v: any) => v.name === item.selectedVariant)?.pricing?.salePrice || item.product.salePrice || item.product.price || 0,
-          taxRate: item.product.variants?.find((v: any) => v.name === item.selectedVariant)?.pricing?.gst || (item.product as any).gst || (item.product.variants?.[0]?.pricing?.gst) || 18,
-          selectedVariant: item.selectedVariant,
-          // Ensuring consistency with required fields
-          totalWeight: 0,
-          totalVolume: 0
-        })),
+        items: cart.map(item => {
+          const variant = item.product.variants?.find((v: any) => v.name === item.selectedVariant);
+          const rawWeight = variant?.inventory?.unitWeight || (variant as any)?.unitWeightGm || item.product.weightPerUnit || 0;
+          const iWeightKg = rawWeight / 1000;
+          return {
+            productId: item.product._id,
+            quantity: item.quantity,
+            price: variant?.pricing?.salePrice || item.product.salePrice || item.product.price || 0,
+            taxRate: variant?.pricing?.gst || (item.product as any).gst || (item.product.variants?.[0]?.pricing?.gst) || 18,
+            selectedVariant: item.selectedVariant,
+            totalWeight: iWeightKg * item.quantity,
+            totalVolume: (item.product.volumePerUnit || 0) * item.quantity
+          };
+        }),
         totalAmount: grandTotal,
         totalTaxAmount: totalGst,
         totalBaseAmount: totalAmount - totalGst,
+        totalWeight: cartWeight,
+        totalVolume: cartVolume,
         paidAmount: paidAmount,
         paymentMethod: paymentMethod,
         paymentReference: paymentRef,
