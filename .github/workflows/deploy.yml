@@ -66,7 +66,7 @@ jobs:
             # Frontend
             echo "Setting up Frontend..."
             cd ../frontend
-            # Fresh install to avoid dependency issues with the new PWA plugin
+            # Fresh install to avoid dependency issues with the new PWA plugin or new internal dependencies like react-is
             echo "Cleaning frontend node_modules..."
             rm -rf node_modules package-lock.json
             echo "Installing frontend dependencies..."
@@ -88,3 +88,4 @@ jobs:
               echo "Build failed - dist folder not found. Skipping copy."
               exit 1
             fi
+    
