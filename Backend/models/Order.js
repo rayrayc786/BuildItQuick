@@ -11,7 +11,8 @@ const OrderItemSchema = new mongoose.Schema({
   cgstAmount: { type: Number },
   sgstAmount: { type: Number },
   totalWeight: { type: Number, required: true }, // Pre-calculated weight
-  totalVolume: { type: Number, required: true }  // Pre-calculated volume
+  totalVolume: { type: Number, required: true },  // Pre-calculated volume
+  selectedVariant: { type: String } // Human readable name of the variant selected
 });
 
 const OrderSchema = new mongoose.Schema({
@@ -52,6 +53,7 @@ const OrderSchema = new mongoose.Schema({
   
   deliveryAddress: {
     name: String,
+    area: String, // Neighborhood, Sector, or Zone
     fullAddress: String,
     pincode: String,
     city: String,

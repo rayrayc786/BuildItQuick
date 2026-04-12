@@ -85,6 +85,7 @@ import SupplierDashboard from './pages/SupplierDashboard';
 import Navbar from './components/Navbar';
 import AdminSidebar from './components/admin/AdminSidebar';
 import ScrollToTop from './components/ScrollToTop';
+import ReloadPrompt from './components/ReloadPrompt';
 // import FloatingCart from './components/FloatingCart';
 import { customerSocket, supplierSocket, adminSocket, connectSocket } from './socket';
 import './App.css';
@@ -275,6 +276,7 @@ const AppContent = () => {
       />
       <SocketManager />
       {showNavbar && <Navbar />}
+      <ReloadPrompt />
       {/* <FloatingCart /> */}
       <Routes>
         {/* Prioritize specific routes */}

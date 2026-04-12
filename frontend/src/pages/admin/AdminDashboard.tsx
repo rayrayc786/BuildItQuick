@@ -539,8 +539,22 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
                  <span>{order.userId?.phoneNumber || 'N/A'}</span>
               </div>
               <div className="meta-item">
-                 <label>Payment</label>
+                 <label>PIN Code</label>
+                 <span>{order.deliveryAddress?.pincode || 'N/A'}</span>
+              </div>
+              {/* <div className="meta-item">
+                 <label>Location (Area)</label>
+                 <span className="location-highlight">{order.deliveryAddress?.area || order.deliveryAddress?.name || 'Area N/A'}</span>
+              </div> */}
+              <div className="meta-item">
+                 <label>Payment Mode</label>
                  <span className="uppercase">{order.paymentMethod || 'COD'}</span>
+              </div>
+              <div className="meta-item">
+                 <label>Payment Status</label>
+                 <span className={`status-pill ${order.paidAmount >= order.totalAmount ? 'paid' : 'pending'}`}>
+                    {order.paidAmount >= order.totalAmount ? 'Complete' : (order.paidAmount > 0 ? 'Partial' : 'Pending')}
+                 </span>
               </div>
               <div className="meta-item">
                  <label>Order Time</label>
@@ -548,7 +562,7 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
               </div>
               <div className="meta-item full-width">
                  <label>Delivery Address</label>
-                 <span>{order.shippingAddress || order.deliveryAddress?.addressText || order.deliveryAddress?.name || 'No address provided'}</span>
+                 <span>{order.deliveryAddress?.fullAddress || order.shippingAddress || 'No address provided'}</span>
               </div>
            </div>
 
@@ -557,10 +571,44 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
               {order.items?.map((item: any, idx: number) => (
                  <div key={idx} className="order-item-row">
                     <div className="item-img">
-                       <img src={item.productId?.images?.[0] || item.product?.images?.[0] || 'https://via.placeholder.com/50'} alt="" />
+                       {(() => {
+                          const variant = item.productId?.variants?.find((v: any) => v.name === item.selectedVariant);
+                          const imgSource = variant?.images?.[0] || item.productId?.images?.[0] || item.productId?.imageUrl || item.product?.images?.[0] || '';
+                          return <img src={getFullImageUrl(imgSource)} alt="" />;
+                       })()}
                     </div>
                     <div className="item-info">
-                       <span className="item-name">{item.productId?.name || item.product?.name || 'Unknown Product'}</span>
+                       <span className="item-brand">{item.productId?.brand || 'Brand N/A'}</span>
+                       <span className="item-name">{item.productId?.productName || item.productId?.name || item.product?.name || 'Unknown Product'}</span>
+                       
+                       {(() => {
+                          const variantName = item.selectedVariant;
+                          const variant = item.productId?.variants?.find((v: any) => v.name === variantName);
+                          // Attributes might be a Map or a plain object
+                          const attrs = variant?.attributes instanceof Map ? Object.fromEntries(variant.attributes) : variant?.attributes;
+                          
+                          return (
+                            <>
+                              {variantName && <span className="item-variant">Variant: {variantName}</span>}
+                              {attrs && Object.entries(attrs).length > 0 && (
+                                <div className="item-attributes">
+                                   {Object.entries(attrs).map(([key, val]: any) => (
+                                      <span key={key}>{key}: {val}</span>
+                                   ))}
+                                </div>
+                              )}
+                            </>
+                          );
+                       })()}
+                       
+                       <div className="item-metadata">
+                          {item.productId?.sku && <span>SKU: {item.productId.sku}</span>}
+                          {item.productId?.productCode && <span>Code: {item.productId.productCode}</span>}
+                          {item.productId?.hsnCode && <span>HSN: {item.productId.hsnCode}</span>}
+                          {item.productId?.category && <span>{item.productId.category}</span>}
+                          {item.productId?.subCategory && <span>{item.productId.subCategory}</span>}
+                       </div>
+
                        <span className="item-sub">Qty: {item.quantity} × ₹{Number(item.unitPrice).toFixed(2)}</span>
                     </div>
                     <div className="item-total">
@@ -572,9 +620,25 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
 
            <div className="order-summary-box">
               <div className="summary-row">
-                 <span>Subtotal</span>
-                 <span>₹{Number(order.totalAmount).toFixed(2)}</span>
+                 <span>Items Subtotal</span>
+                 <span>₹{Number((order.totalAmount || 0) - (order.deliveryCharge || 0) - (order.platformFee || 0)).toFixed(2)}</span>
               </div>
+              {order.totalTaxAmount > 0 && (
+                <div className="summary-row">
+                  <span>GST Amount</span>
+                  <span>₹{Number(order.totalTaxAmount).toFixed(2)}</span>
+                </div>
+              )}
+              <div className="summary-row">
+                 <span>Delivery Fee ({order.vehicleClass || 'Standard'})</span>
+                 <span>₹{Number(order.deliveryCharge || 0).toFixed(2)}</span>
+              </div>
+              {order.platformFee > 0 && (
+                <div className="summary-row">
+                  <span>Platform Fee</span>
+                  <span>₹{Number(order.platformFee).toFixed(2)}</span>
+                </div>
+              )}
               <div className="summary-row total">
                  <span>Grand Total</span>
                  <span>₹{Number(order.totalAmount).toFixed(2)}</span>

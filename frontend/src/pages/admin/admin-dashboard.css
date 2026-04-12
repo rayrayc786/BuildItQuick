@@ -739,8 +739,58 @@
 }
 
 .order-item-row .item-name {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.order-item-row .item-brand {
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.order-item-row .item-variant {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.order-item-row .item-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.order-item-row .item-metadata span {
+  font-size: 0.6rem;
+  background: #f1f5f9;
+  padding: 3px 8px;
+  border-radius: 6px;
+  color: #475569;
+  font-weight: 800;
+  text-transform: uppercase;
+  border: 1px solid #e2e8f0;
+}
+
+.order-item-row .item-attributes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.order-item-row .item-attributes span {
+  font-size: 0.65rem;
+  color: #1e293b;
   font-weight: 700;
-  font-size: 0.9rem;
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .order-item-row .item-sub {
@@ -781,17 +831,57 @@
 
 .order-meta-info {
    display: flex;
-   gap: 20px;
+   flex-wrap: wrap;
+   gap: 16px 24px;
    margin-bottom: 24px;
    background: #fff;
    border: 1px solid #f1f5f9;
-   padding: 12px;
+   padding: 16px;
    border-radius: 12px;
 }
 
 .meta-item {
    display: flex;
    flex-direction: column;
+   min-width: 100px;
+}
+
+.meta-item.full-width {
+   width: 100%;
+   background: #f8fafc;
+   padding: 10px;
+   border-radius: 8px;
+   border: 1px solid #f1f5f9;
+}
+
+.location-highlight {
+   font-weight: 800;
+   color: #1e293b;
+   background: #f0f9ff;
+   padding: 2px 6px;
+   border-radius: 4px;
+   border: 1px solid #bae6fd;
+}
+
+.status-pill {
+   font-size: 0.7rem;
+   font-weight: 800;
+   padding: 2px 10px;
+   border-radius: 6px;
+   text-transform: uppercase;
+   width: fit-content;
+}
+
+.status-pill.pending {
+   background: #fff7ed;
+   color: #c2410c;
+   border: 1px solid #ffedd5;
+}
+
+.status-pill.paid {
+   background: #f0fdf4;
+   color: #15803d;
+   border: 1px solid #dcfce7;
 }
 
 .meta-item label {

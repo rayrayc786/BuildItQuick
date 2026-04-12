@@ -65,7 +65,7 @@ exports.getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find({})
       .populate('userId', 'fullName phoneNumber email')
-      .populate('items.productId', 'name images sku')
+      .populate('items.productId', 'productName name brand images sku hsnCode productCode category subCategory variants imageUrl')
       .sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {

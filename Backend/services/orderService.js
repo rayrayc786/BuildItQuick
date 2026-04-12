@@ -5,38 +5,46 @@ const axios = require('axios');
 const calculateOrderTotals = (items, settings = null) => {
   let totalWeight = 0;
   let totalVolume = 0;
-  let subTotal = 0; // Sum of (unitPrice * quantity) - basically item total incl GST
-  let totalBaseAmount = 0; // Sum of items excluding GST
-  let totalTaxAmount = 0;
+  let totalBaseAmount = 0; // Cumulative base amount for all items
+  let totalTaxAmount = 0;  // Cumulative tax amount for all items
   
   // Use settings or default values
-  const fee_platform = settings?.platformFee ?? 19;
-  const fee_delivery = settings?.deliveryCharge ?? 150;
+  const fee_platform = settings?.platformFee ?? 15;
   const threshold_free = settings?.freeDeliveryThreshold ?? 5000;
 
+  // 1. Determine logistics category based on items
+  let maxCat = 'light';
+  items.forEach(item => {
+    const cat = (item.category || item.product?.logisticsCategory || 'Light').toLowerCase();
+    if (cat === 'heavy') maxCat = 'heavy';
+    else if (cat === 'medium' && maxCat !== 'heavy') maxCat = 'medium';
+  });
+
+  const logisticsRates = settings?.logisticsRates || {
+    light: { rate: 50, mode: "Bike" },
+    medium: { rate: 150, mode: "Three Wheeler" },
+    heavy: { rate: 500, mode: "Truck" }
+  };
+
+  const selectedLogistics = logisticsRates[maxCat] || { rate: 50, mode: "Bike" };
+  const fee_delivery = selectedLogistics.rate;
+
   const mappedItems = items.map(item => {
-    // Basic fields
-    const unitPrice = item.unitPrice || item.price || 0; // Sale price (incl GST)
+    // unitPrice is considered BASE price
+    const unitPrice = item.unitPrice || item.price || 0; 
     const productId = item.productId || item.product;
     const quantity = item.quantity || 1;
     const weight = (item.totalWeight || 0);
     const volume = (item.totalVolume || 0);
 
-    // GST Calculation logic
-    // We now treat unitPrice as the BASE price (Excl GST)
-    const totalTaxRate = item.taxRate || item.igst || 18; // Use provided tax rate or default
+    const totalTaxRate = item.taxRate || 18; // Default 18% GST
     
-    const itemBasePrice = unitPrice;
-    const itemTaxAmount = itemBasePrice * (totalTaxRate / 100);
-    const itemTotalPrice = itemBasePrice + itemTaxAmount;
-    
-    const rowBaseTotal = itemBasePrice * quantity;
-    const rowTaxTotal = itemTaxAmount * quantity;
-    const rowTotal = itemTotalPrice * quantity;
+    const rowBaseTotal = unitPrice * quantity;
+    const rowTaxTotal = rowBaseTotal * (totalTaxRate / 100);
+    const rowTotal = rowBaseTotal + rowTaxTotal;
 
     totalWeight += weight;
     totalVolume += volume;
-    subTotal += rowTotal;
     totalBaseAmount += rowBaseTotal;
     totalTaxAmount += rowTaxTotal;
 
@@ -44,9 +52,9 @@ const calculateOrderTotals = (items, settings = null) => {
       productId,
       quantity,
       unitPrice,
-      basePrice: itemBasePrice,
+      basePrice: unitPrice,
       taxRate: totalTaxRate,
-      igstAmount: rowTaxTotal, // Simplified: storing total tax as IGST for now unless Split is needed
+      igstAmount: rowTaxTotal,
       cgstAmount: rowTaxTotal / 2,
       sgstAmount: rowTaxTotal / 2,
       totalWeight: weight,
@@ -55,29 +63,30 @@ const calculateOrderTotals = (items, settings = null) => {
     };
   });
 
-  // Additional Fees
-  const platformFee = fee_platform; 
-  const platformFeeBase = platformFee / 1.18; 
-  const platformFeeGST = platformFee - platformFeeBase; 
+  // Additional Fees logic: treating them as INCLUSIVE of GST (matches Frontend display)
+  const platformFeeTotal = fee_platform; 
+  const platformFeeBase = platformFeeTotal / 1.18; 
+  const platformFeeGST = platformFeeTotal - platformFeeBase; 
 
-  // Delivery Logic
-  const deliveryChargeInclGST = subTotal > threshold_free ? 0 : fee_delivery;
+  const subTotalInclGST = totalBaseAmount + totalTaxAmount;
+  const deliveryChargeInclGST = subTotalInclGST > threshold_free ? 0 : fee_delivery;
   const deliveryChargeBase = deliveryChargeInclGST / 1.18;
   const deliveryChargeGST = deliveryChargeInclGST - deliveryChargeBase;
 
-  const grandTotal = subTotal + platformFee + deliveryChargeInclGST;
+  const grandTotal = subTotalInclGST + platformFeeTotal + deliveryChargeInclGST;
 
   return { 
     totalAmount: grandTotal, 
-    subTotal,
+    subTotal: subTotalInclGST, // Total of items incl GST
     totalBaseAmount: totalBaseAmount + platformFeeBase + deliveryChargeBase,
     totalTaxAmount: totalTaxAmount + platformFeeGST + deliveryChargeGST,
-    platformFee,
+    platformFee: platformFeeTotal,
     platformFeeGST,
     deliveryCharge: deliveryChargeInclGST,
     deliveryChargeGST,
     totalWeight, 
     totalVolume, 
+    vehicleClass: selectedLogistics.mode,
     mappedItems 
   };
 };
@@ -90,15 +99,24 @@ const determineVehicleClass = (weight) => {
 };
 
 const createOrder = async (orderData) => {
+  const Product = require('../models/Product');
   const Settings = require('../models/Settings');
   const settings = await Settings.findOne();
+
+  // Populate products for each item to get correct category/logistics category
+  const hydratedItems = await Promise.all(orderData.items.map(async (item) => {
+    const product = await Product.findById(item.productId || item.product);
+    return {
+      ...item,
+      product // pass the full product object for calculateOrderTotals
+    };
+  }));
 
   const { 
     totalAmount, subTotal, totalBaseAmount, totalTaxAmount, 
     platformFee, platformFeeGST, deliveryCharge, deliveryChargeGST,
-    totalWeight, totalVolume, mappedItems 
-  } = calculateOrderTotals(orderData.items, settings);
-  const vehicleClass = determineVehicleClass(totalWeight);
+    totalWeight, totalVolume, vehicleClass, mappedItems 
+  } = calculateOrderTotals(hydratedItems, settings);
 
   // Auto-fetch darkStoreId if missing
   let darkStoreId = orderData.darkStoreId;
@@ -134,6 +152,7 @@ const createOrder = async (orderData) => {
     darkStoreId,
     deliveryAddress: {
       name: orderData.deliveryAddress?.name || 'Home',
+      area: orderData.deliveryAddress?.area || '',
       fullAddress: orderData.deliveryAddress?.fullAddress || '',
       pincode: orderData.deliveryAddress?.pincode || '',
       city: orderData.deliveryAddress?.city || '',

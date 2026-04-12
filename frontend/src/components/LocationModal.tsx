@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Navigation, X, Home, Map as MapIcon, Loader2, ChevronRight, Mic, ArrowLeft } from 'lucide-react';
+import { Search, MapPin, Navigation, X, Home, Map as MapIcon, Loader2, ChevronRight, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Map, Marker, useMapsLibrary, useMap } from '@vis.gl/react-google-maps';
@@ -54,6 +54,8 @@ const LocationModal: React.FC<LocationModalProps> = ({
   const [pincode, setPincode] = useState('');
   const [city, setCity] = useState('');
   const [stateName, setStateName] = useState('');
+  const [area, setArea] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isLoggedIn = !!localStorage.getItem('token');
@@ -237,12 +239,18 @@ const LocationModal: React.FC<LocationModalProps> = ({
                          addressComponents.find((c: any) => c.types.includes('administrative_area_level_2'));
     const cityVal = localityComp ? localityComp.long_name : '';
 
+    const sublocalityComp = addressComponents.find((c: any) => c.types.includes('sublocality_level_1')) || 
+                           addressComponents.find((c: any) => c.types.includes('sublocality')) ||
+                           addressComponents.find((c: any) => c.types.includes('neighborhood'));
+    const areaVal = sublocalityComp ? sublocalityComp.long_name : '';
+
     const stateComp = addressComponents.find((c: any) => c.types.includes('administrative_area_level_1'));
     const stateVal = stateComp ? stateComp.long_name : '';
 
     setPincode(pincodeVal);
     setCity(cityVal);
     setStateName(stateVal);
+    setArea(areaVal);
 
     if (!pincodeVal && !cityVal) {
       toast.error("Could not detect location. Please try a more specific spot.");
@@ -321,7 +329,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
     
     if (geocodingLibrary) {
         const geocoder = new geocodingLibrary.Geocoder();
-        geocoder.geocode({ location: { lat, lng } }, async (results, status) => {
+        geocoder.geocode({ location: { lat, lng } }, async (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
           if (status === "OK" && results?.[0]) {
             const isServiceableResult = await checkPincode(results);
             const address = results[0].formatted_address;
@@ -390,7 +398,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
 
           if (geocodingLibrary) {
             const geocoder = new geocodingLibrary.Geocoder();
-            geocoder.geocode({ location: newCenter }, async (results, status) => {
+            geocoder.geocode({ location: newCenter }, async (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
               if (status === "OK" && results?.[0]) {
                 const isServiceableResult = await checkPincode(results);
                 if (!isServiceableResult) {
@@ -455,6 +463,25 @@ const LocationModal: React.FC<LocationModalProps> = ({
         return;
     }
 
+    // Validation
+    const newErrors: Record<string, string> = {};
+    if (!houseNumber.trim()) newErrors.houseNumber = 'Required';
+    if (!landmark.trim()) newErrors.landmark = 'Required';
+    if (!pincode.trim()) newErrors.pincode = 'Required';
+    else if (pincode.length !== 6) newErrors.pincode = 'Invalid (6 digits)';
+    if (!city.trim()) newErrors.city = 'Required';
+    if (!newAddrName.trim()) newErrors.newAddrName = 'Required';
+    if (!newAddrPhone.trim()) newErrors.newAddrPhone = 'Required';
+    else if (newAddrPhone.length !== 10) newErrors.newAddrPhone = 'Invalid (10 digits)';
+
+    if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        toast.error('Please fill all required fields correctly');
+        return;
+    }
+
+    setErrors({});
+
     try {
         const token = localStorage.getItem('token');
         const formattedAddress = `${houseNumber ? houseNumber + ', ' : ''}${floor ? 'Floor ' + floor + ', ' : ''}${tower ? tower + ', ' : ''}${apartmentName ? apartmentName + ', ' : ''}${newAddrText}${landmark ? ' (Near ' + landmark + ')' : ''}`;
@@ -465,6 +492,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
             addressText: formattedAddress,
             pincode: pincode,
             city: city,
+            area: area,
             state: stateName,
             contactPhone: newAddrPhone,
             location: {
@@ -741,10 +769,19 @@ const LocationModal: React.FC<LocationModalProps> = ({
                 </div>
 
                 <div className="form-grid-2col">
-                   <div className="form-group">
-                       <label>House/ Unit Number</label>
-                       <input type="text" value={houseNumber} onChange={e => setHouseNumber(e.target.value)} placeholder="e.g. 402" />
-                   </div>
+                    <div className="form-group">
+                        <label className={errors.houseNumber ? 'label-error' : ''}>House/ Unit Number {errors.houseNumber && <span className="error-txt">({errors.houseNumber})</span>}</label>
+                        <input 
+                            type="text" 
+                            className={errors.houseNumber ? 'input-error' : ''}
+                            value={houseNumber} 
+                            onChange={e => {
+                                setHouseNumber(e.target.value);
+                                if (errors.houseNumber) setErrors(prev => ({ ...prev, houseNumber: '' }));
+                            }} 
+                            placeholder="e.g. 402" 
+                        />
+                    </div>
                    <div className="form-group">
                        <label>Floor</label>
                        <input type="text" value={floor} onChange={e => setFloor(e.target.value)} placeholder="e.g. 4th" />
@@ -752,36 +789,47 @@ const LocationModal: React.FC<LocationModalProps> = ({
                 </div>
 
                 <div className="form-group">
-                    <label>Apartment/ Building Name (optional)</label>
+                    <label>Apartment/ Building Name </label>
                     <input type="text" value={apartmentName} onChange={e => setApartmentName(e.target.value)} placeholder="e.g. DLF Heights" />
                 </div>
 
                 <div className="form-group">
-                    <label>Tower/ Block (optional)</label>
+                    <label>Tower/ Block </label>
                     <input type="text" value={tower} onChange={e => setTower(e.target.value)} placeholder="e.g. Block B" />
                 </div>
 
                 <div className="form-group">
-                    <label>Nearby Landmark</label>
-                    <input type="text" value={landmark} onChange={e => setLandmark(e.target.value)} placeholder="e.g. Near Petrol Pump" />
+                    <label className={errors.landmark ? 'label-error' : ''}>Nearby Landmark {errors.landmark && <span className="error-txt">({errors.landmark})</span>}</label>
+                    <input 
+                        type="text" 
+                        className={errors.landmark ? 'input-error' : ''}
+                        value={landmark} 
+                        onChange={e => {
+                            setLandmark(e.target.value);
+                            if (errors.landmark) setErrors(prev => ({ ...prev, landmark: '' }));
+                        }} 
+                        placeholder="e.g. Near Petrol Pump" 
+                    />
                 </div>
 
                 <div className="form-grid-2col">
                     <div className="form-group">
-                        <label>PIN Code</label>
+                        <label className={errors.pincode ? 'label-error' : ''}>PIN Code {errors.pincode && <span className="error-txt">({errors.pincode})</span>}</label>
                         <input 
                             type="text" 
+                            className={`${errors.pincode ? 'input-error' : ''} read-only-input`}
                             value={pincode} 
-                            onChange={(e) => setPincode(e.target.value)} 
+                            readOnly
                             placeholder="e.g. 160062" 
                         />
                     </div>
                     <div className="form-group">
-                        <label>City</label>
+                        <label className={errors.city ? 'label-error' : ''}>City {errors.city && <span className="error-txt">({errors.city})</span>}</label>
                         <input 
                             type="text" 
+                            className={`${errors.city ? 'input-error' : ''} read-only-input`}
                             value={city} 
-                            onChange={(e) => setCity(e.target.value)} 
+                            readOnly
                             placeholder="e.g. Sahibzada Ajit Singh Nagar" 
                         />
                     </div>
@@ -791,18 +839,37 @@ const LocationModal: React.FC<LocationModalProps> = ({
                     <label>Directions for rider</label>
                     <div className="input-with-mic">
                        <input type="text" value={directions} onChange={e => setDirections(e.target.value)} placeholder="e.g. Yellow gate" />
-                       <Mic size={18} />
+                       {/* <Mic size={18} /> */}
                     </div>
                 </div>
 
                 <div className="form-group">
-                    <label>Recipient's name</label>
-                    <input type="text" value={newAddrName} onChange={e => setNewAddrName(e.target.value)} placeholder="e.g. Rahul Arora" />
+                    <label className={errors.newAddrName ? 'label-error' : ''}>Recipient's name {errors.newAddrName && <span className="error-txt">({errors.newAddrName})</span>}</label>
+                    <input 
+                        type="text" 
+                        className={errors.newAddrName ? 'input-error' : ''}
+                        value={newAddrName} 
+                        onChange={e => {
+                            setNewAddrName(e.target.value);
+                            if (errors.newAddrName) setErrors(prev => ({ ...prev, newAddrName: '' }));
+                        }} 
+                        placeholder="e.g. Rahul Arora" 
+                    />
                 </div>
 
                 <div className="form-group">
-                    <label>Recipient's mobile number</label>
-                    <input type="text" value={newAddrPhone} onChange={e => setNewAddrPhone(e.target.value)} placeholder="9876543210" />
+                    <label className={errors.newAddrPhone ? 'label-error' : ''}>Recipient's mobile number {errors.newAddrPhone && <span className="error-txt">({errors.newAddrPhone})</span>}</label>
+                    <input 
+                        type="tel" 
+                        className={errors.newAddrPhone ? 'input-error' : ''}
+                        value={newAddrPhone} 
+                        onChange={e => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                            setNewAddrPhone(val);
+                            if (errors.newAddrPhone) setErrors(prev => ({ ...prev, newAddrPhone: '' }));
+                        }} 
+                        placeholder="9876543210" 
+                    />
                 </div>
 
                 <button type="submit" className="save-btn" disabled={!newAddrCoords}>Add complete address</button>

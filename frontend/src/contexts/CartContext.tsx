@@ -134,22 +134,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let gstSum = 0;
 
     cart.forEach(item => {
-      let itemPrice = item.product.price;
+      let itemPrice = item.product.price; // We treat this as BASE price
       let itemWeight = (item.product.weightPerUnit || 0);
       let itemVolume = (item.product.volumePerUnit || 0);
-      let itemGstRate = (item.product as any).gst || 0;
+      let itemGstRate = (item.product as any).gst || 18; // Default to 18% GST
 
       // Use variant values if selected
       if (item.selectedVariant && item.product.variants) {
         const variant: any = item.product.variants.find(v => v.name === item.selectedVariant);
         if (variant) {
+          // pricing.salePrice is also treated as BASE price
           itemPrice = variant.pricing?.salePrice || variant.price || item.product.price;
           itemWeight = variant.inventory?.unitWeight || (variant.unitWeightGm ? variant.unitWeightGm / 1000 : 0) || (item.product.weightPerUnit || 0);
-          itemGstRate = variant.pricing?.gst || (item.product as any).gst || 0;
+          itemGstRate = variant.pricing?.gst || (item.product as any).gst || 18;
         }
       }
       
-      // Bulk Pricing Logic (applied per variant total)
+      // Bulk Pricing Logic (applied on base price)
       if (item.product.bulkPricing) {
         const applicableTier = [...item.product.bulkPricing]
           .sort((a, b) => b.minQty - a.minQty)
@@ -160,12 +161,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // Calculate totals (itemPrice is already Inclusive of GST)
-      const totalItemAmount = itemPrice * item.quantity;
-      const gstAmount = totalItemAmount - (totalItemAmount / (1 + itemGstRate / 100));
+      // Calculate totals
+      const baseAmountTotal = itemPrice * item.quantity;
+      const gstAmountTotal = baseAmountTotal * (itemGstRate / 100);
+      const rowTotalInclGst = baseAmountTotal + gstAmountTotal;
 
-      amount += totalItemAmount;
-      gstSum += gstAmount;
+      amount += rowTotalInclGst;
+      gstSum += gstAmountTotal;
       weight += itemWeight * item.quantity;
       volume += itemVolume * item.quantity;
     });

@@ -545,3 +545,20 @@
 .clear-search-btn svg {
   pointer-events: none;
 }
+
+/* Error Styles */
+.input-error {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+}
+
+.label-error {
+  color: #ef4444 !important;
+}
+
+.error-txt {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 4px;
+  color: #ef4444;
+}

@@ -220,17 +220,44 @@ const Tracking: React.FC = () => {
                       style={{ cursor: 'pointer' }}
                     >
                         <div className="item-thumb-box">
-                           <img 
-                              src={getFullImageUrl(item?.productId?.imageUrl || item?.product?.imageUrl || (item?.productId?.images && item?.productId?.images[0]))} 
-                              alt="" 
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=400';
-                              }}
-                           />
+                           {(() => {
+                              const variantName = item.selectedVariant;
+                              const variant = item.productId?.variants?.find((v: any) => v.name === variantName) || item.productId?.variants?.[0];
+                              const imgSource = variant?.images?.[0] || item.productId?.images?.[0] || item.productId?.imageUrl || item.product?.images?.[0] || '';
+                              return (
+                                <img 
+                                   src={getFullImageUrl(imgSource)} 
+                                   alt="" 
+                                   onError={(e) => {
+                                     (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=400';
+                                   }}
+                                />
+                              );
+                           })()}
                         </div>
                        <div className="item-info-col">
-                          <p className="item-name-bold">{item?.productId?.brand} {item?.productId?.name || item?.product?.name}</p>
-                          <span className="item-variant-label">{item?.selectedVariant || 'Standard'}</span>
+                          <p className="item-brand-label" style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', marginBottom: '2px' }}>{item.productId?.brand || 'Brand'}</p>
+                          <p className="item-name-bold">{item?.productId?.productName || item?.productId?.name || item?.product?.name}</p>
+                          
+                          {(() => {
+                             const variantName = item.selectedVariant;
+                             const variant = item.productId?.variants?.find((v: any) => v.name === variantName) || item.productId?.variants?.[0];
+                             const rawAttrs = variant?.attributes;
+                             const attrs = rawAttrs instanceof Map ? Object.fromEntries(rawAttrs) : rawAttrs;
+                             return (
+                               <>
+                                 <span className="item-variant-label">{variantName || variant?.name || 'Standard'}</span>
+                                 {attrs && typeof attrs === 'object' && Object.entries(attrs).length > 0 && (
+                                   <div className="item-attributes-mini" style={{ display: 'flex', gap: '4px', marginTop: '2px', flexWrap: 'wrap' }}>
+                                      {Object.entries(attrs).map(([k, v]: any) => (
+                                        <span key={k} style={{ fontSize: '0.65rem', background: '#f1f5f9', padding: '1px 5px', borderRadius: '4px', color: '#475569' }}>{k}: {v}</span>
+                                      ))}
+                                   </div>
+                                 )}
+                               </>
+                             );
+                          })()}
+
                           <div className="item-price-qty-row">
                              <span className="qty-pill">Qty: {item.quantity}</span>
                              <span className="price-bold">₹{item.unitPrice || item.price || 0}</span>
@@ -301,25 +328,35 @@ const Tracking: React.FC = () => {
            </div>
         </div>
 
-        {/* Bill Summary - Reusing Premium Style */}
+        {/* Bill Summary - Reconstructed with safety */}
         <div className="section-container card-style">
            <div className="section-header"><h3>Bill Summary</h3></div>
            <div className="bill-summary-rows">
               <div className="bill-row">
-                 <div className="label-with-icon"><Package size={14} /> <span>Items Total</span></div>
-                 <span>₹{order.items.reduce((acc: number, item: any) => acc + ((item.unitPrice || item.price || 0) * item.quantity), 0)}</span>
+                 <div className="label-with-icon"><Package size={14} /> <span>Items Total (Excl. GST)</span></div>
+                 <span>₹{Number((order.totalAmount || 0) - (order.totalTaxAmount || 0) - ((order.deliveryCharge || 0) / 1.18) - ((order.platformFee || 0) / 1.18)).toFixed(2)}</span>
               </div>
-              <div className="bill-row">
-                 <div className="label-with-icon"><span>Delivery Charge</span></div>
-                 <span className="free-tag">₹150</span>
-              </div>
-              <div className="bill-row">
-                 <div className="label-with-icon"><span>Handling Charge</span></div>
-                 <span>₹25</span>
-              </div>
+              {(order.totalTaxAmount || 0) > 0 && (
+                <div className="bill-row">
+                  <div className="label-with-icon"><span>Total GST Amount</span></div>
+                  <span>₹{Number(order.totalTaxAmount || 0).toFixed(2)}</span>
+                </div>
+              )}
+              {(order.deliveryCharge || 0) > 0 && (
+                <div className="bill-row">
+                   <div className="label-with-icon"><span>Delivery Fee (Excl. Tax)</span></div>
+                   <span>₹{Number((order.deliveryCharge || 0) / 1.18).toFixed(2)}</span>
+                </div>
+              )}
+              {(order.platformFee || 0) > 0 && (
+                <div className="bill-row">
+                   <div className="label-with-icon"><span>Handling Charge (Excl. Tax)</span></div>
+                   <span>₹{Number((order.platformFee || 0) / 1.18).toFixed(2)}</span>
+                </div>
+              )}
               <div className="bill-row grand-total-row">
                  <strong>Grand Total</strong>
-                 <strong>₹{order.totalAmount}</strong>
+                 <strong>₹{Number(order.totalAmount || 0).toFixed(2)}</strong>
               </div>
               <div className="bill-row-footer">
                  <span className="payment-tag">PAID VIA {order.paymentMethod?.toUpperCase() || 'COD'}</span>
