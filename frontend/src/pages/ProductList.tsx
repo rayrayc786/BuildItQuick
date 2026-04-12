@@ -177,7 +177,7 @@ const ProductList: React.FC = () => {
   }, [allCategories, categoryId]);
 
   return (
-    <div className="blinkit-list-page">
+    <div className="matall-list-page">
       <SEO 
         title={subCategoryName || categoryId || 'Products'}
         description={`Explore our collection of ${subCategoryName || categoryId || 'products'} on MatAll. Quality supplies delivered fast.`}

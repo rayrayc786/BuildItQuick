@@ -133,12 +133,12 @@ const Cart: React.FC = () => {
 
   if (cart.length === 0) {
     return (
-      <div className="blinkit-cart-page">
+      <div className="matall-cart-page">
         <SEO title="My Shopping Cart" description="Review your items in the cart and proceed to checkout for fast delivery." />
         <div className="cart-empty-lux main-content-responsive">
           <ShoppingCart size={80} strokeWidth={1.5} color="#e2e8f0" />
           <h2>Your cart is empty</h2>
-          <p>Add some products to witness the magic of Blinkit-style shopping!</p>
+          <p>Add some products to witness the magic of matall-style shopping!</p>
           <Link to="/products" className="f-add-btn" style={{ textDecoration: 'none' }}>Start Shopping</Link>
         </div>
       </div>
@@ -146,7 +146,7 @@ const Cart: React.FC = () => {
   }
 
   return (
-    <div className="blinkit-cart-page">
+    <div className="matall-cart-page">
       <SEO title="My Shopping Cart" description="Review your items in the cart and proceed to checkout for fast delivery." />
       <main className="checkout-content main-content-responsive">
         <div className="checkout-grid-responsive">
@@ -167,7 +167,7 @@ const Cart: React.FC = () => {
 
               <div className="cart-list-vertical">
                 {cart.map((item, idx) => (
-                  <div key={idx} className="cart-item-row-blinkit">
+                  <div key={idx} className="cart-item-row-matall">
                     <div className="c-item-img">
                       <img 
                         src={getFullImageUrl(item.product.imageUrl || (item.product.images && item.product.images[0]))} 

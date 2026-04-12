@@ -1,4 +1,4 @@
-.blinkit-support-page {
+.matall-support-page {
   background: #ffffff;
   min-height: 100vh;
   display: flex;
@@ -140,12 +140,25 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (min-width: 851px) {
-  .support-header-prd, .support-content-prd, .genie-header-sticky, .genie-messages-container, .genie-input-area, .policies-list-container {
+
+  .support-header-prd,
+  .support-content-prd,
+  .genie-header-sticky,
+  .genie-messages-container,
+  .genie-input-area,
+  .policies-list-container {
     max-width: 800px;
     margin: 0 auto;
     width: 100%;
@@ -155,5 +168,3 @@
     display: none;
   }
 }
-
-

@@ -190,7 +190,7 @@ const Tracking: React.FC = () => {
 
 
   return (
-    <div className="blinkit-tracking-page">
+    <div className="matall-tracking-page">
       <SEO title={`Track Order #${id?.slice(-8).toUpperCase()}`} description="Track your MatAll order status in real-time. See delivery timeline and details." />
       <header className="tracking-header-sticky">
         <div className="header-left-group">

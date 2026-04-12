@@ -178,7 +178,7 @@ const ProductDetail: React.FC = () => {
     : (product.images && product.images.length > 0 ? product.images : [product.imageUrl]);
 
   return (
-    <div className="blinkit-detail-page">
+    <div className="matall-detail-page">
       <SEO 
         title={`${product.brand} ${product.productName || product.name}`}
         description={product.description || `Buy ${product.brand} ${product.productName || product.name} on MatAll. Get it delivered within 60 minutes.`}
@@ -304,7 +304,7 @@ const ProductDetail: React.FC = () => {
                    <span>(₹{basePrice.toFixed(2)} + GST ₹{gstAmount.toFixed(2)})</span>
                 </div>
                 {currentMrp > currentPrice && (
-                  <div className="list-discount-badge-blinkit" style={{ fontSize: '0.75rem', marginTop: '4px' }}>
+                  <div className="list-discount-badge-matall" style={{ fontSize: '0.75rem', marginTop: '4px' }}>
                     {Math.round(((currentMrp - currentPrice)/currentMrp)*100)}% OFF on MRP
                   </div>
                 )}
@@ -576,7 +576,7 @@ const ProductDetail: React.FC = () => {
       <section className="recommendations-section main-content-responsive">
          <div className="section-head">
             <h3>Similar products</h3>
-            <button className="see-all-btn-blinkit">See all <ChevronRight size={14} /></button>
+            <button className="see-all-btn-matall">See all <ChevronRight size={14} /></button>
          </div>
          <div className="cat-grid-standard">
             {similarProducts.map((p) => (

@@ -340,7 +340,7 @@ const Checkout: React.FC = () => {
 
 
   return (
-    <div className="blinkit-checkout-page">
+    <div className="matall-checkout-page">
       <SEO title="Secure Checkout" description="Finalize your order on MatAll. Secure payment and fast delivery for all your building material needs." />
       <header className="checkout-header-sticky">
         <div className="header-nav-container main-content-responsive">

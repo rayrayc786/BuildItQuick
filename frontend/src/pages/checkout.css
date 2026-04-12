@@ -1,4 +1,4 @@
-.blinkit-checkout-page {
+.matall-checkout-page {
   background: #f1f5f9;
   min-height: 100vh;
   display: flex;
@@ -16,7 +16,7 @@
   }
 
   /* Force hide Top Navbar on mobile Checkout */
-  :has(.blinkit-checkout-page) .navbar-container {
+  :has(.matall-checkout-page) .navbar-container {
     display: none !important;
   }
 
@@ -29,7 +29,7 @@
 @media (min-width: 851px) {
 
   /* Selectively hide the bottom navigation when on the checkout page on desktop */
-  :has(.blinkit-checkout-page) .landing-footer {
+  :has(.matall-checkout-page) .landing-footer {
     display: none !important;
   }
 }
@@ -122,7 +122,7 @@
   background: white;
   z-index: 1000;
   padding: 1rem 1.25rem;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
 }
 
 .header-title {
@@ -798,7 +798,7 @@
   gap: 8px;
 }
 
-.dot-blinkit {
+.dot-matall {
   width: 8px;
   height: 8px;
   background: #16a34a;

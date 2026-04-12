@@ -228,7 +228,7 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <div className="blinkit-profile-page">
+    <div className="matall-profile-page">
       <SEO title="My Profile" description="Manage your account, view savings, and check your order history on MatAll." />
       <main className="profile-content">
         <div className="profile-inner-container">

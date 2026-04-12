@@ -116,11 +116,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   }, [product.brand, product.productName, product.name]);
 
   return (
-    <div className="blinkit-list-card" onClick={handleCardClick}>
+    <div className="matall-list-card" onClick={handleCardClick}>
       {/* 1. Image Section */}
       <div className="list-card-image-section">
         {discount > 0 && (
-          <div className="list-discount-badge-blinkit">
+          <div className="list-discount-badge-matall">
             {discount}% OFF
           </div>
         )}

@@ -1,9 +1,10 @@
-.blinkit-detail-page {
+.matall-detail-page {
   background: #f8fafc;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: 65px; /* Added to global 80px = 145px, perfect for 2 stacked bars (130px) */
+  padding-bottom: 65px;
+  /* Added to global 80px = 145px, perfect for 2 stacked bars (130px) */
 }
 
 /* Header Styling */
@@ -17,12 +18,13 @@
   padding: 0.75rem 1rem;
   gap: 0.5rem;
   width: 100%;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 @media (min-width: 851px) {
   .detail-header-sticky {
-    display: none !important; /* Force hide on desktop */
+    display: none !important;
+    /* Force hide on desktop */
   }
 }
 
@@ -74,7 +76,9 @@
   height: 100%;
 }
 
-.image-snap-track::-webkit-scrollbar { display: none; }
+.image-snap-track::-webkit-scrollbar {
+  display: none;
+}
 
 .snap-img-item {
   min-width: 100%;
@@ -148,7 +152,9 @@
   scrollbar-width: none;
 }
 
-.highlights-scroll-row::-webkit-scrollbar { display: none; }
+.highlights-scroll-row::-webkit-scrollbar {
+  display: none;
+}
 
 .highlight-chip {
   min-width: 90px;
@@ -159,7 +165,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .h-label {
@@ -330,9 +336,20 @@
   flex-shrink: 0;
 }
 
-.policy-item-icon.damage { background: #fee2e2; color: #ef4444; }
-.policy-item-icon.mismatch { background: #fef3c7; color: #d97706; }
-.policy-item-icon.hardware { background: #dbeafe; color: #2563eb; }
+.policy-item-icon.damage {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.policy-item-icon.mismatch {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.policy-item-icon.hardware {
+  background: #dbeafe;
+  color: #2563eb;
+}
 
 .policy-item-info {
   flex: 1;
@@ -360,8 +377,15 @@
   letter-spacing: 0.05em;
 }
 
-.policy-badge.red { background: #fee2e2; color: #b91c1c; }
-.policy-badge.blue { background: #dbeafe; color: #1e40af; }
+.policy-badge.red {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.policy-badge.blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
 
 .policy-desc {
   margin: 0;
@@ -445,8 +469,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .details-para {
@@ -582,7 +611,7 @@
   font-weight: 900;
 }
 
-.see-all-btn-blinkit {
+.see-all-btn-matall {
   background: none;
   border: none;
   color: #16a34a;
@@ -596,7 +625,7 @@
   transition: all 0.2s ease;
 }
 
-.see-all-btn-blinkit:hover {
+.see-all-btn-matall:hover {
   transform: translateX(3px);
   color: #15803d;
 }
@@ -614,7 +643,7 @@
   justify-content: space-between;
   border-top: 1px solid #f1f5f9;
   z-index: 2000;
-  box-shadow: 0 -10px 40px rgba(0,0,0,0.05);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.05);
 }
 
 .footer-price-info {
@@ -741,7 +770,7 @@
   .snap-img-item {
     background: white;
     border-radius: 24px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
   }
 
   .detail-main-info {
@@ -762,14 +791,16 @@
     font-size: 2rem;
   }
 
-  .f-add-btn, .f-qty-control {
+  .f-add-btn,
+  .f-qty-control {
     width: 100%;
     margin-top: 2rem;
     position: static;
   }
 
   .detail-sticky-footer {
-    display: none; /* In desktop, use a static ADD button in the info side */
+    display: none;
+    /* In desktop, use a static ADD button in the info side */
   }
 }
 
@@ -819,6 +850,5 @@
   background: #000;
   color: #FFEA00;
   border-color: #000;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-

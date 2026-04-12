@@ -1,9 +1,10 @@
-.blinkit-cart-page {
+.matall-cart-page {
   background: #f1f5f9;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: 180px; /* Space for dual sticky footers */
+  padding-bottom: 180px;
+  /* Space for dual sticky footers */
 }
 
 /* Header */
@@ -16,15 +17,17 @@
   align-items: center;
   padding: 0.75rem 1rem;
   gap: 1rem;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 /* Global Navigation Control for Cart Page specifically */
 @media (max-width: 850px) {
+
   /* Ensure Landing Footer is visible on Cart Mobile */
   .landing-footer {
     display: flex !important;
-    z-index: 4000 !important; /* On top of everything */
+    z-index: 4000 !important;
+    /* On top of everything */
   }
 
   /* Push the Cart/Checkout Transactional Footer UP by the height of the bottom nav (65px) */
@@ -34,6 +37,7 @@
 }
 
 @media (min-width: 851px) {
+
   /* Selectively hide the bottom navigation when on the cart page on desktop */
   .landing-footer {
     display: none !important;
@@ -85,7 +89,7 @@
   margin: 0.75rem;
   border-radius: 20px;
   padding: 1.25rem 1rem;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
 }
 
 .ship-head-row {
@@ -126,7 +130,7 @@
   gap: 1.25rem;
 }
 
-.cart-item-row-blinkit {
+.cart-item-row-matall {
   display: flex;
   gap: 16px;
   position: relative;
@@ -135,7 +139,7 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
-.cart-item-row-blinkit:last-child {
+.cart-item-row-matall:last-child {
   border-bottom: none;
 }
 
@@ -163,7 +167,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  min-width: 0; /* important for flex ellipsis */
+  min-width: 0;
+  /* important for flex ellipsis */
 }
 
 .c-item-info h5 {
@@ -268,7 +273,7 @@
   margin: 1.25rem;
   padding: 1.25rem;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
   border: 1px solid #f1f5f9;
 }
 
@@ -483,7 +488,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     border: none;
   }
 
@@ -555,5 +560,3 @@
     transform: translateY(0);
   }
 }
-
-

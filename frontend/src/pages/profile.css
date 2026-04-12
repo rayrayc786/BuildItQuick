@@ -1,4 +1,4 @@
-.blinkit-profile-page {
+.matall-profile-page {
   background: #fdfdfd;
   min-height: 100vh;
   display: flex;
@@ -514,6 +514,7 @@
     align-items: flex-end;
     padding: 0;
   }
+
   .address-manager-drawer {
     border-radius: 24px 24px 0 0;
     max-height: 92vh;

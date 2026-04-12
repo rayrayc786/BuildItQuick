@@ -19,7 +19,7 @@ const Support: React.FC = () => {
   };
 
   return (
-    <div className="blinkit-support-page">
+    <div className="matall-support-page">
       <SEO title="Customer Support" description="Get help with your MatAll orders. Contact our support team via WhatsApp for quick assistance." />
       <header className="support-header-prd">
         <div className="header-nav-support">

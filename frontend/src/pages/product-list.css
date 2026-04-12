@@ -1,5 +1,5 @@
-/* Blinkit Style List Page - Mobile Optimized 3-Column */
-.blinkit-list-page {
+/* matall Style List Page - Mobile Optimized 3-Column */
+.matall-list-page {
   background: #ffffff;
   min-height: 100vh;
   display: flex;
@@ -12,7 +12,7 @@
   top: 0;
   background: white;
   z-index: 1000;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .header-nav {
@@ -67,7 +67,7 @@
 
 .ql-item {
   background: white;
-  color: #0c831f; 
+  color: #0c831f;
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 0.8rem;
@@ -233,11 +233,11 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
   }
-  
+
   .brand-sidebar-vertical {
     width: 130px;
   }
-  
+
   .brand-sidebar-img {
     width: 80px;
     height: 80px;
@@ -265,7 +265,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #25D366; /* WhatsApp Green */
+  background: #25D366;
+  /* WhatsApp Green */
   color: white;
   padding: 12px 24px;
   border-radius: 50px;
@@ -305,7 +306,8 @@
 /* View Cart Bar */
 .view-cart-bar-sticky {
   position: fixed;
-  bottom: 80px; /* Above global footer */
+  bottom: 80px;
+  /* Above global footer */
   left: 12px;
   right: 12px;
   background: #16a34a;
@@ -326,7 +328,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   z-index: 9999;
   display: flex;
   align-items: flex-end;
@@ -345,8 +347,13 @@
 }
 
 @keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
 }
 
 .modal-header {
@@ -447,17 +454,17 @@
     align-items: center;
     justify-content: center;
   }
-  
+
   .category-filter-modal-container {
     width: 700px;
     height: 600px;
     border-radius: 20px;
   }
-  
+
   .cat-sidebar {
     width: 180px;
   }
-  
+
   .cat-tab {
     font-size: 0.9rem;
     padding: 20px;

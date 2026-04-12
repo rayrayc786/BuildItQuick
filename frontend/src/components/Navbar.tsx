@@ -115,7 +115,7 @@ const Navbar: React.FC = () => {
   // On mobile, if it has a custom header, hide this navbar
   if (!isDesktop && hasCustomHeader) return null;
 
-  const isBlinkitHeader = !isLoggedIn && isDesktop;
+  const isMatallHeader = !isLoggedIn && isDesktop;
 
   const renderSearchBar = () => (
     <div className="search-row-main-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', flex: 1 }}>
@@ -163,7 +163,7 @@ const Navbar: React.FC = () => {
     <header className={`navbar-new-layout ${isHomePage ? 'landing-header-wrapper' : ''}`}>
       {(isHomePage && !isDesktop) ? (
         <LocationSelector searchNode={renderSearchBar()} />
-      ) : isBlinkitHeader ? (
+      ) : isMatallHeader ? (
         <>
           <div className="standard-navbar main-content-responsive">
             <div className="nav-left">
@@ -172,7 +172,7 @@ const Navbar: React.FC = () => {
                   <img src={logoImg} alt="MatAll" className="navbar-logo-img" />
                 </Link>
               </div>
-              <LocationSelectorInNav isBlinkitStyle={true} />
+              <LocationSelectorInNav ismatallStyle={true} />
             </div>
             
             {renderSearchBar()}
@@ -182,7 +182,7 @@ const Navbar: React.FC = () => {
                 Login
               </Link>
               
-              <Link to="/cart" className="cart-button-blinkit">
+              <Link to="/cart" className="cart-button-matall">
                 <ShoppingCart size={20} />
                 <span>My Cart</span>
               </Link>
@@ -212,7 +212,7 @@ const Navbar: React.FC = () => {
             <Link to="/" className="logo">
               <img src={logoImg} alt="MatAll" className="navbar-logo-img" />
             </Link>
-            {isDesktop && <LocationSelectorInNav isBlinkitStyle={false} />}
+            {isDesktop && <LocationSelectorInNav ismatallStyle={false} />}
           </div>
           
           {renderSearchBar()}
@@ -294,7 +294,7 @@ const Navbar: React.FC = () => {
   );
 };
 
-const LocationSelectorInNav = ({ isBlinkitStyle }: { isBlinkitStyle?: boolean }) => {
+const LocationSelectorInNav = ({ ismatallStyle }: { ismatallStyle?: boolean }) => {
   const { location, setLocation } = useLocationContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -308,7 +308,7 @@ const LocationSelectorInNav = ({ isBlinkitStyle }: { isBlinkitStyle?: boolean })
     }, true); // Mark as manual selection
   };
 
-  if (isBlinkitStyle) {
+  if (ismatallStyle) {
     return (
       <div className="delivery-info-container" onClick={() => setIsModalOpen(true)}>
         <span className="delivery-title">Delivery in 60 minutes</span>

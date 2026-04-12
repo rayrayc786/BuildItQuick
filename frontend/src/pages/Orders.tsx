@@ -61,7 +61,7 @@ const Orders: React.FC = () => {
   };
 
   return (
-    <div className="blinkit-orders-page">
+    <div className="matall-orders-page">
       <SEO title="My Orders" description="View your past orders and track current deliveries on MatAll." />
       <header className="orders-header-sticky">
         <div className="header-left">
