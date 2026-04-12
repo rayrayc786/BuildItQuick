@@ -442,15 +442,16 @@ const SKUManager: React.FC = () => {
               <th>SKU ID</th>
               <th>Prices (MRP/Sale)</th>
               <th>Delivery</th>
+              <th>Status</th>
               <th>Stock</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="loading-cell">Loading Inventory...</td></tr>
+              <tr><td colSpan={8} className="loading-cell">Loading Inventory...</td></tr>
             ) : filteredSkus.length === 0 ? (
-              <tr><td colSpan={7} className="empty-cell">No products found matching "{search}"</td></tr>
+              <tr><td colSpan={8} className="empty-cell">No products found matching "{search}"</td></tr>
             ) : (
               filteredSkus.map(sku => (
                 <tr key={sku._id} className={!sku.isActive ? 'sku-row-inactive' : ''}>
@@ -510,6 +511,11 @@ const SKUManager: React.FC = () => {
                   <td>
                     <span className={`sku-delivery-text ${sku.deliveryTime === 'On Demand' ? 'on-demand-highlight' : ''}`}>
                       {sku.deliveryTime || 'N/A'}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`sku-variant-badge ${sku.status === 'Active' || sku.isActive ? 'group-count' : ''}`} style={{ textTransform: 'capitalize' }}>
+                      {sku.status || (sku.isActive ? 'Active' : 'Inactive')}
                     </span>
                   </td>
                   <td>

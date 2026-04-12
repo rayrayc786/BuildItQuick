@@ -72,16 +72,16 @@ const Checkout: React.FC = () => {
   const deliveryMode = logisticsInfo.mode;
   const handlingCharge = settings.platformFee;
   const grandTotal = itemsTotal + deliveryCharge + handlingCharge;
-  const appliedGstRates = Array.from(new Set(cart.map(item => {
-    let rate = (item.product as any).gst || 18;
-    if (item.selectedVariant && item.product.variants) {
-      const variant: any = item.product.variants.find(v => v.name === item.selectedVariant);
-      if (variant) {
-        rate = variant.pricing?.gst || (item.product as any).gst || 18;
-      }
-    }
-    return rate;
-  }))).sort((a, b) => b - a);
+  // const appliedGstRates = Array.from(new Set(cart.map(item => {
+  //   let rate = (item.product as any).gst || 18;
+  //   if (item.selectedVariant && item.product.variants) {
+  //     const variant: any = item.product.variants.find(v => v.name === item.selectedVariant);
+  //     if (variant) {
+  //       rate = variant.pricing?.gst || (item.product as any).gst || 18;
+  //     }
+  //   }
+  //   return rate;
+  // }))).sort((a, b) => b - a);
 
   useEffect(() => {
     let timer: any;
@@ -415,7 +415,7 @@ const Checkout: React.FC = () => {
                   <span className="bill-val">₹{(totalAmount - totalGst).toFixed(2)}</span>
                 </div>
                 <div className="bill-row-checkout" style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '8px' }}>
-                  <span>GST Amount {appliedGstRates.length > 0 ? `(@ ${appliedGstRates.map(r => `${r}%`).join(' & ')})` : ''}</span>
+                  <span>GST Amount </span>
                   <span className="bill-val">₹{totalGst.toFixed(2)}</span>
                 </div>
                 <div className="bill-row-checkout">

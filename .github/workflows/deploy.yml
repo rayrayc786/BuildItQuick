@@ -17,6 +17,10 @@ jobs:
           host: 195.35.21.157
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: 15m
+          debug: true
           script: |
             set -e
             echo "Checking deployment directory..."

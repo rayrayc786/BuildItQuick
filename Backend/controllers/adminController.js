@@ -415,8 +415,15 @@ exports.bulkUploadProducts = async (req, res) => {
         });
 
         const statusVal = getVal(['Status', 'status']);
+        const normalizedStatus = String(statusVal || '').trim().toLowerCase();
         if (statusVal !== null) {
-          productMap.get(productId).productData.isActive = String(statusVal).trim().toLowerCase() === 'active';
+          const isA = normalizedStatus === 'active';
+          productMap.get(productId).productData.isActive = isA;
+          productMap.get(productId).productData.status = isA ? 'Active' : 'Inactive';
+        } else {
+          // If no status provided, default to Active/In stock
+          productMap.get(productId).productData.isActive = true;
+          productMap.get(productId).productData.status = 'Active';
         }
       } else {
         const p = productMap.get(productId);
@@ -426,7 +433,9 @@ exports.bulkUploadProducts = async (req, res) => {
         
         const statusVal = getVal(['Status', 'status']);
         if (statusVal !== null) {
-          p.productData.isActive = String(statusVal).trim().toLowerCase() === 'active';
+          const isA = String(statusVal).trim().toLowerCase() === 'active';
+          p.productData.isActive = isA;
+          p.productData.status = isA ? 'Active' : 'Inactive';
         }
         
         // Avoid duplicate Variant Ids in the same product group from Excel
@@ -821,8 +830,9 @@ exports.toggleActiveStatus = async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
     product.isActive = !product.isActive;
+    product.status = product.isActive ? 'Active' : 'Inactive';
     await product.save();
-    res.json({ message: `Product is now ${product.isActive ? 'Active' : 'Hidden'}`, isActive: product.isActive });
+    res.json({ message: `Product is now ${product.isActive ? 'Active' : 'Hidden'}`, isActive: product.isActive, status: product.status });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
