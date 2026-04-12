@@ -373,6 +373,20 @@ function ManagementModal({
                           }} 
                         />
                       </div>
+                      <div className="input-group-admin">
+                        <label>Contact Phone</label>
+                        <input 
+                          key={`site-phone-${idx}`}
+                          type="text" 
+                          placeholder="Recipient phone" 
+                          value={site.contactPhone || ''} 
+                          onChange={(e) => {
+                            const newSites = [...(formData.jobsites || [])];
+                            newSites[idx] = { ...newSites[idx], contactPhone: e.target.value };
+                            setFormData({...formData, jobsites: newSites});
+                          }} 
+                        />
+                      </div>
                       <button type="button" className="remove-site-btn" onClick={() => {
                         const newSites = formData.jobsites.filter((_: any, i: number) => i !== idx);
                         setFormData({...formData, jobsites: newSites});
@@ -535,8 +549,12 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
                  <span>{order.userId?.fullName || 'Guest'}</span>
               </div>
               <div className="meta-item">
-                 <label>Contact</label>
+                 <label>Contact (User)</label>
                  <span>{order.userId?.phoneNumber || 'N/A'}</span>
+              </div>
+              <div className="meta-item">
+                 <label>Contact (Site)</label>
+                 <span>{order.deliveryAddress?.contactPhone || 'N/A'}</span>
               </div>
               <div className="meta-item">
                  <label>PIN Code</label>

@@ -383,9 +383,15 @@ const Tracking: React.FC = () => {
                    {new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} at {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                  </p>
               </div>
-              <div className="info-block">
+              <div className="info-block full-width">
                  <span className="info-label">Delivering to</span>
-                 <p className="info-value">{order.shippingAddress || order.deliveryAddress?.name}</p>
+                 <p className="info-value"><strong>{order.deliveryAddress?.name || 'Home'}</strong></p>
+                 <p className="info-value" style={{ fontSize: '0.85rem', color: '#64748b' }}>{order.deliveryAddress?.fullAddress || order.shippingAddress || 'No address provided'}</p>
+                 {order.deliveryAddress?.contactPhone && (
+                   <p className="info-value" style={{ fontSize: '0.85rem', color: '#16a34a', fontWeight: '800', marginTop: '4px' }}>
+                     📞 {order.deliveryAddress.contactPhone}
+                   </p>
+                 )}
               </div>
            </div>
         </div>

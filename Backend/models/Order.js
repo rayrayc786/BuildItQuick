@@ -55,6 +55,7 @@ const OrderSchema = new mongoose.Schema({
     name: String,
     area: String, // Neighborhood, Sector, or Zone
     fullAddress: String,
+    contactPhone: String,
     pincode: String,
     city: String,
     state: String,

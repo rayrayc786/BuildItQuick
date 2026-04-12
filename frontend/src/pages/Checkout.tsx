@@ -268,6 +268,7 @@ const Checkout: React.FC = () => {
         deliveryAddress: {
           name: selectedAddress.name || 'Site',
           fullAddress: selectedAddress.addressText || 'N/A',
+          contactPhone: (selectedAddress as any).contactPhone || '',
           pincode: (selectedAddress as any).pincode || '',
           city: (selectedAddress as any).city || '',
           state: (selectedAddress as any).state || '',
