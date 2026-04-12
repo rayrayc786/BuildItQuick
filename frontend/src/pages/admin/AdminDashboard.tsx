@@ -549,6 +549,10 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
                  <span>{order.userId?.fullName || 'Guest'}</span>
               </div>
               <div className="meta-item">
+                 <label>Recipient's Name</label>
+                 <span>{order.deliveryAddress?.name || 'N/A'}</span>
+              </div>
+              <div className="meta-item">
                  <label>Contact (User)</label>
                  <span>{order.userId?.phoneNumber || 'N/A'}</span>
               </div>

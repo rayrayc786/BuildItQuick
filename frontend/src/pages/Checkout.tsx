@@ -414,7 +414,7 @@ const Checkout: React.FC = () => {
                   <span>Item Total (Excl. GST)</span>
                   <span className="bill-val">₹{(totalAmount - totalGst).toFixed(2)}</span>
                 </div>
-                <div className="bill-row-checkout" style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '8px' }}>
+                <div className="bill-row-checkout bill-row-secondary">
                   <span>GST Amount </span>
                   <span className="bill-val">₹{totalGst.toFixed(2)}</span>
                 </div>
@@ -429,6 +429,7 @@ const Checkout: React.FC = () => {
                   <span>Handling Charge</span>
                   <span className="bill-val">₹{handlingCharge.toFixed(2)}</span>
                 </div>
+
                 <div className="bill-row-checkout grand-total-row">
                   <span className="total-label">Grand Total</span>
                   <span className="total-val">₹{grandTotal.toFixed(2)}</span>
