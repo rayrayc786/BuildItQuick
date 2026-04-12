@@ -54,6 +54,8 @@ const SupplierDashboard: React.FC = () => {
     loadAll();
     connectSocket(supplierSocket);
 
+    // Global notification permission and system notifications are handled in App.tsx (SocketManager)
+
     supplierSocket.on('order-updated', (updatedOrder: any) => {
       setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
     });
@@ -61,7 +63,7 @@ const SupplierDashboard: React.FC = () => {
     supplierSocket.on('new-order', () => {
       // Refresh available orders when a new one comes in
       fetchAvailableOrders();
-      toast.success('New matching procurement request available!');
+      // Global toast/sound/notif is handled in App.tsx (SocketManager)
     });
 
     return () => {

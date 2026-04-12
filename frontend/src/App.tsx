@@ -86,7 +86,7 @@ import Navbar from './components/Navbar';
 import AdminSidebar from './components/admin/AdminSidebar';
 import ScrollToTop from './components/ScrollToTop';
 // import FloatingCart from './components/FloatingCart';
-import { customerSocket, supplierSocket, connectSocket } from './socket';
+import { customerSocket, supplierSocket, adminSocket, connectSocket } from './socket';
 import './App.css';
 import './responsive.css';
 
@@ -121,44 +121,106 @@ const AdminLayout = () => {
 };
 
 const SocketManager = () => {
-  const location = useLocation();
   
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    // Request notification permission
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+
+    const showSystemNotification = (title: string, body: string, tag: string) => {
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        const n = new Notification(title, { body, icon: '/logo192.png', tag });
+        n.onclick = () => { window.focus(); n.close(); };
+      }
+    };
+
+    const playSound = (file: string) => {
+      const audio = new Audio(file);
+      audio.play().catch(e => console.error('Audio play failed:', e));
+    };
     
     // Role-based Socket Connection Management
     if (!user.role || user.role === 'End User' || user.role === 'Rider') {
       connectSocket(customerSocket);
       
-      // Remove existing listeners to avoid duplicates
-      customerSocket.off('order-status-update');
-      customerSocket.on('order-status-update', (data: any) => {
-        toast.success(`Order Update: ${data.status.replace(/-/g, ' ').toUpperCase()}`, {
+      const handleStatusUpdate = (data: any) => {
+        const statusText = data.status.replace(/-/g, ' ').toUpperCase();
+        toast.success(`Order Update: ${statusText}`, {
           icon: '📋',
           duration: 5000,
           position: 'bottom-right'
         });
-      });
+        playSound('/sounds/notification.mp3');
+        showSystemNotification('📋 Order Update', `Your order status has changed to: ${statusText}`, `order-update-${data.orderId}`);
+      };
+
+      customerSocket.on('order-status-update', handleStatusUpdate);
+      return () => {
+        customerSocket.off('order-status-update', handleStatusUpdate);
+      };
     }
 
     if (user.role === 'Supplier') {
       connectSocket(supplierSocket);
-      supplierSocket.off('new-order');
-      supplierSocket.on('new-order', (order: any) => {
-        toast.success(`NEW PROCUREMENT REQUEST! #BID-${order._id.slice(-6).toUpperCase()}`, {
+      const handleNewOrderProcurement = (order: any) => {
+        const refId = order._id.slice(-6).toUpperCase();
+        toast.success(`NEW PROCUREMENT REQUEST! #BID-${refId}`, {
           icon: '📦',
           duration: 10000,
           position: 'top-center',
           style: { background: '#0f172a', color: '#fff', border: '1px solid #f59e0b', padding: '16px', fontWeight: 'bold' }
         });
-      });
+        playSound('/sounds/New Order.mpeg');
+        showSystemNotification('📦 New Procurement Request!', `A new order #BID-${refId} matching your expertise is available.`, 'new-procurement');
+      };
+
+      supplierSocket.on('new-order', handleNewOrderProcurement);
+      return () => {
+        supplierSocket.off('new-order', handleNewOrderProcurement);
+      };
     }
-    
-    // Admin socket is uniquely managed inside AdminDashboard.tsx to handle local component state refreshes.
-  }, [location.pathname]);
+
+    if (user.role === 'Admin') {
+      connectSocket(adminSocket);
+
+      const handleNewOrder = (order: any) => {
+        const refId = String(order?._id || order?.id || 'UNKNOWN').slice(-6).toUpperCase();
+        toast.success(`🎉 New Order Received! (#${refId})`);
+        playSound('/sounds/New Order.mpeg');
+        showSystemNotification('🎉 New Order Received!', `Order #${refId} has been placed.`, 'admin-new-order');
+      };
+
+      const handleNewRequest = (request: any) => {
+        toast.success(`📸 New Material Request from ${request.name}!`);
+        playSound('/sounds/New request.mpeg');
+        showSystemNotification('📸 New Material Request!', `New request from ${request.name}.`, 'admin-new-request');
+      };
+
+      const handleNewOnDemand = (request: any) => {
+        toast.success(`📞 New On-Demand Request for ${request.productName}!`);
+        playSound('/sounds/New request.mpeg');
+        showSystemNotification('📞 New On-Demand Request!', `Custom request for ${request.productName}.`, 'admin-new-ondemand');
+      };
+
+      adminSocket.on('new-order', handleNewOrder);
+      adminSocket.on('new-user-request', handleNewRequest);
+      adminSocket.on('new-on-demand-request', handleNewOnDemand);
+
+      return () => {
+        adminSocket.off('new-order', handleNewOrder);
+        adminSocket.off('new-user-request', handleNewRequest);
+        adminSocket.off('new-on-demand-request', handleNewOnDemand);
+      };
+    }
+  }, []);
 
   return null;
 };

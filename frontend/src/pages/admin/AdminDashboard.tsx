@@ -676,6 +676,7 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+    // Global notification permission is handled in App.tsx (SocketManager)
   }, []);
 
   useEffect(() => {
@@ -699,28 +700,15 @@ const AdminDashboard: React.FC = () => {
     const onConnect = () => console.log('Admin Socket Connected');
     const onNewOrder = (order: any) => {
        console.log('Received socket new-order payload:', order);
-       const refId = String(order?._id || order?.id || 'UNKNOWN').slice(-6).toUpperCase();
-       
-       // Play notification sound
-       const audio = new Audio('/sounds/New Order.mpeg');
-       audio.play().catch(e => console.error('Audio play failed:', e));
-       
-       toast.success(`🎉 New Order Received! (#${refId})`);
        fetchData(); // Auto-refresh all stats and orders
     };
 
 
-    const onNewUserRequest = (request: any) => {
-       const audio = new Audio('/sounds/New request.mpeg');
-       audio.play().catch(e => console.error('Audio play failed:', e));
-       toast.success(`📸 New Material Request from ${request.name}!`);
+    const onNewUserRequest = () => {
        fetchData();
     };
 
-    const onNewOnDemandRequest = (request: any) => {
-       const audio = new Audio('/sounds/New request.mpeg');
-       audio.play().catch(e => console.error('Audio play failed:', e));
-       toast.success(`📞 New On-Demand Request for ${request.productName}!`);
+    const onNewOnDemandRequest = () => {
        fetchData();
     };
 
