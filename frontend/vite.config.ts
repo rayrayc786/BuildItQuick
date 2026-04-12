@@ -23,38 +23,39 @@ export default defineConfig(({ mode }) => ({
         screenshots: [
           {
             src: 'screenshot-wide.png',
-            sizes: '1024x1024',
+            sizes: '1280x720',
             type: 'image/png',
             form_factor: 'wide',
             label: 'MatAll Desktop'
           },
           {
             src: 'screenshot-mobile.png',
-            sizes: '1024x1024',
+            sizes: '390x844',
             type: 'image/png',
+            form_factor: 'narrow',
             label: 'MatAll Mobile'
           }
         ],
         icons: [
           {
             src: 'pwa-192x192.png',
-            sizes: '1024x1024',
+            sizes: '192x192',
             type: 'image/png'
           },
           {
             src: 'pwa-512x512.png',
-            sizes: '1024x1024',
+            sizes: '512x512',
             type: 'image/png'
           },
           {
             src: 'pwa-512x512.png',
-            sizes: '1024x1024',
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
           },
           {
             src: 'pwa-512x512.png',
-            sizes: '1024x1024',
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
           }

@@ -410,11 +410,21 @@ exports.bulkUploadProducts = async (req, res) => {
           },
           variants: [variantData]
         });
+
+        const statusVal = getVal(['Status', 'status']);
+        if (statusVal !== null) {
+          productMap.get(productId).productData.isActive = String(statusVal).trim().toLowerCase() === 'active';
+        }
       } else {
         const p = productMap.get(productId);
         // Fill in missing product metadata if this row has it
         if (!p.productData.productName && productName) p.productData.productName = productName;
         if (!p.productData.category && getVal(['Category'])) p.productData.category = String(getVal(['Category'])).trim();
+        
+        const statusVal = getVal(['Status', 'status']);
+        if (statusVal !== null) {
+          p.productData.isActive = String(statusVal).trim().toLowerCase() === 'active';
+        }
         
         // Avoid duplicate Variant Ids in the same product group from Excel
         if (variantId && p.variants.some(v => v.variantId === variantId)) {
