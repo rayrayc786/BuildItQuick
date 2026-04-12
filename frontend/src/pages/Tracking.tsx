@@ -269,7 +269,7 @@ const Tracking: React.FC = () => {
 
                           <div className="item-price-qty-row">
                              <span className="qty-pill">Qty: {item.quantity}</span>
-                             <span className="price-bold">₹{item.unitPrice || item.price || 0}</span>
+                             <span className="price-bold">₹{Number(item.unitPrice || item.price || 0).toFixed(2)}</span>
                           </div>
                        </div>
                     </div>

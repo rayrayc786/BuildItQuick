@@ -95,7 +95,7 @@ const Orders: React.FC = () => {
                         {order.status === 'Delivered' ? ', Delivered in 45 mins' : ''}
                       </span>
                       <p className="order-sub-meta">
-                        ₹{order.totalAmount}, {new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}, {new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        ₹{Number(order.totalAmount || 0).toFixed(2)}, {new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}, {new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </p>
                       <div className={`order-status-tag ${order.status?.toLowerCase().replace(/\s+/g, '-')}`}>
                         {order.status || 'Accepted'}
