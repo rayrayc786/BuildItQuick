@@ -5,7 +5,8 @@ import {
   ArrowLeft, 
   Home, 
   ArrowUpDown, 
-  Filter
+  Filter,
+  X
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 
@@ -97,14 +98,27 @@ const BrandStore: React.FC = () => {
           <div className="filter-group">
             <button 
               className={`filter-chip-pill ${sortBy !== 'default' ? 'active' : ''}`}
-              onClick={() => setSortBy(sortBy === 'price-low' ? 'price-high' : 'price-low')}
+              onClick={() => {
+                if (sortBy === 'default') setSortBy('price-low');
+                else if (sortBy === 'price-low') setSortBy('price-high');
+                else setSortBy('default');
+              }}
             >
               <ArrowUpDown size={14} /> 
               Sort: {sortBy === 'price-low' ? 'Low to High' : sortBy === 'price-high' ? 'High to Low' : 'Price'}
+              {sortBy !== 'default' && <X size={12} />}
             </button>
             <button className="filter-chip-pill">
               <Filter size={14} /> Filter
             </button>
+            {selectedSubCat && (
+              <button 
+                className="filter-chip-pill clear-filter-btn" 
+                onClick={() => setSelectedSubCat(null)}
+              >
+                <X size={14} /> Clear
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -125,7 +139,7 @@ const BrandStore: React.FC = () => {
             <div 
               key={idx} 
               className={`cat-sidebar-item ${selectedSubCat === sub.name ? 'active' : ''}`}
-              onClick={() => setSelectedSubCat(sub.name)}
+              onClick={() => setSelectedSubCat(selectedSubCat === sub.name ? null : sub.name)}
             >
               <div className="cat-sidebar-img">
                 <img src={sub.image} alt={sub.name} />

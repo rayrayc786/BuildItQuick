@@ -12,8 +12,12 @@ const OrderItemSchema = new mongoose.Schema({
   sgstAmount: { type: Number },
   totalWeight: { type: Number, required: true }, // Pre-calculated weight
   totalVolume: { type: Number, required: true },  // Pre-calculated volume
-  selectedVariant: { type: String } // Human readable name of the variant selected
+  selectedVariant: { type: String }, // Human readable name of the variant selected
+  variantAttributes: { type: Map, of: String }, // Snapshot of selected variant attributes
+  variantImage: { type: String }, // Snapshot of selected variant's primary image
+  selectedVariantData: { type: Object } // Full snapshot of the selected variant (logistics, price, etc.)
 });
+
 
 const OrderSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

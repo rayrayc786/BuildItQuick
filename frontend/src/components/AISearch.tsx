@@ -12,6 +12,7 @@ const AISearch: React.FC = () => {
   const [showCameraModal, setShowCameraModal] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -146,7 +147,16 @@ const AISearch: React.FC = () => {
   const startCameraClick = async () => {
     if (requireLogin()) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+           throw new Error("Generic camera API not supported");
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          } 
+        });
         setShowCameraModal(true);
         setTimeout(() => {
           if (videoRef.current) {
@@ -154,10 +164,14 @@ const AISearch: React.FC = () => {
           }
         }, 100);
       } catch (err) {
-        toast.error("Camera access denied or device not found.");
+        console.error("Camera access error:", err);
+        // Fallback for mobile: trigger native camera via hidden input
+        toast.error("Custom camera not available. Opening native camera...");
+        cameraInputRef.current?.click();
       }
     }
   };
+
 
   const closeAndStopCamera = () => {
     if (videoRef.current?.srcObject) {
@@ -181,16 +195,43 @@ const AISearch: React.FC = () => {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (reader.result) {
-          processImage(reader.result.toString());
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const MAX_DIM = 1200;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height *= MAX_DIM / width;
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width *= MAX_DIM / height;
+            height = MAX_DIM;
+          }
         }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // Compress to 70% quality jpeg
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        processImage(compressedBase64);
       };
-      reader.readAsDataURL(file);
-    }
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
+
 
   const processImage = async (imageBase64: string) => {
     const user = requireLogin();
@@ -200,7 +241,7 @@ const AISearch: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/user-requests`, {
-        userId: user._id || user.id,
+        userId: String(user._id || user.id || ''),
         name: user.fullName || user.name || 'Unknown User',
         phone: user.phoneNumber || user.phone || 'Unknown Phone',
         imageBase64
@@ -226,7 +267,8 @@ const AISearch: React.FC = () => {
       canvas.width = videoRef.current.videoWidth;
       canvas.height = videoRef.current.videoHeight;
       canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
-      const dataUrl = canvas.toDataURL('image/jpeg');
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
       
       // Stop camera tracks immediately
       if (videoRef.current.srcObject) {
@@ -277,21 +319,36 @@ const AISearch: React.FC = () => {
                 </div>
               ) : (
                 <div className="search-options-grid">
-                  <div className="option-card" onClick={handleFileUploadClick}>
+                  <button type="button" className="option-card" onClick={handleFileUploadClick}>
                     <Upload size={32} />
                     <span>Upload Image</span>
                     <p>Handwritten lists or BOQs</p>
-                  </div>
-                  <div className="option-card" onClick={startCameraClick}>
+                  </button>
+                  <button type="button" className="option-card" onClick={startCameraClick}>
                     <Camera size={32} />
                     <span>Use Camera</span>
                     <p>Capture site notes live</p>
-                  </div>
+                  </button>
                 </div>
               )}
               
-              <input type="file" ref={fileInputRef} onChange={handleFileUpload} hidden accept="image/*" />
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileUpload} 
+                style={{ opacity: 0, position: 'absolute', pointerEvents: 'none', width: 0, height: 0 }} 
+                accept="image/*" 
+              />
+              <input 
+                type="file" 
+                ref={cameraInputRef} 
+                onChange={handleFileUpload} 
+                style={{ opacity: 0, position: 'absolute', pointerEvents: 'none', width: 0, height: 0 }} 
+                accept="image/*" 
+                capture="environment" 
+              />
             </div>
+
           </div>
         </div>
       )}

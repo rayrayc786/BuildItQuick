@@ -3034,12 +3034,22 @@ a {
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
+  background: transparent;
+  width: 100%;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .option-card:hover {
   border-color: var(--primary);
   background: #fffbeb;
+  transform: translateY(-2px);
 }
+
 
 .option-card span {
   display: block;

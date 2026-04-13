@@ -140,16 +140,29 @@ const ProductList: React.FC = () => {
     fetchSubCategories();
   }, [categoryId]);
 
+  // Ensure an active category is selected when the modal opens
+  useEffect(() => {
+    if (showFilters && !activeModalCat && allCategories.length > 0) {
+      setActiveModalCat(allCategories[0].name || allCategories[0]._id);
+    }
+  }, [showFilters, allCategories, activeModalCat]);
+
+  const activeCatObject = useMemo(() => {
+    return allCategories.find(c => c.name === activeModalCat || c._id === activeModalCat);
+  }, [allCategories, activeModalCat]);
+
   useEffect(() => {
     const fetchModalSubCats = async () => {
-      if (!activeModalCat) return;
+      const targetId = activeCatObject?._id || activeModalCat;
+      
+      if (!targetId) return;
       try {
-        const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products/sub-categories?categoryId=${activeModalCat}`);
+        const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products/sub-categories?categoryId=${encodeURIComponent(targetId)}`);
         setModalSubCats(data);
       } catch (err) { console.error(err); }
     };
     if (showFilters) fetchModalSubCats();
-  }, [activeModalCat, showFilters]);
+  }, [activeModalCat, showFilters, activeCatObject]);
 
   const brands = useMemo(() => {
     const uniqueBrands = Array.from(new Set(products.map(p => p.brand))).filter(Boolean);
@@ -167,9 +180,18 @@ const ProductList: React.FC = () => {
     } else if (sortBy === 'price-high') {
       result.sort((a, b) => b.price - a.price);
     }
-    
     return result;
   }, [products, selectedBrand, sortBy]);
+
+  const handleClearFilters = () => {
+    setSelectedBrand(null);
+    setSortBy('default');
+    navigate('/products');
+  };
+
+  const isFiltered = useMemo(() => {
+    return !!(categoryId || subCategoryName || searchTerm || selectedBrand);
+  }, [categoryId, subCategoryName, searchTerm, selectedBrand]);
 
   const currentCategoryMetadata = useMemo(() => {
     if (!categoryId) return null;
@@ -202,15 +224,22 @@ const ProductList: React.FC = () => {
             <div className="main-content-responsive ql-container" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: 0 }}>
               <span className="ql-label">Similar Products</span>
               <div className="ql-track">
-                {similarProducts.map((item, idx) => (
-                  <Link 
-                    key={idx} 
-                    to={item.link} 
-                    className={`ql-item ${item.name === subCategoryName ? 'active' : ''}`}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
+                {similarProducts.map((item, idx) => {
+                  const isActive = item.name === subCategoryName;
+                  // If active, clicking again removes the subCategory filter
+                  const toggleLink = isActive ? `/products?category=${categoryId}` : item.link;
+                  
+                  return (
+                    <Link 
+                      key={idx} 
+                      to={toggleLink} 
+                      className={`ql-item ${isActive ? 'active' : ''}`}
+                    >
+                      {item.name}
+                      {isActive && <X size={12} style={{ marginLeft: '4px' }} />}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -220,14 +249,24 @@ const ProductList: React.FC = () => {
           <div className="filter-group">
             <button 
               className={`filter-chip-pill ${sortBy !== 'default' ? 'active' : ''}`}
-              onClick={() => setSortBy(sortBy === 'price-low' ? 'price-high' : 'price-low')}
+              onClick={() => {
+                if (sortBy === 'default') setSortBy('price-low');
+                else if (sortBy === 'price-low') setSortBy('price-high');
+                else setSortBy('default');
+              }}
             >
               <ArrowUpDown size={14} /> 
               Sort: {sortBy === 'price-low' ? 'Low to High' : sortBy === 'price-high' ? 'High to Low' : 'Price'}
+              {sortBy !== 'default' && <X size={12} />}
             </button>
             <button className="filter-chip-pill" onClick={() => setShowFilters(!showFilters)}>
               <Filter size={14} /> Filter
             </button>
+            {isFiltered && (
+              <button className="filter-chip-pill clear-filter-btn" onClick={handleClearFilters}>
+                <X size={14} /> Clear
+              </button>
+            )}
           </div>
         </div>
       </header>

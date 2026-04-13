@@ -65,7 +65,7 @@ exports.getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find({})
       .populate('userId', 'fullName phoneNumber email')
-      .populate('items.productId', 'productName name brand images sku hsnCode productCode category subCategory variants imageUrl')
+      .populate('items.productId', '-variants')
       .sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
@@ -76,7 +76,7 @@ exports.getAllOrders = async (req, res) => {
 exports.getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.id })
-      .populate('items.productId')
+      .populate('items.productId', '-variants')
       .sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {

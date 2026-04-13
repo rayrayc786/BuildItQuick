@@ -409,7 +409,7 @@ const Checkout: React.FC = () => {
                   <span className="bill-val">{deliveryCharge > 0 ? `₹${deliveryCharge.toFixed(2)}` : <span className="free">FREE</span>}</span>
                 </div>
                 <div className="bill-row-checkout">
-                  <span>Handling Charge</span>
+                  <span>Handling Charge (incl GST)</span>
                   <span className="bill-val">₹{handlingCharge.toFixed(2)}</span>
                 </div>
 

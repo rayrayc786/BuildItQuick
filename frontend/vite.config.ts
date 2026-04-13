@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'maskable-icon.png'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'maskable-icon.png', 'MatAll_Policies.pdf'],
       manifest: {
         name: 'MatAll: Home Repair Supplies within 60 mins',
         short_name: 'MatAll',
@@ -67,7 +67,7 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         // Only precache files in production mode to avoid dev warnings
-        globPatterns: mode === 'production' ? ['**/*.{js,css,html,ico,png,svg,webmanifest}'] : [],
+        globPatterns: mode === 'production' ? ['**/*.{js,css,html,ico,png,svg,webmanifest,pdf}'] : [],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true

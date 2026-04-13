@@ -244,6 +244,14 @@ exports.updateOrderStatus = async (req, res) => {
         orderId: order._id,
         status: order.status
       });
+      
+      // Notify all admins about the change
+      console.log('Broadcasting order update to all admins');
+      io.of('/admin').emit('order-updated', {
+        orderId: order._id,
+        status: order.status,
+        updatedOrder: order
+      });
     }
 
     res.json(order);

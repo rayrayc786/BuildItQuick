@@ -36,7 +36,7 @@ const calculateOrderTotals = (items, settings = null) => {
   const fee_delivery = selectedLogistics.rate;
 
   const mappedItems = items.map(item => {
-    // unitPrice is considered BASE price
+    // unitPrice is considered INCLUSIVE of GST (matches salePrice)
     const unitPrice = item.unitPrice || item.price || 0; 
     const hydratedProduct = item.product;
     const productId = hydratedProduct?._id || item.productId || item.product;
@@ -46,21 +46,35 @@ const calculateOrderTotals = (items, settings = null) => {
     const weight = item.totalWeight || (hydratedProduct?.inventory?.unitWeight ? (hydratedProduct.inventory.unitWeight * quantity) / 1000 : 0);
     const volume = item.totalVolume || 0;
 
-    const totalTaxRate = item.taxRate || 18; // Default 18% GST
+    const totalTaxRate = item.taxRate || 18; 
     
-    const rowBaseTotal = unitPrice * quantity;
-    const rowTaxTotal = rowBaseTotal * (totalTaxRate / 100);
+    // Reverse calculate the Base Price and Tax from the Inclusive Price
+    const rowTotalInclGST = unitPrice * quantity;
+    const rowBaseTotal = rowTotalInclGST / (1 + totalTaxRate / 100);
+    const rowTaxTotal = rowTotalInclGST - rowBaseTotal;
 
     totalWeight += weight;
     totalVolume += volume;
     totalBaseAmount += rowBaseTotal;
     totalTaxAmount += rowTaxTotal;
 
+    // Look up the selected variant to snapshot its attributes and image
+    const selectedVariantName = item.selectedVariant || '';
+    const matchedVariant = hydratedProduct?.variants?.find(v => v.name === selectedVariantName) || hydratedProduct?.variants?.[0];
+    const variantAttrs = matchedVariant?.attributes;
+    // Convert Mongoose Map to plain object if needed
+    const variantAttributes = variantAttrs instanceof Map ? Object.fromEntries(variantAttrs) : (variantAttrs || {});
+    const variantImage = matchedVariant?.images?.[0] || hydratedProduct?.imageUrl || '';
+
     return {
       productId,
+      selectedVariant: selectedVariantName,
+      variantAttributes,
+      variantImage,
+      selectedVariantData: matchedVariant ? (matchedVariant.toObject ? matchedVariant.toObject() : matchedVariant) : null,
       quantity,
       unitPrice,
-      basePrice: unitPrice,
+      basePrice: unitPrice / (1 + totalTaxRate / 100), // Store the per-unit base price (Excl GST)
       taxRate: totalTaxRate,
       igstAmount: rowTaxTotal,
       cgstAmount: rowTaxTotal / 2,
@@ -73,25 +87,19 @@ const calculateOrderTotals = (items, settings = null) => {
 
   // Additional Fees logic: treating them as INCLUSIVE of GST (matches Frontend display)
   const platformFeeTotal = fee_platform; 
-  const platformFeeBase = platformFeeTotal / 1.18; 
-  const platformFeeGST = platformFeeTotal - platformFeeBase; 
 
   const subTotalInclGST = totalBaseAmount + totalTaxAmount;
   const deliveryChargeInclGST = subTotalInclGST > threshold_free ? 0 : fee_delivery;
-  const deliveryChargeBase = deliveryChargeInclGST / 1.18;
-  const deliveryChargeGST = deliveryChargeInclGST - deliveryChargeBase;
 
   const grandTotal = subTotalInclGST + platformFeeTotal + deliveryChargeInclGST;
 
   return { 
     totalAmount: grandTotal, 
     subTotal: subTotalInclGST, // Total of items incl GST
-    totalBaseAmount: totalBaseAmount + platformFeeBase + deliveryChargeBase,
-    totalTaxAmount: totalTaxAmount + platformFeeGST + deliveryChargeGST,
+    totalBaseAmount: totalBaseAmount,
+    totalTaxAmount: totalTaxAmount,
     platformFee: platformFeeTotal,
-    platformFeeGST,
     deliveryCharge: deliveryChargeInclGST,
-    deliveryChargeGST,
     totalWeight, 
     totalVolume, 
     vehicleClass: selectedLogistics.mode,
@@ -191,7 +199,7 @@ const syncToHisaabKitaab = async (orderId) => {
 
   try {
     // Populate the order with product details for naming
-    const order = await Order.findById(orderId).populate('items.productId');
+    const order = await Order.findById(orderId).populate('items.productId', '-variants');
     if (!order) return;
 
     const invoiceData = {
@@ -231,7 +239,7 @@ const syncToHisaabKitaab = async (orderId) => {
 };
 
 const getOrderById = async (orderId) => {
-  return await Order.findById(orderId).populate('items.productId');
+  return await Order.findById(orderId).populate('items.productId', '-variants');
 };
 
 module.exports = {

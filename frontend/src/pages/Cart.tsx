@@ -179,7 +179,13 @@ const Cart: React.FC = () => {
                           <span className="c-qty-val">{item.quantity}</span>
                           <button onClick={() => addToCart(item.product, 1, item.selectedVariant)}><Plus size={14} /></button>
                         </div>
-                        <span className="c-item-price">₹{((item.product.variants?.find((v: any) => v.name === item.selectedVariant)?.pricing?.salePrice || item.product.salePrice || item.product.price) * item.quantity).toFixed(2)}</span>
+                         <span className="c-item-price">
+                           {(() => {
+                             const salePrice = item.product.variants?.find((v: any) => v.name === item.selectedVariant)?.pricing?.salePrice || item.product.salePrice || item.product.price || 0;
+                             const basePrice = salePrice / 1.18;
+                             return `₹${(basePrice * item.quantity).toFixed(2)}`;
+                           })()}
+                         </span>
                       </div>
                     </div>
                   </div>
@@ -198,11 +204,14 @@ const Cart: React.FC = () => {
                 <span>₹{totalGst.toFixed(2)}</span>
               </div>
               <div className="bill-row-item">
-                <span>Delivery Charge (incl GST) (Mode: {deliveryMode})</span>
+                <div className="bill-label-group">
+                  <span>Delivery Charge (incl GST)</span>
+                  <span className="delivery-mode-tag">(Mode: {deliveryMode})</span>
+                </div>
                 {deliveryCharge > 0 ? <span>₹{deliveryCharge.toFixed(2)}</span> : <span style={{ color: '#16a34a' }}>FREE</span>}
               </div>
               <div className="bill-row-item">
-                <span>Handling Charge</span>
+                <span>Handling Charge (incl GST)</span>
                 <span>₹{handlingCharge.toFixed(2)}</span>
               </div>
               <div className="bill-row-total">
@@ -238,13 +247,16 @@ const Cart: React.FC = () => {
                   <span className="bill-val">₹{totalGst.toFixed(2)}</span>
                 </div>
                 <div className="bill-row-checkout">
-                  <span>Delivery Charge (incl GST) (Mode: {deliveryMode})</span>
+                  <div className="bill-label-group">
+                    <span>Delivery Charge (incl GST)</span>
+                    <span className="delivery-mode-tag">(Mode: {deliveryMode})</span>
+                  </div>
                   <span className="bill-val">
                     {deliveryCharge > 0 ? `₹${deliveryCharge.toFixed(2)}` : <span className="free">FREE</span>}
                   </span>
                 </div>
                 <div className="bill-row-checkout">
-                  <span>Handling Charge</span>
+                  <span>Handling Charge (incl GST)</span>
                   <span className="bill-val">₹{handlingCharge.toFixed(2)}</span>
                 </div>
                 <div className="bill-row-checkout grand-total-row">

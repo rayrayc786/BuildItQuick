@@ -229,43 +229,42 @@ const Tracking: React.FC = () => {
                       style={{ cursor: 'pointer' }}
                     >
                         <div className="item-thumb-box">
-                           {(() => {
-                              const variantName = item.selectedVariant;
-                              const variant = item.productId?.variants?.find((v: any) => v.name === variantName) || item.productId?.variants?.[0];
-                              const imgSource = variant?.images?.[0] || item.productId?.images?.[0] || item.productId?.imageUrl || item.product?.images?.[0] || '';
-                              return (
-                                <img 
-                                   src={getFullImageUrl(imgSource)} 
-                                   alt="" 
-                                   onError={(e) => {
-                                     (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=400';
-                                   }}
-                                />
-                              );
-                           })()}
+                           <img 
+                              src={getFullImageUrl(item.variantImage || item.productId?.images?.[0] || item.productId?.imageUrl || '')} 
+                              alt="" 
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=400';
+                              }}
+                           />
                         </div>
                        <div className="item-info-col">
                           <p className="item-brand-label" style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', marginBottom: '2px' }}>{item.productId?.brand || 'Brand'}</p>
                           <p className="item-name-bold">{item?.productId?.productName || item?.productId?.name || item?.product?.name}</p>
                           
                           {(() => {
-                             const variantName = item.selectedVariant;
-                             const variant = item.productId?.variants?.find((v: any) => v.name === variantName) || item.productId?.variants?.[0];
-                             const rawAttrs = variant?.attributes;
-                             const attrs = rawAttrs instanceof Map ? Object.fromEntries(rawAttrs) : rawAttrs;
-                             return (
-                               <>
-                                 <span className="item-variant-label">{variantName || variant?.name || 'Standard'}</span>
-                                 {attrs && typeof attrs === 'object' && Object.entries(attrs).length > 0 && (
-                                   <div className="item-attributes-mini" style={{ display: 'flex', gap: '4px', marginTop: '2px', flexWrap: 'wrap' }}>
-                                      {Object.entries(attrs).map(([k, v]: any) => (
-                                        <span key={k} style={{ fontSize: '0.65rem', background: '#f1f5f9', padding: '1px 5px', borderRadius: '4px', color: '#475569' }}>{k}: {v}</span>
-                                      ))}
-                                   </div>
-                                 )}
-                               </>
-                             );
-                          })()}
+                              const variantName = item.selectedVariant;
+                              // Read from full snapshot first, then partial snapshot, then product lookup
+                              const rawAttrs = item.selectedVariantData?.attributes || item.variantAttributes || item.productId?.variants?.find((v: any) => v.name === variantName)?.attributes;
+                              const parsed = rawAttrs instanceof Map ? Object.fromEntries(rawAttrs) : (rawAttrs?._doc || rawAttrs);
+                              const internalKeys = new Set(['$__parent', '$__path', '$__schemaType', '_doc', '$__', '$isNew', '_id']);
+                              const attrs = parsed && typeof parsed === 'object'
+                                ? Object.fromEntries(Object.entries(parsed).filter(([k]) => !internalKeys.has(k) && !k.startsWith('$')))
+                                : null;
+                              return (
+                                <>
+                                  {(!attrs || Object.keys(attrs).length === 0) && (
+                                    <span className="item-variant-label">{variantName || 'Standard'}</span>
+                                  )}
+                                  {attrs && Object.keys(attrs).length > 0 && (
+                                    <div className="item-attributes-mini" style={{ display: 'flex', gap: '4px', marginTop: '2px', flexWrap: 'wrap' }}>
+                                       {Object.entries(attrs).map(([k, v]: any) => (
+                                         <span key={k} style={{ fontSize: '0.65rem', background: '#f1f5f9', padding: '1px 5px', borderRadius: '4px', color: '#475569' }}>{k}: {v}</span>
+                                       ))}
+                                    </div>
+                                  )}
+                                </>
+                              );
+                           })()}
 
                           <div className="item-price-qty-row">
                              <span className="qty-pill">Qty: {item.quantity}</span>
@@ -342,25 +341,25 @@ const Tracking: React.FC = () => {
            <div className="section-header"><h3>Bill Summary</h3></div>
            <div className="bill-summary-rows">
               <div className="bill-row">
-                 <div className="label-with-icon"><Package size={14} /> <span>Items Total (Excl. GST)</span></div>
-                 <span>₹{Number((order.totalAmount || 0) - (order.totalTaxAmount || 0) - ((order.deliveryCharge || 0) / 1.18) - ((order.platformFee || 0) / 1.18)).toFixed(2)}</span>
+                 <div className="label-with-icon"><Package size={14} /> <span>Item Total (Excl. GST)</span></div>
+                 <span>₹{Number(order.totalBaseAmount || 0).toFixed(2)}</span>
               </div>
-              {(order.totalTaxAmount || 0) > 0 && (
-                <div className="bill-row">
-                  <div className="label-with-icon"><span>Total GST Amount</span></div>
-                  <span>₹{Number(order.totalTaxAmount || 0).toFixed(2)}</span>
-                </div>
-              )}
+              
+              <div className="bill-row" style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                 <div className="label-with-icon"><span>GST Amount</span></div>
+                 <span>₹{Number(order.totalTaxAmount || 0).toFixed(2)}</span>
+              </div>
+              
               {(order.deliveryCharge || 0) > 0 && (
                 <div className="bill-row">
-                   <div className="label-with-icon"><span>Delivery Fee (Excl. Tax)</span></div>
-                   <span>₹{Number((order.deliveryCharge || 0) / 1.18).toFixed(2)}</span>
+                   <div className="label-with-icon"><span>Delivery Charge (incl GST)</span></div>
+                   <span>₹{Number(order.deliveryCharge || 0).toFixed(2)}</span>
                 </div>
               )}
               {(order.platformFee || 0) > 0 && (
                 <div className="bill-row">
-                   <div className="label-with-icon"><span>Handling Charge (Excl. Tax)</span></div>
-                   <span>₹{Number((order.platformFee || 0) / 1.18).toFixed(2)}</span>
+                   <div className="label-with-icon"><span>Handling Charge (incl GST)</span></div>
+                   <span>₹{Number(order.platformFee || 0).toFixed(2)}</span>
                 </div>
               )}
               <div className="bill-row grand-total-row">

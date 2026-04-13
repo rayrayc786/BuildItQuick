@@ -171,14 +171,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (logisticsCat === 'heavy') maxCat = 'heavy';
       else if (logisticsCat === 'medium' && maxCat !== 'heavy') maxCat = 'medium';
 
-      amount += itemPrice * item.quantity;
+      const rowTotalInclGST = itemPrice * item.quantity;
+      const rowBase = rowTotalInclGST / (1 + itemGstRate / 100);
+      const rowGst = rowTotalInclGST - rowBase;
+
+      amount += rowBase;
       weight += itemWeight * item.quantity;
       volume += itemVolume * item.quantity;
-      gstSum += (itemPrice * item.quantity) * (itemGstRate / 100);
+      gstSum += rowGst;
     });
 
     return { 
-      totalAmount: (Math.round(amount * 100) / 100) + (Math.round(gstSum * 100) / 100), 
+      totalAmount: (Math.round((amount + gstSum) * 100) / 100), 
       totalWeight: weight, 
       totalVolume: volume, 
       totalGst: (Math.round(gstSum * 100) / 100), 

@@ -131,6 +131,16 @@
   border-color: #000;
 }
 
+.clear-filter-btn {
+  background: #fff1f2 !important;
+  color: #e11d48 !important;
+  border-color: #fecdd3 !important;
+}
+
+.clear-filter-btn:hover {
+  background: #ffe4e6 !important;
+}
+
 /* Sidebar Layout */
 .sub-cat-main-layout {
   display: flex;

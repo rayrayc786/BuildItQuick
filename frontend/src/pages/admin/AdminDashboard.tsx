@@ -25,6 +25,7 @@ import Reports from '../Reports';
 import FooterManager from './FooterManager';
 import ServiceSettings from './ServiceSettings';
 import ReviewManager from './ReviewManager';
+import Loader from '../../components/Loader';
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -594,8 +595,8 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
               </div>
               <div className="meta-item">
                  <label>Payment Status</label>
-                 <span className={`status-pill ${order.paidAmount >= order.totalAmount ? 'paid' : 'pending'}`}>
-                    {order.paidAmount >= order.totalAmount ? 'Complete' : (order.paidAmount > 0 ? 'Partial' : 'Pending')}
+                 <span className={`status-pill ${ (order.paidAmount >= order.totalAmount || order.status === 'Payment Received') ? 'paid' : 'pending'}`}>
+                    {(order.paidAmount >= order.totalAmount || order.status === 'Payment Received') ? 'Complete' : (order.paidAmount > 0 ? 'Partial' : 'Pending')}
                  </span>
               </div>
               <div className="meta-item">
@@ -613,35 +614,37 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
               {order.items?.map((item: any, idx: number) => (
                  <div key={idx} className="order-item-row">
                     <div className="item-img">
-                       {(() => {
-                          const variant = item.productId?.variants?.find((v: any) => v.name === item.selectedVariant);
-                          const imgSource = variant?.images?.[0] || item.productId?.images?.[0] || item.productId?.imageUrl || item.product?.images?.[0] || '';
-                          return <img src={getFullImageUrl(imgSource)} alt="" />;
-                       })()}
+                       <img src={getFullImageUrl(item.variantImage || item.productId?.images?.[0] || item.productId?.imageUrl || '')} alt="" />
                     </div>
                     <div className="item-info">
                        <span className="item-brand">{item.productId?.brand || 'Brand N/A'}</span>
                        <span className="item-name">{item.productId?.productName || item.productId?.name || item.product?.name || 'Unknown Product'}</span>
                        
                        {(() => {
-                          const variantName = item.selectedVariant;
-                          const variant = item.productId?.variants?.find((v: any) => v.name === variantName);
-                          // Attributes might be a Map or a plain object
-                          const attrs = variant?.attributes instanceof Map ? Object.fromEntries(variant.attributes) : variant?.attributes;
-                          
-                          return (
-                            <>
-                              {variantName && <span className="item-variant">Variant: {variantName}</span>}
-                              {attrs && Object.entries(attrs).length > 0 && (
-                                <div className="item-attributes">
-                                   {Object.entries(attrs).map(([key, val]: any) => (
-                                      <span key={key}>{key}: {val}</span>
-                                   ))}
-                                </div>
-                              )}
-                            </>
-                          );
-                       })()}
+                           const variantName = item.selectedVariant;
+                           // Read from full snapshot first, then partial snapshot, then product lookup
+                           const rawAttrs = item.selectedVariantData?.attributes || item.variantAttributes || item.productId?.variants?.find((v: any) => v.name === variantName)?.attributes;
+                           const internalKeys = new Set(['$__parent', '$__path', '$__schemaType', '_doc', '$__', '$isNew', '_id']);
+                           const parsed = rawAttrs instanceof Map ? Object.fromEntries(rawAttrs) : (rawAttrs?._doc || rawAttrs);
+                           const attrs = parsed && typeof parsed === 'object'
+                             ? Object.fromEntries(Object.entries(parsed).filter(([k]) => !internalKeys.has(k) && !k.startsWith('$')))
+                             : null;
+                           
+                           return (
+                             <>
+                               {variantName && (!attrs || Object.keys(attrs).length === 0) && (
+                                 <span className="item-variant">Variant: {variantName}</span>
+                               )}
+                               {attrs && Object.keys(attrs).length > 0 && (
+                                 <div className="item-attributes">
+                                    {Object.entries(attrs).map(([key, val]: any) => (
+                                       <span key={key}>{key}: {val}</span>
+                                    ))}
+                                 </div>
+                               )}
+                             </>
+                           );
+                        })()}
                        
                        <div className="item-metadata">
                           {item.productId?.sku && <span>SKU: {item.productId.sku}</span>}
@@ -823,12 +826,17 @@ const AdminDashboard: React.FC = () => {
        fetchData(); // Refresh requests to show updated status instantly
     };
 
+    const onOrderUpdated = (data: any) => {
+       console.log('Received order-updated:', data);
+       fetchData(); // Auto-refresh order list and summary stats
+    };
 
     adminSocket.on('connect', onConnect);
     adminSocket.on('new-order', onNewOrder);
     adminSocket.on('new-user-request', onNewUserRequest);
     adminSocket.on('new-on-demand-request', onNewOnDemandRequest);
     adminSocket.on('on-demand-status-update', onOnDemandStatusUpdate);
+    adminSocket.on('order-updated', onOrderUpdated);
 
     return () => {
       adminSocket.off('connect', onConnect);
@@ -836,6 +844,7 @@ const AdminDashboard: React.FC = () => {
       adminSocket.off('new-user-request', onNewUserRequest);
       adminSocket.off('new-on-demand-request', onNewOnDemandRequest);
       adminSocket.off('on-demand-status-update', onOnDemandStatusUpdate);
+      adminSocket.off('order-updated', onOrderUpdated);
       // NOTE: Removed adminSocket.disconnect() to prevent breaking the singleton connection on quick re-renders
     };
   }, []);
@@ -1668,11 +1677,7 @@ const AdminDashboard: React.FC = () => {
     );
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center p-20" style={{ height: '70vh', fontFamily: 'monospace' }}>
-      Loading Dashboard Data...
-    </div>
-  );
+  if (loading) return <Loader message="Loading Dashboard Data..." height="70vh" />;
 
   return (
     <div className="matall-admin-dashboard">

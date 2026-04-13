@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Home, ArrowUpDown, Filter, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Home, ArrowUpDown, Filter, MessageCircle, X } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import './sub-category.css';
 import SEO from '../components/SEO';
@@ -114,12 +114,25 @@ const SubCategoryPage: React.FC = () => {
           <div className="filter-row-v2">
             <button 
               className={`filter-pill ${sortBy !== 'default' ? 'active' : ''}`}
-              onClick={() => setSortBy(sortBy === 'price-low' ? 'price-high' : 'price-low')}
+              onClick={() => {
+                if (sortBy === 'default') setSortBy('price-low');
+                else if (sortBy === 'price-low') setSortBy('price-high');
+                else setSortBy('default');
+              }}
             >
               <ArrowUpDown size={14} /> 
               {sortBy === 'price-low' ? 'Low to High' : sortBy === 'price-high' ? 'High to Low' : 'Price'}
+              {sortBy !== 'default' && <X size={12} />}
             </button>
             <button className="filter-pill"><Filter size={14} /> Filters</button>
+            {selectedSubCat && (
+              <button 
+                className="filter-pill clear-filter-btn" 
+                onClick={() => setSelectedSubCat(null)}
+              >
+                <X size={14} /> Clear
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -141,7 +154,7 @@ const SubCategoryPage: React.FC = () => {
             <div 
               key={idx} 
               className={`cat-sidebar-item-v2 ${selectedSubCat === sub.name ? 'active' : ''}`}
-              onClick={() => setSelectedSubCat(sub.name)}
+              onClick={() => setSelectedSubCat(selectedSubCat === sub.name ? null : sub.name)}
             >
               <div className="cat-img-v2">
                 {sub.image && (
