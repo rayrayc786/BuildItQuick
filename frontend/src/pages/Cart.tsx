@@ -182,8 +182,7 @@ const Cart: React.FC = () => {
                          <span className="c-item-price">
                            {(() => {
                              const salePrice = item.product.variants?.find((v: any) => v.name === item.selectedVariant)?.pricing?.salePrice || item.product.salePrice || item.product.price || 0;
-                             const basePrice = salePrice / 1.18;
-                             return `₹${(basePrice * item.quantity).toFixed(2)}`;
+                             return `₹${(salePrice * item.quantity).toFixed(2)}`;
                            })()}
                          </span>
                       </div>

@@ -157,7 +157,6 @@
   gap: 1.5rem;
   position: sticky;
   top: 180px;
-  height: calc(100vh - 200px);
   overflow-y: auto;
   border-right: 1px solid #f1f5f9;
   padding-right: 1rem;

@@ -147,6 +147,18 @@ const ProductList: React.FC = () => {
     }
   }, [showFilters, allCategories, activeModalCat]);
 
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (showFilters) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showFilters]);
+
   const activeCatObject = useMemo(() => {
     return allCategories.find(c => c.name === activeModalCat || c._id === activeModalCat);
   }, [allCategories, activeModalCat]);

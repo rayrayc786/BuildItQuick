@@ -220,9 +220,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <span className="list-price">₹{currentPrice.toFixed(2)}</span>
               {currentMrp > currentPrice && <span className="list-mrp">₹{currentMrp.toFixed(2)}</span>}
            </div>
-           <div className="list-gst-breakdown">
-              (₹{basePrice.toFixed(2)} + GST ₹{gstAmount.toFixed(2)})
-           </div>
+
         </div>
 
         {/* 4. Product Name */}
@@ -286,9 +284,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                         <span className="v-price">₹{vsPrice.toFixed(2)}</span>
                         {vmrp > vsPrice && <span className="v-mrp">₹{vmrp.toFixed(2)}</span>}
                       </div>
-                      <div className="v-gst-breakdown">
-                        (₹{vBase.toFixed(2)} + GST ₹{vGst.toFixed(2)})
-                      </div>
+
                     </div>
                     
                     <div className="v-item-right">

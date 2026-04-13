@@ -386,12 +386,24 @@
 }
 
 .cat-sidebar {
-  width: 100px;
+  width: 110px;
   background: #f8fafc;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow-y: scroll; /* Force scrollbar space or allow scrolling */
   border-right: 1px solid #f1f5f9;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  overscroll-behavior: contain;
+}
+
+.cat-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.cat-sidebar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
 }
 
 .cat-tab {
@@ -402,6 +414,8 @@
   cursor: pointer;
   border-left: 4px solid transparent;
   color: #64748b;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
 }
 
 .cat-tab.active {
@@ -414,6 +428,9 @@
   flex: 1;
   padding: 1rem;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: white;
+  overscroll-behavior: contain;
 }
 
 .subcat-grid-area h3 {

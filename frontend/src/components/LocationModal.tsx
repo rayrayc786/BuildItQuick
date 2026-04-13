@@ -62,11 +62,51 @@ const LocationModal: React.FC<LocationModalProps> = ({
   const placesLibrary = useMapsLibrary('places');
   const geocodingLibrary = useMapsLibrary('geocoding');
 
-  // Safe Marker component using stable Marker
-  const MapMarker = ({ position }: { position: google.maps.LatLngLiteral }) => {
+  // Safe Marker component with dynamic color
+  const MapMarker = ({ position, serviceable }: { position: google.maps.LatLngLiteral, serviceable: boolean }) => {
     const map = useMap();
     if (!map) return null;
-    return <Marker position={position} />;
+    return (
+      <Marker 
+        position={position} 
+        draggable={true}
+        onDragEnd={(e: any) => {
+           const lat = e.latLng.lat();
+           const lng = e.latLng.lng();
+           // Simulate a map click to trigger geocoding and serviceability check
+           handleMapClick({ detail: { latLng: { lat, lng } } });
+        }}
+        icon={serviceable ? undefined : {
+           path: google.maps.SymbolPath.CIRCLE,
+           fillColor: "#ef4444",
+           fillOpacity: 1,
+           strokeWeight: 2,
+           strokeColor: "#ffffff",
+           scale: 10,
+        }}
+      />
+    );
+  };
+
+  // Service Circle component
+  const ServiceCircle = ({ center, radius }: { center: google.maps.LatLngLiteral, radius: number }) => {
+    const map = useMap();
+    useEffect(() => {
+      if (!map) return;
+      const circle = new google.maps.Circle({
+        map,
+        center,
+        radius,
+        fillColor: '#22c55e',
+        fillOpacity: 0.1,
+        strokeColor: '#22c55e',
+        strokeOpacity: 0.3,
+        strokeWeight: 1,
+        clickable: false
+      });
+      return () => circle.setMap(null);
+    }, [map, center, radius]);
+    return null;
   };
 
   // Sync form state when user transitions to add address form
@@ -257,21 +297,25 @@ const LocationModal: React.FC<LocationModalProps> = ({
       return false;
     }
 
+    if (!pincodeVal) {
+      toast.error("Please pick a more specific point to detect the area pincode.", { icon: '📍' });
+      return false;
+    }
+
     try {
-      const query = pincodeVal || cityVal;
-      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/location/check-serviceability/${encodeURIComponent(query)}`);
+      const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/location/check-serviceability/${encodeURIComponent(pincodeVal)}`);
       
       if (!data.serviceable) {
-        toast.error(`Oops, we do not serve this area currently. We will be live soon and keep you informed`, {
+        toast.error(`We don't deliver to ${pincodeVal} yet. We're expanding fast and will be here soon!`, {
           duration: 4000,
-          icon: '📍'
+          icon: '🚚'
         });
         return false;
       }
       return true;
     } catch (err) {
       console.error('Serviceability check failed', err);
-      toast.error("Area check currently unavailable. Please try again.");
+      toast.error("Area check unavailable. Please try again.");
       return false; 
     }
   };
@@ -632,7 +676,8 @@ const LocationModal: React.FC<LocationModalProps> = ({
                            if (c) setMapCenter({ lat: c.lat, lng: c.lng });
                         }}
                       >
-                        <MapMarker position={mapCenter} />
+                        <MapMarker position={mapCenter} serviceable={isServiceable} />
+                        <ServiceCircle center={{ lat: 28.4595, lng: 77.0266 }} radius={20000} />
                       </Map>
                       
                       <button className="locate-me-btn-overlay" onClick={() => {

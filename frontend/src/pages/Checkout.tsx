@@ -85,22 +85,24 @@ const Checkout: React.FC = () => {
        return;
     }
 
-    if (user.jobsites) {
-      setAddresses(user.jobsites);
+    const freshUser = JSON.parse(localStorage.getItem('user') || '{}');
+    if (freshUser.jobsites && freshUser.jobsites.length > 0) {
+      setAddresses(freshUser.jobsites);
       
-      // Recognition logic: match global location with a saved jobsite
-      if (globalLocation) {
-        if (globalLocation.matchingJobsite) {
-             setSelectedAddress(globalLocation.matchingJobsite);
-        } else {
-             // If no saved match, we DON'T auto-select. Force user to add site.
-             setSelectedAddress(null);
+      const matched = freshUser.jobsites.find((s: any) => 
+        globalLocation?.matchingJobsite?._id && String(s._id) === String(globalLocation.matchingJobsite._id)
+      );
+
+      if (matched) {
+        if (!selectedAddress || String(selectedAddress._id) !== String(matched._id)) {
+          setSelectedAddress(matched);
         }
-      } else if (user.jobsites.length > 0) {
-        setSelectedAddress(user.jobsites[0]);
+      } else if (!selectedAddress) {
+        // If no GPS match and nothing selected yet, default to first saved address
+        setSelectedAddress(freshUser.jobsites[0]);
       }
     }
-  }, [globalLocation]);
+  }, [globalLocation, selectedAddress, navigate]);
 
 
   const loadRazorpayScript = () => {

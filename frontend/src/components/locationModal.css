@@ -4,12 +4,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: flex-end;
   justify-content: center;
   z-index: 99999;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .location-modal-content {
@@ -100,11 +101,23 @@
 .decision-btn.yellow {
   background: #FFEA00;
   color: #000;
+  transition: all 0.2s;
+}
+
+.decision-btn.yellow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 234, 0, 0.3);
 }
 
 .decision-btn.black {
   background: #000;
   color: #fff;
+  transition: all 0.2s;
+}
+
+.decision-btn.black:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Saved Addresses Preview */
@@ -400,10 +413,19 @@
 .suggestion-row {
   display: flex;
   align-items: center;
-  padding: 0.75rem 0;
+  padding: 1rem;
   gap: 1rem;
   border-bottom: 1px solid #f1f5f9;
   cursor: pointer;
+  transition: background 0.2s;
+}
+
+.suggestion-row:hover {
+  background: #f8fafc;
+}
+
+.suggestion-row:last-child {
+  border-bottom: none;
 }
 
 .empty-search-state {
