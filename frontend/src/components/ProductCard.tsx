@@ -54,9 +54,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   );
 
   const currentPrice = Number(selectedVariant?.pricing?.salePrice || selectedVariant?.price || product.salePrice || product.price || 0);
-  const gstRate = Number(selectedVariant?.pricing?.gst || (product.variants?.[0]?.pricing?.gst) || 0);
-  const basePrice = currentPrice / (1 + gstRate / 100);
-  const gstAmount = currentPrice - basePrice;
+  // const gstRate = Number(selectedVariant?.pricing?.gst || (product.variants?.[0]?.pricing?.gst) || 0);
+  // const basePrice = currentPrice / (1 + gstRate / 100);
+  // const gstAmount = currentPrice - basePrice;
   const currentMrp = Number(selectedVariant?.pricing?.mrp || selectedVariant?.mrp || product.mrp || 0);
   
   const discount = (currentMrp > currentPrice && currentMrp > 0)
@@ -259,9 +259,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 
                 // Pricing calculations for variant
                 const vsPrice = Number(v.pricing?.salePrice || v.price || 0);
-                const vGstRate = Number(v.pricing?.gst || (product.variants?.[0]?.pricing?.gst) || 0);
-                const vBase = vsPrice / (1 + vGstRate / 100);
-                const vGst = vsPrice - vBase;
+                // const vGstRate = Number(v.pricing?.gst || (product.variants?.[0]?.pricing?.gst) || 0);
+                // const vBase = vsPrice / (1 + vGstRate / 100);
+                // const vGst = vsPrice - vBase;
                 const vmrp = Number(v.pricing?.mrp || v.mrp || 0);
                 const vDisc = (vmrp > vsPrice && vmrp > 0) ? Math.round(((vmrp - vsPrice) / vmrp) * 100) : 0;
                 
