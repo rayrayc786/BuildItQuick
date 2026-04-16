@@ -3,6 +3,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Plus, Search, Edit3, Trash2, X, Tag, ChevronDown, ChevronRight, Layers, Image, Menu } from 'lucide-react';
 import { getFullImageUrl } from '../../utils/imageUrl';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 const CategoryManager: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
@@ -402,7 +404,7 @@ const CategoryManager: React.FC = () => {
       {/* Master Category Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content card" style={{ maxWidth: '500px' }}>
+          <div className="modal-content card" style={{ maxWidth: '800px', width: '90%' }}>
             <div className="modal-header space-between" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ margin: 0 }}>{editingCategory ? 'Edit Master Category' : 'Create Master Category'}</h2>
               <button className="icon-btn" onClick={() => setShowModal(false)}><X size={20} /></button>
@@ -420,22 +422,24 @@ const CategoryManager: React.FC = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Blog Space / SEO Description (Multiple Paragraphs)</label>
-                  <textarea 
-                    value={catFormData.description} 
-                    onChange={e => setCatFormData({...catFormData, description: e.target.value})} 
-                    placeholder="Enter multiple paragraphs for the category blog section..."
-                    rows={6}
-                    style={{ 
-                      width: '100%', 
-                      padding: '0.75rem', 
-                      borderRadius: '8px', 
-                      border: '1px solid #e2e8f0',
-                      outline: 'none',
-                      fontSize: '0.9rem',
-                      fontFamily: 'inherit'
-                    }}
-                  ></textarea>
+                  <label>Blog Space / SEO Description (Rich Text Editor)</label>
+                  <div style={{ height: '300px', marginBottom: '50px' }}>
+                    <ReactQuill 
+                      theme="snow"
+                      value={catFormData.description} 
+                      onChange={(content) => setCatFormData({...catFormData, description: content})} 
+                      placeholder="Enter rich text for the category blog section..."
+                      modules={{
+                        toolbar: [
+                          [{ 'header': [1, 2, 3, false] }],
+                          ['bold', 'italic', 'underline', 'strike'],
+                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                          ['link', 'clean']
+                        ],
+                      }}
+                      style={{ height: '250px' }}
+                    />
+                  </div>
                 </div>
                 <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '1.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

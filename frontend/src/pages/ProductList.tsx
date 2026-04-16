@@ -360,11 +360,10 @@ const ProductList: React.FC = () => {
 
           {/* Blog Space */}
           {currentCategoryMetadata?.description && (
-            <div className="category-blog-space">
-               {currentCategoryMetadata.description.split('\n').filter((p: string) => p.trim() !== '').map((para: string, idx: number) => (
-                 <p key={idx}>{para}</p>
-               ))}
-            </div>
+            <div 
+              className="category-blog-space rich-text-content"
+              dangerouslySetInnerHTML={{ __html: currentCategoryMetadata.description }}
+            />
           )}
         </section>
       </main>
