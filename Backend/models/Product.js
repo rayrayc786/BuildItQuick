@@ -79,6 +79,8 @@ const ProductSchema = new mongoose.Schema({
   numReviews: { type: Number, default: 0 }
 }, { timestamps: true });
 
+ProductSchema.index({ isActive: 1, category: 1, subCategory: 1, brand: 1 });
+ProductSchema.index({ isPopular: 1, isActive: 1 });
 ProductSchema.index({ productName: 'text', alternateNames: 'text', description: 'text', category: 'text', brand: 'text', 'variants.sku': 'text' });
 
 module.exports = mongoose.model('Product', ProductSchema);

@@ -40,26 +40,23 @@ const ProductList: React.FC = () => {
 
 
 
+  // Parallel fetch for static metadata
   useEffect(() => {
-    const fetchAllCats = async () => {
+    const fetchMetadata = async () => {
       try {
-        const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products/categories`);
-        setAllCategories(data);
+        const [catsRes, brandsRes] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products/categories`),
+          axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products/brands`)
+        ]);
+        setAllCategories(catsRes.data);
+        setAllBrands(brandsRes.data);
         if (categoryId) setActiveModalCat(categoryId);
-      } catch (err) { console.error(err); }
+      } catch (err) {
+        console.error('Failed to fetch metadata:', err);
+      }
     };
-    fetchAllCats();
+    fetchMetadata();
   }, [categoryId]);
-
-  useEffect(() => {
-    const fetchBrands = async () => {
-      try {
-        const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products/brands`);
-        setAllBrands(data);
-      } catch (err) { console.error('Failed to fetch brands:', err); }
-    };
-    fetchBrands();
-  }, []);
 
   useEffect(() => {
     if (initialBrand) {
@@ -67,42 +64,47 @@ const ProductList: React.FC = () => {
     }
   }, [initialBrand]);
 
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const loaderRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Reset products when filters change
+    setProducts([]);
+    setPage(1);
+    setHasMore(true);
+  }, [location.search, selectedBrand, sortBy]);
+
   useEffect(() => {
     const fetchProducts = async () => {
+      if (!hasMore && page > 1) return;
       setLoading(true);
       try {
-        const searchUrl = `${import.meta.env.VITE_API_BASE_URL}/api/products${location.search}`;
-        const { data } = await axios.get(searchUrl);
-        setProducts(data);
+        const params = new URLSearchParams(location.search);
+        params.set('page', page.toString());
+        params.set('limit', '20');
+        if (sortBy !== 'default') params.set('sort', sortBy);
+        if (selectedBrand) params.set('brand', selectedBrand);
+
+        const searchUrl = `${import.meta.env.VITE_API_BASE_URL}/api/products?${params.toString()}`;
+        const { data, headers } = await axios.get(searchUrl);
         
-        // If it's a search query and results are empty, report to backend
-        if (searchTerm && data.length === 0) {
-          const userStr = localStorage.getItem('user');
-          let userData = {
-            searchTerm,
-            userName: 'Unknown User',
-            userId: null,
-            userPhone: '',
-            userEmail: ''
-          };
+        setProducts(prev => page === 1 ? data : [...prev, ...data]);
+        
+        const totalCount = parseInt(headers['x-total-count'] || '0');
+        if (products.length + data.length >= totalCount || data.length < 20) {
+          setHasMore(false);
+        }
 
-          if (userStr) {
-            try {
-              const user = JSON.parse(userStr);
-              userData = {
-                searchTerm,
-                userName: user.fullName || user.name || 'Unknown User',
-                userId: user._id || user.id || null,
-                userPhone: user.phoneNumber || user.phone || '',
-                userEmail: user.email || ''
-              };
-            } catch (e) {
-              console.error('Failed to parse user for reporting:', e);
-            }
-          }
-
-          axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user-requests/report-missing-product`, userData)
-            .catch(err => console.error('Failed to report missing product:', err));
+        // Reporting missing products (only on first page search)
+        if (searchTerm && page === 1 && data.length === 0) {
+           const userStr = localStorage.getItem('user');
+           let userData = { searchTerm, userName: 'Guest', userId: null, userPhone: '', userEmail: '' };
+           if (userStr) {
+             const user = JSON.parse(userStr);
+             userData = { ...userData, userName: user.fullName || 'User', userId: user._id || null };
+           }
+           axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user-requests/report-missing-product`, userData).catch(() => {});
         }
       } catch (err) {
         console.error(err);
@@ -111,7 +113,19 @@ const ProductList: React.FC = () => {
       }
     };
     fetchProducts();
-  }, [location.search, searchTerm]);
+  }, [page, location.search, selectedBrand, sortBy]);
+
+  // Infinite Scroll Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore && !loading) {
+        setPage(prev => prev + 1);
+      }
+    }, { threshold: 1.0 });
+
+    if (loaderRef.current) observer.observe(loaderRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loading]);
 
   // Scroll results area back to top when brand changes
   useEffect(() => {
@@ -177,23 +191,14 @@ const ProductList: React.FC = () => {
   }, [activeModalCat, showFilters, activeCatObject]);
 
   const brands = useMemo(() => {
-    const uniqueBrands = Array.from(new Set(products.map(p => p.brand))).filter(Boolean);
-    return uniqueBrands;
-  }, [products]);
+    // If brand selection is active, we still want to show all available brands for the category/search
+    // For now, we'll keep it simple and show brands from allBrands that are relevant or just use distinct brands if we had them.
+    // Optimal: get distinct brands from backend for the current query.
+    return allBrands.map(b => b.name).sort();
+  }, [allBrands]);
 
-  const filteredProducts = useMemo(() => {
-    let result = [...products];
-    if (selectedBrand) {
-      result = result.filter(p => p.brand === selectedBrand);
-    }
-    
-    if (sortBy === 'price-low') {
-      result.sort((a, b) => a.price - b.price);
-    } else if (sortBy === 'price-high') {
-      result.sort((a, b) => b.price - a.price);
-    }
-    return result;
-  }, [products, selectedBrand, sortBy]);
+  // Products are now filtered on the server side
+  const filteredProducts = products;
 
   const handleClearFilters = () => {
     setSelectedBrand(null);
@@ -310,6 +315,7 @@ const ProductList: React.FC = () => {
                     <img 
                       src={getFullImageUrl(brandLogo)} 
                       alt={brand} 
+                      loading="lazy"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                         const parent = e.currentTarget.parentElement;
@@ -333,15 +339,23 @@ const ProductList: React.FC = () => {
 
         {/* Product Grid Area */}
         <section className="list-results-area" ref={resultsAreaRef}>
-          {loading ? (
-            <div className="loading-box">Finding best deals...</div>
-          ) : filteredProducts.length > 0 ? (
+          {loading && page === 1 ? (
             <div className="list-grid-3xN">
-              {filteredProducts.map(product => (
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="skeleton-card">
+                  <div className="shimmer-block" style={{ height: '180px', borderRadius: '20px' }}></div>
+                  <div className="shimmer-block" style={{ height: '24px', width: '60%', marginTop: '1rem', borderRadius: '4px' }}></div>
+                  <div className="shimmer-block" style={{ height: '40px', width: '100%', marginTop: '0.5rem', borderRadius: '12px' }}></div>
+                </div>
+              ))}
+            </div>
+          ) : products.length > 0 ? (
+            <div className="list-grid-3xN">
+              {products.map(product => (
                 <ProductCard key={product._id} product={product} />
               ))}
             </div>
-          ) : (
+          ) : !loading ? (
             <div className="no-products">
               <p>No products found for this selection.</p>
               <button 
@@ -355,6 +369,12 @@ const ProductList: React.FC = () => {
                 <MessageCircle size={20} />
                 Contact us on WhatsApp
               </button>
+            </div>
+          ) : null}
+
+          {hasMore && (
+            <div className="infinite-loader" ref={loaderRef}>
+              <div className="shimmer-block" style={{ height: '100px', width: '100%' }}></div>
             </div>
           )}
 

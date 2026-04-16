@@ -63,13 +63,14 @@ const Home: React.FC = () => {
                 return (
                   <Link to={`/products?category=${encodeURIComponent(cat.name)}`} key={cat._id} className="category-modern-card">
                     <div className="category-card-img-box">
-                      <img 
-                        src={catImg} 
-                        alt={cat.name} 
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
+                        <img 
+                          src={catImg} 
+                          alt={cat.name} 
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=400';
+                          }}
+                        />
                     </div>
                     <div className="category-card-info">
                       <h4 className="cat-card-title">{cat.name}</h4>

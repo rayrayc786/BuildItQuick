@@ -12,6 +12,68 @@ body {
   line-height: 1.5;
 }
 
+/* Route Loading Fallback */
+.loading-fallback {
+  width: 100%;
+  height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+}
+
+.shimmer-container {
+  width: 100%;
+  max-width: 1200px;
+  padding: 2rem;
+}
+
+.shimmer-header {
+  height: 40px;
+  width: 40%;
+  background: #f1f5f9;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.shimmer-block {
+  height: 350px;
+  background: #f1f5f9;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-header::after,
+.shimmer-block::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 a {
   text-decoration: none;
   color: inherit;

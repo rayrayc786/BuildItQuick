@@ -242,20 +242,40 @@ exports.getAllProducts = async (req, res) => {
       }
     }
 
-    let products = await Product.find(query).lean();
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 1000; // Default to a large number if not specified
+    const skip = (page - 1) * limit;
+    const sort = req.query.sort || 'default';
+
+    let totalCount = await Product.countDocuments(query);
+    res.setHeader('X-Total-Count', totalCount);
+
+    let sortCriteria = { createdAt: -1 };
+    if (sort === 'price-low') {
+      sortCriteria = { price: 1 };
+    } else if (sort === 'price-high') {
+      sortCriteria = { price: -1 };
+    }
+
+    // Apply pagination and sort in a single chain
+    let products = await Product.find(query)
+      .sort(sortCriteria)
+      .skip(skip)
+      .limit(limit)
+      .lean();
     
     // Log the search
-    if (search) {
+    if (search && page === 1) { // Only log on first page search
       try {
         await SearchLog.create({
           query: search,
-          resultsCount: products.length,
+          resultsCount: totalCount,
           ip: req.ip || req.connection.remoteAddress,
           user: req.user ? req.user.id || req.user._id : null
         });
 
         // If no products found, send instant email notification
-        if (products.length === 0) {
+        if (totalCount === 0) {
           let userData = { 
             searchTerm: search, 
             userName: 'Guest', 
@@ -299,13 +319,15 @@ exports.getAllProducts = async (req, res) => {
       return h;
     });
 
-    hydrated.sort((a, b) => {
-      const aHasImg = a.imageUrl && !a.imageUrl.includes('unsplash');
-      const bHasImg = b.imageUrl && !b.imageUrl.includes('unsplash');
-      if (aHasImg && !bHasImg) return -1;
-      if (!aHasImg && bHasImg) return 1;
-      return 0;
-    });
+    if (sort === 'default') {
+      hydrated.sort((a, b) => {
+        const aHasImg = a.imageUrl && !a.imageUrl.includes('unsplash');
+        const bHasImg = b.imageUrl && !b.imageUrl.includes('unsplash');
+        if (aHasImg && !bHasImg) return -1;
+        if (!aHasImg && bHasImg) return 1;
+        return 0;
+      });
+    }
 
     res.json(hydrated);
   } catch (err) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { CartProvider } from './contexts/CartContext';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
@@ -37,51 +37,58 @@ axios.interceptors.response.use(
   }
 );
 
-// User Pages
+// User Pages (Lazy Loaded)
+// User Pages (Immediate for Landing)
 import Home from './pages/Home';
-import Login from './pages/Login';
-import ProductList from './pages/ProductList';
-import ProductDetail from './pages/ProductDetail';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import Tracking from './pages/Tracking';
-import SupplierStore from './pages/SupplierStore';
-import BrandStore from './pages/BrandStore';
-import Orders from './pages/Orders';
-import Profile from './pages/Profile';
-import Favorites from './pages/Favorites';
-import SearchFilter from './pages/SearchFilter';
-import SubCategoryPage from './pages/SubCategoryPage';
-import Support from './pages/Support';
-import PaymentMethod from './pages/PaymentMethod';
 
-// Admin Pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import SKUManager from './pages/admin/SKUManager';
-import SupplierManager from './pages/admin/SupplierManager';
-import CategoryManager from './pages/admin/CategoryManager';
-import SubCategoryManager from './pages/admin/SubCategoryManager';
-import UnitManager from './pages/admin/UnitManager';
-import BrandManager from './pages/admin/BrandManager';
-import SubVariantTitleManager from './pages/admin/SubVariantTitleManager';
-import DeliveryTimeManager from './pages/admin/DeliveryTimeManager';
-import PickingQueue from './pages/admin/PickingQueue';
-import RiderManager from './pages/admin/RiderManager';
-import InvoicingReports from './pages/admin/InvoicingReports';
-import OfferManager from './pages/admin/OfferManager';
-import LocationManager from './pages/admin/LocationManager';
+// Lazy Loaded Pages
+const Login = lazy(() => import('./pages/Login'));
+const ProductList = lazy(() => import('./pages/ProductList'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail'));
+const Cart = lazy(() => import('./pages/Cart'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const Tracking = lazy(() => import('./pages/Tracking'));
+const SupplierStore = lazy(() => import('./pages/SupplierStore'));
+const BrandStore = lazy(() => import('./pages/BrandStore'));
+const Orders = lazy(() => import('./pages/Orders'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Favorites = lazy(() => import('./pages/Favorites'));
+const SearchFilter = lazy(() => import('./pages/SearchFilter'));
+const SubCategoryPage = lazy(() => import('./pages/SubCategoryPage'));
+const Support = lazy(() => import('./pages/Support'));
+const PaymentMethod = lazy(() => import('./pages/PaymentMethod'));
 
+// Other (Lazy Loaded)
+const Reports = lazy(() => import('./pages/Reports'));
+const SupplierDashboard = lazy(() => import('./pages/SupplierDashboard'));
 
-// Rider Pages
-import RiderDashboard from './pages/rider/RiderDashboard';
-import TaskVerification from './pages/rider/TaskVerification';
-import DeliveryNavigation from './pages/rider/DeliveryNavigation';
-import ProofOfDelivery from './pages/rider/ProofOfDelivery';
+// Admin Pages (Lazy Loaded)
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const SKUManager = lazy(() => import('./pages/admin/SKUManager'));
+const SupplierManager = lazy(() => import('./pages/admin/SupplierManager'));
+const CategoryManager = lazy(() => import('./pages/admin/CategoryManager'));
+const SubCategoryManager = lazy(() => import('./pages/admin/SubCategoryManager'));
+const UnitManager = lazy(() => import('./pages/admin/UnitManager'));
+const BrandManager = lazy(() => import('./pages/admin/BrandManager'));
+const SubVariantTitleManager = lazy(() => import('./pages/admin/SubVariantTitleManager'));
+const DeliveryTimeManager = lazy(() => import('./pages/admin/DeliveryTimeManager'));
+const PickingQueue = lazy(() => import('./pages/admin/PickingQueue'));
+const RiderManager = lazy(() => import('./pages/admin/RiderManager'));
+const InvoicingReports = lazy(() => import('./pages/admin/InvoicingReports'));
+const OfferManager = lazy(() => import('./pages/admin/OfferManager'));
+const LocationManager = lazy(() => import('./pages/admin/LocationManager'));
 
-// Other
-import Reports from './pages/Reports';
-import SupplierDashboard from './pages/SupplierDashboard';
+// Rider Pages (Lazy Loaded)
+const RiderDashboard = lazy(() => import('./pages/rider/RiderDashboard'));
+const TaskVerification = lazy(() => import('./pages/rider/TaskVerification'));
+const DeliveryNavigation = lazy(() => import('./pages/rider/DeliveryNavigation'));
+const ProofOfDelivery = lazy(() => import('./pages/rider/ProofOfDelivery'));
+
+// Header & Footer (Immediate)
 import Navbar from './components/Navbar';
+import SiteFooter from './components/SiteFooter';
+import Footer from './components/Footer';
+
 import AdminSidebar from './components/admin/AdminSidebar';
 import ScrollToTop from './components/ScrollToTop';
 import ReloadPrompt from './components/ReloadPrompt';
@@ -242,8 +249,20 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
   return <>{children}</>;
 };
 
-import Footer from './components/Footer';
-import SiteFooter from './components/SiteFooter';
+
+
+const LoadingFallback = () => (
+  <div className="loading-fallback">
+    <div className="shimmer-container">
+      <div className="shimmer-header"></div>
+      <div className="shimmer-content">
+        <div className="shimmer-block"></div>
+        <div className="shimmer-block"></div>
+        <div className="shimmer-block"></div>
+      </div>
+    </div>
+  </div>
+);
 
 const AppContent = () => {
   const location = useLocation();
@@ -280,76 +299,78 @@ const AppContent = () => {
       {showNavbar && <Navbar />}
       <ReloadPrompt />
       {/* <FloatingCart /> */}
-      <Routes>
-        {/* Prioritize specific routes */}
-        <Route path="/search" element={<SearchFilter />} />
-        
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/products" element={<ProductList />} />
-        <Route path="/category/:categoryName" element={<SubCategoryPage />} />
-        <Route path="/brand/:brandName" element={<BrandStore />} />
-        <Route path="/products/:id" element={<ProductDetail />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/payment" element={<PaymentMethod />} />
-        <Route path="/tracking/:id" element={<Tracking />} />
-        <Route path="/supplier/:id" element={<SupplierStore />} />
-        <Route path="/orders" element={<Orders />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/favorites" element={<Favorites />} />
-        <Route path="/support" element={<Support />} />
-        
-        {/* Admin Routes */}
-        <Route 
-          path="/admin" 
-          element={
-            <ProtectedRoute allowedRoles={['Admin']}>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<AdminDashboard />} />
-          <Route path="inventory" element={<SKUManager />} />
-          <Route path="suppliers" element={<SupplierManager />} />
-          <Route path="categories" element={<CategoryManager />} />
-          <Route path="sub-categories" element={<SubCategoryManager />} />
-          <Route path="units" element={<UnitManager />} />
-          <Route path="brands" element={<BrandManager />} />
-          <Route path="variant-titles" element={<SubVariantTitleManager />} />
-          <Route path="delivery-times" element={<DeliveryTimeManager />} />
-          <Route path="queue" element={<PickingQueue />} />
-          <Route path="fleet" element={<RiderManager />} />
-          <Route path="invoices" element={<InvoicingReports />} />
-          <Route path="offers" element={<OfferManager />} />
-          <Route path="locations" element={<LocationManager />} />
-        </Route>
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          {/* Prioritize specific routes */}
+          <Route path="/search" element={<SearchFilter />} />
+          
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/products" element={<ProductList />} />
+          <Route path="/category/:categoryName" element={<SubCategoryPage />} />
+          <Route path="/brand/:brandName" element={<BrandStore />} />
+          <Route path="/products/:id" element={<ProductDetail />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/payment" element={<PaymentMethod />} />
+          <Route path="/tracking/:id" element={<Tracking />} />
+          <Route path="/supplier/:id" element={<SupplierStore />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/support" element={<Support />} />
+          
+          {/* Admin Routes */}
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="inventory" element={<SKUManager />} />
+            <Route path="suppliers" element={<SupplierManager />} />
+            <Route path="categories" element={<CategoryManager />} />
+            <Route path="sub-categories" element={<SubCategoryManager />} />
+            <Route path="units" element={<UnitManager />} />
+            <Route path="brands" element={<BrandManager />} />
+            <Route path="variant-titles" element={<SubVariantTitleManager />} />
+            <Route path="delivery-times" element={<DeliveryTimeManager />} />
+            <Route path="queue" element={<PickingQueue />} />
+            <Route path="fleet" element={<RiderManager />} />
+            <Route path="invoices" element={<InvoicingReports />} />
+            <Route path="offers" element={<OfferManager />} />
+            <Route path="locations" element={<LocationManager />} />
+          </Route>
 
 
-        {/* Rider Routes */}
-        <Route 
-          path="/rider" 
-          element={
-            <ProtectedRoute allowedRoles={['Rider']}>
-              <RiderDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route path="/rider/verify/:id" element={<ProtectedRoute allowedRoles={['Rider']}><TaskVerification /></ProtectedRoute>} />
-        <Route path="/rider/delivery/:id" element={<ProtectedRoute allowedRoles={['Rider']}><DeliveryNavigation /></ProtectedRoute>} />
-        <Route path="/rider/pod/:id" element={<ProtectedRoute allowedRoles={['Rider']}><ProofOfDelivery /></ProtectedRoute>} />
+          {/* Rider Routes */}
+          <Route 
+            path="/rider" 
+            element={
+              <ProtectedRoute allowedRoles={['Rider']}>
+                <RiderDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="/rider/verify/:id" element={<ProtectedRoute allowedRoles={['Rider']}><TaskVerification /></ProtectedRoute>} />
+          <Route path="/rider/delivery/:id" element={<ProtectedRoute allowedRoles={['Rider']}><DeliveryNavigation /></ProtectedRoute>} />
+          <Route path="/rider/pod/:id" element={<ProtectedRoute allowedRoles={['Rider']}><ProofOfDelivery /></ProtectedRoute>} />
 
-        {/* Supplier Routes */}
-        <Route 
-          path="/supplier" 
-          element={
-            <ProtectedRoute allowedRoles={['Supplier']}>
-              <SupplierDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route path="/reports" element={<ProtectedRoute allowedRoles={['Supplier']}><Reports /></ProtectedRoute>} />
-      </Routes>
+          {/* Supplier Routes */}
+          <Route 
+            path="/supplier" 
+            element={
+              <ProtectedRoute allowedRoles={['Supplier']}>
+                <SupplierDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="/reports" element={<ProtectedRoute allowedRoles={['Supplier']}><Reports /></ProtectedRoute>} />
+        </Routes>
+      </Suspense>
 
       {showSiteFooter && <SiteFooter />}
       {showBottomNav && <Footer />}

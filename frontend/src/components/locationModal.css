@@ -79,6 +79,12 @@
   padding: 1rem;
   overflow-y: auto;
   flex: 1;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.location-modal-body::-webkit-scrollbar {
+  display: none;
 }
 
 @media (max-width: 850px) {
@@ -426,6 +432,12 @@
   max-height: 250px;
   overflow-y: auto;
   margin-top: -10px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.search-suggestions.mini::-webkit-scrollbar {
+  display: none;
 }
 
 .search-suggestions.floating {
@@ -442,6 +454,15 @@
   max-height: 280px;
   overflow-y: auto;
   isolation: isolate;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.search-suggestions.floating::-webkit-scrollbar {
+  display: none;
 }
 
 .location-search-step {
@@ -525,6 +546,16 @@
   z-index: 1;
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Hide Google Maps Legal/Logo for "Invisible" look */
+.map-display-container .gm-style-cc,
+.map-display-container .gm-style-mtc,
+.map-display-container .gm-err-container,
+.map-display-container .gmnoprint,
+.map-display-container a[href^="https://maps.google.com/maps"],
+.map-display-container a[href^="https://www.google.com/intl/en-US_US/help/terms_maps.html"] {
+  display: none !important;
 }
 
 
