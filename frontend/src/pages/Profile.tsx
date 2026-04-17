@@ -2,21 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { 
-  ArrowLeft, 
-  MessageSquare, 
-  History, 
-  MapPin, 
-  TrendingUp, 
-  Package, 
-  Clock, 
-  Share2, 
+  ArrowLeft,
+  MessageSquare,
+  History,
+  MapPin,
+  TrendingUp,
+  Package,
+  Clock,
+  Share2,
   ChevronRight,
   LogOut,
   Trash2,
   FileText,
   X,
   Loader2,
-  Pencil
+  Pencil,
+  Home
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './profile.css';
@@ -231,12 +232,21 @@ const Profile: React.FC = () => {
       <SEO title="My Profile" description="Manage your account, view savings, and check your order history on MatAll." />
       <main className="profile-content">
         <div className="profile-inner-container">
-          <header className="profile-header-new">
-            <button className="back-btn" onClick={() => navigate(-1)}>
-              <ArrowLeft size={22} />
-            </button>
-            <div className="profile-user-info">
-              <h2>Your Account</h2>
+          <header className="profile-header-sticky">
+            <div className="header-nav-profile main-content-responsive">
+              <button className="back-btn" onClick={() => navigate(-1)}>
+                <ArrowLeft size={24} />
+              </button>
+              <div className="header-title-box">
+                <h2 className="profile-nav-title">Your Account</h2>
+                <span>Manage Profile</span>
+              </div>
+              <Link to="/" className="home-btn-link">
+                <Home size={24} />
+              </Link>
+            </div>
+            
+            <div className="profile-user-info main-content-responsive">
               <div className="user-details-box">
                  <span className="user-name">{user.fullName || 'New User'}</span>
                  <p className="user-phone">{user.phoneNumber ? `+91 ${user.phoneNumber}` : '+91 8888888888'}</p>

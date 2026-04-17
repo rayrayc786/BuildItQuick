@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { 
-  ArrowLeft, 
-  Mic, 
-  Plus, 
-  Camera, 
-  PlayCircle
+  ArrowLeft,
+  Mic,
+  Plus,
+  Camera,
+  PlayCircle,
+  Home
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './search-filter.css';
@@ -170,11 +171,16 @@ const SearchFilter: React.FC = () => {
   return (
     <div className="search-filter-page">
       <SEO title="Search Products" description="Search for building materials, tools, and hardware on MatAll. Get everything you need delivered in 60 minutes." />
-      <header className="search-filter-header">
-        <button className="back-btn" onClick={() => navigate(-1)}>
-          <ArrowLeft size={24} />
-        </button>
-        <h2 className="header-title">Search your product</h2>
+      <header className="search-filter-header-sticky">
+        <div className="header-nav-search main-content-responsive">
+          <button className="back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={24} />
+          </button>
+          <h2 className="search-nav-title">Search your product</h2>
+          <Link to="/" className="home-btn-link">
+            <Home size={24} />
+          </Link>
+        </div>
       </header>
 
       <div className="search-filter-content">

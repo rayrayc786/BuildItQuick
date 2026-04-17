@@ -378,25 +378,9 @@
 }
 
 /* Mobile adjustments for category blog */
-@media (max-width: 768px) {
+@media (max-width: 850px) {
   .category-blog-space {
-    padding: 1.5rem 0.75rem;
-    margin-top: 2rem;
-  }
-  
-  .category-blog-space h1 { font-size: 1.4rem; }
-  .category-blog-space h2 { font-size: 1.25rem; }
-  .category-blog-space h3 { font-size: 1.1rem; }
-  
-  .category-blog-space p {
-    font-size: 0.9rem;
-    line-height: 1.6;
-    text-align: left; /* Better for mobile than justify */
-  }
-
-  .category-blog-space ul, 
-  .category-blog-space ol {
-    padding-left: 1.25rem;
+    display: none !important;
   }
 }
 

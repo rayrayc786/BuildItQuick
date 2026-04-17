@@ -64,15 +64,18 @@ const Orders: React.FC = () => {
     <div className="matall-orders-page">
       <SEO title="My Orders" description="View your past orders and track current deliveries on MatAll." />
       <header className="orders-header-sticky">
-        <div className="header-left">
+        <div className="header-nav-orders main-content-responsive">
            <button className="back-btn" onClick={() => navigate(-1)}>
-             <ArrowLeft size={22} />
+             <ArrowLeft size={24} />
            </button>
-           <div className="header-title">Order History</div>
+           <div className="header-title-box">
+             <h2 className="orders-nav-title">Order History</h2>
+             <span>Track & Manage</span>
+           </div>
+           <Link to="/" className="home-btn-link">
+             <Home size={24} />
+           </Link>
         </div>
-        <Link to="/" className="home-btn-link">
-          <Home size={22} />
-        </Link>
       </header>
 
       <main className="orders-content">

@@ -98,17 +98,17 @@ const SubCategoryPage: React.FC = () => {
         title={displayCategory} 
         description={`Browse ${displayCategory} construction materials on MatAll. Quality supplies for your building needs, delivered in 60 minutes.`} 
       />
-      <header className="sub-cat-header-v2">
-        <div className="main-content-responsive header-content-box">
+      <header className="sub-cat-header-sticky">
+        <div className="header-content-box-v2 main-content-responsive">
           <div className="header-nav-v2">
-            <button className="back-btn-v2" onClick={() => navigate(-1)}>
-              <ArrowLeft size={20} />
+            <button className="back-btn" onClick={() => navigate(-1)}>
+              <ArrowLeft size={24} />
             </button>
             <div className="title-section">
               <h2 className="main-category-title">{displayCategory}</h2>
               <p className="subtitle-material">Material Collection</p>
             </div>
-            <Link to="/" className="home-btn-v2"><Home size={20} /></Link>
+            <Link to="/" className="home-btn-link"><Home size={24} /></Link>
           </div>
           
           <div className="filter-row-v2">

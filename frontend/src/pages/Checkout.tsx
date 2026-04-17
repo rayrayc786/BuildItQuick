@@ -6,7 +6,8 @@ import {
   ArrowLeft,
   ChevronDown,
   Receipt,
-  ShoppingBasket
+  ShoppingBasket,
+  Home
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -327,11 +328,17 @@ const Checkout: React.FC = () => {
     <div className="matall-checkout-page">
       <SEO title="Secure Checkout" description="Finalize your order on MatAll. Secure payment and fast delivery for all your building material needs." />
       <header className="checkout-header-sticky">
-        <div className="header-nav-container main-content-responsive">
+        <div className="header-nav-checkout main-content-responsive">
           <button className="back-btn" onClick={() => navigate(-1)}>
             <ArrowLeft size={24} />
           </button>
-          <div className="header-title">Checkout</div>
+          <div className="header-title-box">
+            <h2 className="checkout-nav-title">Checkout</h2>
+            <span>Secure Order</span>
+          </div>
+          <Link to="/" className="home-btn-link">
+            <Home size={24} />
+          </Link>
         </div>
       </header>
 

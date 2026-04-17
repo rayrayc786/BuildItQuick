@@ -193,15 +193,15 @@ const Tracking: React.FC = () => {
     <div className="matall-tracking-page">
       <SEO title={`Track Order #${id?.slice(-8).toUpperCase()}`} description="Track your MatAll order status in real-time. See delivery timeline and details." />
       <header className="tracking-header-sticky">
-        <div className="header-left-group">
-          <button className="back-btn" onClick={() => navigate(-1)}>
-            <ArrowLeft size={22} />
-          </button>
-          <div className="header-title">Order Details</div>
+        <div className="header-nav-tracking main-content-responsive">
+           <button className="back-btn" onClick={() => navigate(-1)}>
+             <ArrowLeft size={24} />
+           </button>
+           <h2 className="tracking-nav-title">Order Details</h2>
+           <Link to="/" className="home-btn-link">
+             <Home size={24} />
+           </Link>
         </div>
-        <Link to="/" className="home-btn-link">
-          <Home size={22} />
-        </Link>
       </header>
 
       <main className="tracking-content full-width-mobile">

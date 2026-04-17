@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { 
   ArrowLeft, 
@@ -13,7 +13,8 @@ import {
   RotateCcw,
   ShieldCheck,
   Info,
-  Clock
+  Clock,
+  Home
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import ProductCard from '../components/ProductCard';
@@ -186,14 +187,17 @@ const ProductDetail: React.FC = () => {
       />
       {/* Header */}
       <header className="detail-header-sticky">
-        <button className="header-icon-btn" onClick={() => navigate(-1)}>
-          <ArrowLeft size={24} />
-        </button>
-        <div className="header-title-scroll">
-          {product.brand} {product.productName || product.name}
-        </div>
-        <div className="header-actions">
-           <button className="header-icon-btn" onClick={handleShare}><Share2 size={20} /></button>
+        <div className="header-nav-detail main-content-responsive">
+          <button className="back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={24} />
+          </button>
+          <div className="header-title-box">
+            <h2 className="detail-nav-title">{product.brand} {product.productName || product.name}</h2>
+            <span>Product Details</span>
+          </div>
+          <Link to="/" className="home-btn-link">
+            <Home size={24} />
+          </Link>
         </div>
       </header>
 

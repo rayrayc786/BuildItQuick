@@ -21,24 +21,19 @@ const Support: React.FC = () => {
   return (
     <div className="matall-support-page">
       <SEO title="Customer Support" description="Get help with your MatAll orders. Contact our support team via WhatsApp for quick assistance." />
-      <header className="support-header-prd">
-        <div className="header-nav-support">
+      <header className="support-header-sticky">
+        <div className="header-nav-support main-content-responsive">
           <button className="back-btn" onClick={() => navigate(-1)}>
             <ArrowLeft size={24} />
           </button>
-          <h2 className="support-nav-title">Customer Support</h2>
-          <Link to="/" className="home-btn-link"><Home size={24} /></Link>
+          <div className="header-title-box">
+            <h2 className="support-nav-title">Customer Support</h2>
+            
+          </div>
+          <Link to="/" className="home-btn-link">
+            <Home size={24} />
+          </Link>
         </div>
-        
-        {/* <div className="support-hero-box">
-           <div className="profile-icon-support">
-              <User size={32} />
-           </div>
-           <div className="greeting-text-support">
-              <span>Hello, {user.fullName || 'Guest'}</span>
-              <h2 className="support-prompt-bold">How can we help?</h2>
-           </div>
-        </div> */}
       </header>
 
       <main className="support-content-prd single-button-layout">

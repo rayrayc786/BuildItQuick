@@ -61,14 +61,19 @@ const PaymentMethod: React.FC = () => {
   return (
     <div className="payment-page">
       <SEO title="Payment Method" description="Select your preferred payment method on MatAll. Secure and flexible payment options available." />
-      <header className="payment-header">
-        <button className="back-btn" onClick={() => navigate(-1)}>
-          <ArrowLeft size={24} />
-        </button>
-        <h2>Select Payment Method</h2>
-        <Link to="/" className="home-btn-link">
-          <Home size={24} />
-        </Link>
+      <header className="payment-header-sticky">
+        <div className="header-nav-payment main-content-responsive">
+          <button className="back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={24} />
+          </button>
+          <div className="header-title-box">
+            <h2 className="payment-nav-title">Select Payment</h2>
+            <span>Secure Checkout</span>
+          </div>
+          <Link to="/" className="home-btn-link">
+            <Home size={24} />
+          </Link>
+        </div>
       </header>
 
       <main className="payment-content">

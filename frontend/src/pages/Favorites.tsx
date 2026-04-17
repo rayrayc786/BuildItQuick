@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Heart, ShoppingCart } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Heart, ShoppingCart, Home, ArrowLeft } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import SEO from '../components/SEO';
 
@@ -58,12 +58,24 @@ const Favorites: React.FC = () => {
   if (loading) return <div className="content">Loading your favorites...</div>;
 
   return (
-    <main className="content favorites-page" style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem' }}>
+    <div className="favorites-page-container">
       <SEO title="My Favorites" description="Your saved building materials and tools for quick access and procurement on MatAll." />
-      <header style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: '2.25rem', fontWeight: 900 }}>Favorite Materials</h1>
-        <p style={{ color: '#64748b' }}>Quick access to your frequently ordered industrial products</p>
+      <header className="favorites-header-sticky">
+        <div className="header-nav main-content-responsive">
+          <button className="back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={24} />
+          </button>
+          <div className="header-title-box">
+            <h2 className="favorites-nav-title">Favorite Materials</h2>
+            <span>Saved Items</span>
+          </div>
+          <Link to="/" className="home-btn-link">
+            <Home size={24} />
+          </Link>
+        </div>
       </header>
+
+      <main className="favorites-content main-content-responsive">
 
       {favorites.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '5rem' }}>
@@ -109,7 +121,8 @@ const Favorites: React.FC = () => {
           ))}
         </div>
       )}
-    </main>
+      </main>
+    </div>
   );
 };
 
