@@ -32,6 +32,11 @@
   :has(.matall-checkout-page) .landing-footer {
     display: none !important;
   }
+  
+  /* Hide checkout header on desktop */
+  .checkout-header-sticky {
+    display: none !important;
+  }
 }
 
 /* Premium User Pods (Checkout) */

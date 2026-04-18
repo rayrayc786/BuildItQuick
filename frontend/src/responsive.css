@@ -88,27 +88,24 @@
     top: 1rem;
   }
 
-  /* Hide redundant sub-headers on desktop */
-  .list-header-sticky .header-nav,
-  .detail-header-sticky .header-nav-container,
-  .cart-header-sticky .header-nav-container,
-  .checkout-header-sticky .header-nav-container,
-  .brand-header-sticky .header-nav,
+  /* Hide redundant sub-headers on desktop completely */
+  .list-header-sticky,
+  .detail-header-sticky,
+  .cart-header-sticky,
+  .checkout-header-sticky,
+  .brand-header-sticky,
+  .sub-cat-header-sticky,
   .sub-cat-header-v2,
   .orders-header-sticky,
   .tracking-header-sticky,
-  .profile-header .back-btn {
+  .profile-header,
+  .profile-header-sticky,
+  .support-header-sticky,
+  .payment-header-sticky,
+  .search-filter-header-sticky,
+  .favorites-header-sticky,
+  [class*="-header-sticky"] {
     display: none !important;
-  }
-
-  .matall-list-page .list-header-sticky,
-  .matall-detail-page .detail-header-sticky,
-  .matall-cart-page .cart-header-sticky,
-  .matall-checkout-page .checkout-header-sticky,
-  .brand-store-page .brand-header-sticky {
-    padding: 0 !important;
-    box-shadow: none !important;
-    background: transparent !important;
   }
 
   /* Desktop specific layout for Cart */
