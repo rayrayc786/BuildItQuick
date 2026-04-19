@@ -46,11 +46,11 @@ const OrderSchema = new mongoose.Schema({
   totalBaseAmount: { type: Number }, // Sum of items base price
   totalTaxAmount: { type: Number }, // Sum of IGST/CGST/SGST from items
   
-  platformFee: { type: Number, default: 19 }, // incl GST
-  platformFeeGST: { type: Number, default: 2.9 }, // 18% of 16.10 approx
+  platformFee: { type: Number }, // incl GST
+  platformFeeGST: { type: Number }, // 18% of 16.10 approx
   
-  deliveryCharge: { type: Number, default: 0 },
-  deliveryChargeGST: { type: Number, default: 0 },
+  deliveryCharge: { type: Number },
+  deliveryChargeGST: { type: Number },
 
   totalWeight: { type: Number, required: true },
   totalVolume: { type: Number, required: true },

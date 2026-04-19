@@ -124,7 +124,7 @@ const Product = require('../models/Product');
 const Settings = require('../models/Settings');
 
 const createOrder = async (orderData, io) => {
-  const { items, deliveryCharge, platformFee, userId } = orderData;
+  const { items, userId } = orderData;
   const settings = await Settings.findOne();
 
   // 1. Populate products to get weights/volumes for logistics calculation
@@ -135,8 +135,8 @@ const createOrder = async (orderData, io) => {
 
   // 2. Calculate totals using the full product details
   const { 
-    subTotal, totalAmount, totalBaseAmount, totalTaxAmount, platformFeeGST, 
-    deliveryChargeGST, totalWeight, totalVolume, mappedItems 
+    subTotal, totalAmount, totalBaseAmount, totalTaxAmount, 
+    platformFee, deliveryCharge, totalWeight, totalVolume, mappedItems 
   } = calculateOrderTotals(hydratedItems, settings);
 
   const vehicleClass = determineVehicleClass(totalWeight, totalVolume);
@@ -165,9 +165,7 @@ const createOrder = async (orderData, io) => {
     totalBaseAmount,
     totalTaxAmount,
     platformFee,
-    platformFeeGST,
     deliveryCharge,
-    deliveryChargeGST,
     totalWeight,
     totalVolume,
     vehicleClass,
