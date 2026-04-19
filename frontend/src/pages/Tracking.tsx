@@ -95,10 +95,19 @@ const Tracking: React.FC = () => {
       }
     };
 
+    const handleInvoiceUpdate = (data: any) => {
+      console.log('Received socket invoice-number-updated:', data);
+      if (String(data.orderId) === String(id)) {
+        setOrder((prev: any) => ({ ...prev, hisaabKitaabInvoiceNumber: data.invoiceNumber }));
+      }
+    };
+
     customerSocket.on('order-status-update', handleStatusUpdate);
+    customerSocket.on('invoice-number-updated', handleInvoiceUpdate);
 
     return () => {
       customerSocket.off('order-status-update', handleStatusUpdate);
+      customerSocket.off('invoice-number-updated', handleInvoiceUpdate);
     };
   }, [id]);
 

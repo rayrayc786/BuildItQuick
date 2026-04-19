@@ -150,9 +150,9 @@ exports.checkout = async (req, res) => {
     };
 
     console.log('Processing Order Data:', orderData);
-    const order = await OrderService.createOrder(orderData);
-
     const io = req.app.get('socketio');
+    const order = await OrderService.createOrder(orderData, io);
+
     if (order.supplierId) {
       io.of('/supplier').to(order.supplierId.toString()).emit('new-order', order);
     }

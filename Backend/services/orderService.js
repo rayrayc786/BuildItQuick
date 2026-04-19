@@ -2,12 +2,18 @@ const Order = require('../models/Order');
 const DarkStore = require('../models/DarkStore');
 const axios = require('axios');
 
+// Hisaab Kitaab Inventory Cache (30 Min TTL)
+let HISAABIB_INVENTORY_CACHE = null;
+let HISAABIB_CACHE_TIMESTAMP = 0;
+const CACHE_TTL = 30 * 60 * 1000;
+
+
 const calculateOrderTotals = (items, settings = null) => {
   let totalWeight = 0;
   let totalVolume = 0;
   let totalBaseAmount = 0; // Cumulative base amount for all items
   let totalTaxAmount = 0;  // Cumulative tax amount for all items
-  
+
   // Use settings or default values
   const fee_platform = settings?.platformFee ?? 15;
   const threshold_free = settings?.freeDeliveryThreshold ?? 5000;
@@ -18,10 +24,10 @@ const calculateOrderTotals = (items, settings = null) => {
     const product = item.product;
     const selectedVariantName = item.selectedVariant;
     const variant = product?.variants?.find(v => v.name === selectedVariantName);
-    
+
     // Priority: 1. Variant Logistics Category, 2. Product Logistics Category, 3. Item Category (backwards compatibility), 4. Default 'Light'
     const cat = (variant?.logisticsCategory || product?.logisticsCategory || item.category || 'Light').toLowerCase();
-    
+
     if (cat === 'heavy') maxCat = 'heavy';
     else if (cat === 'medium' && maxCat !== 'heavy') maxCat = 'medium';
   });
@@ -41,13 +47,13 @@ const calculateOrderTotals = (items, settings = null) => {
     const hydratedProduct = item.product;
     const productId = hydratedProduct?._id || item.productId || item.product;
     const quantity = item.quantity || 1;
-    
+
     // Fallback to product metadata for weight/volume if not in item
     const weight = item.totalWeight || (hydratedProduct?.inventory?.unitWeight ? (hydratedProduct.inventory.unitWeight * quantity) / 1000 : 0);
     const volume = item.totalVolume || 0;
 
     const totalTaxRate = item.taxRate || 18; 
-    
+
     // Reverse calculate the Base Price and Tax from the Inclusive Price
     const rowTotalInclGST = unitPrice * quantity;
     const rowBaseTotal = rowTotalInclGST / (1 + totalTaxRate / 100);
@@ -114,32 +120,32 @@ const determineVehicleClass = (weight) => {
   return 'Heavy Trailer';
 };
 
-const createOrder = async (orderData) => {
-  const Product = require('../models/Product');
-  const Settings = require('../models/Settings');
+const Product = require('../models/Product');
+const Settings = require('../models/Settings');
+
+const createOrder = async (orderData, io) => {
+  const { items, deliveryCharge, platformFee, userId } = orderData;
   const settings = await Settings.findOne();
 
-  // Populate products for each item to get correct category/logistics category
-  const hydratedItems = await Promise.all(orderData.items.map(async (item) => {
+  // 1. Populate products to get weights/volumes for logistics calculation
+  const hydratedItems = await Promise.all(items.map(async (item) => {
     const product = await Product.findById(item.productId || item.product);
-    return {
-      ...item,
-      product // pass the full product object for calculateOrderTotals
-    };
+    return { ...item, product };
   }));
 
+  // 2. Calculate totals using the full product details
   const { 
-    totalAmount, subTotal, totalBaseAmount, totalTaxAmount, 
-    platformFee, platformFeeGST, deliveryCharge, deliveryChargeGST,
-    totalWeight, totalVolume, vehicleClass, mappedItems 
+    subTotal, totalAmount, totalBaseAmount, totalTaxAmount, platformFeeGST, 
+    deliveryChargeGST, totalWeight, totalVolume, mappedItems 
   } = calculateOrderTotals(hydratedItems, settings);
 
-  // Auto-fetch darkStoreId if missing
+  const vehicleClass = determineVehicleClass(totalWeight, totalVolume);
+
+  // Auto-assign to nearest hub if darkStoreId not provided
   let darkStoreId = orderData.darkStoreId;
   if (!darkStoreId) {
-    let defaultStore = await DarkStore.findOne();
+    let defaultStore = await DarkStore.findOne({ isOpen: true });
     if (!defaultStore) {
-      console.log('No DarkStore found. Creating a Default Hub for you...');
       defaultStore = await DarkStore.create({
         storeName: 'Main Warehouse Hub',
         location: { type: 'Point', coordinates: [0, 0] },
@@ -183,79 +189,79 @@ const createOrder = async (orderData) => {
   });
 
   const savedOrder = await newOrder.save();
-  
+
   // Async Sync to Hisaab Kitaab (Don't await to avoid slowing down checkout)
-  syncToHisaabKitaab(savedOrder._id).catch(err => console.error('HisaabKitaab Sync Error:', err.message));
+  syncToHisaabKitaab(savedOrder._id, io).catch(err => console.error('HisaabKitaab Sync Error:', err.message));
 
   return savedOrder;
 };
 
-// Performance Cache: Store inventory in memory for 30 minutes
-let HISAABIB_INVENTORY_CACHE = null;
-let HISAABIB_CACHE_TIMESTAMP = 0;
-const CACHE_TTL = 30 * 60 * 1000; // 30 Minutes
+const syncToHisaabKitaab = async (orderId, io) => {
+  const API_KEY = process.env.HISAAB_KITAAB_API_KEY;
+  if (!API_KEY) {
+    console.warn('[HisabKitab] API Key missing. Skipping sync.');
+    return;
 
-/**
- * Ensures inventory is loaded into memory. Returns the Map for lookups.
- * This can be called proactively ("warmup") to prevent lag during checkout.
- */
-async function getInventoryMap() {
-  const API_KEY = process.env.HISAAB_KITAAB_API_KEY || '1aa158f2-ee16-46af-a60c-f05555ce07b4';
-  let inventoryMap = new Map();
-  const now = Date.now();
 
-  if (HISAABIB_INVENTORY_CACHE && (now - HISAABIB_CACHE_TIMESTAMP < CACHE_TTL)) {
-    console.log(`[HisabKitab] Using CACHED inventory (${HISAABIB_INVENTORY_CACHE.length} items).`);
-    inventoryMap = new Map(HISAABIB_INVENTORY_CACHE.map(i => [String(i.sku || i.barcode || '').trim(), i]));
-    return inventoryMap;
+
+
+
+
+
+
+
+
+
+
+
   }
 
-  console.log(`[HisabKitab] Fetching fresh inventory...`);
-  let allItems = [];
-  let currentPage = 1;
-  const seenIds = new Set();
 
-  while (true) {
-    const limit = 150;
-    const skip = (currentPage - 1) * limit;
-    try {
-      const res = await axios.get(`https://api.hisabkitab.co/third-party/items?per_page=${limit}&page=${currentPage}&page_no=${currentPage}&skip=${skip}`, {
-        headers: { 'ApiKey': API_KEY }
-      });
-      const pageData = res.data?.data;
-      if (!pageData || !Array.isArray(pageData) || pageData.length === 0) break;
 
-      for (const i of pageData) {
-        if (i.id && !seenIds.has(String(i.id))) {
-          seenIds.add(String(i.id));
-          allItems.push(i);
-          if (i.sku) inventoryMap.set(String(i.sku).trim(), i);
-          if (i.barcode) inventoryMap.set(String(i.barcode).trim(), i);
-        }
-      }
-      if (currentPage >= 60) break;
-      currentPage++;
-    } catch (e) {
-      console.error(`[HisabKitab] Inventory Paging Error:`, e.message);
-      break;
-    }
-  }
 
-  HISAABIB_INVENTORY_CACHE = allItems;
-  HISAABIB_CACHE_TIMESTAMP = now;
-  console.log(`[HisabKitab] Inventory indexed: ${allItems.length} items.`);
-  return inventoryMap;
-}
 
-async function syncToHisaabKitaab(orderId) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   try {
-    const API_KEY = process.env.HISAAB_KITAAB_API_KEY || '1aa158f2-ee16-46af-a60c-f05555ce07b4';
+
     const order = await Order.findById(orderId).populate('items.productId');
     if (!order) return;
 
-    console.log(`[HisabKitab] Starting Sync for Order ${order.orderId}...`);
+    // 0. Fetch Next Invoice Number
 
-    const inventoryMap = await getInventoryMap();
+
 
     let invoiceNumber = `0001`; 
     try {
@@ -268,14 +274,14 @@ async function syncToHisaabKitaab(orderId) {
     } catch (numErr) {
       console.warn('[HisabKitab] Failed to fetch next invoice number, falling back.', numErr.message);
     }
-    
+
     // Enforce the FY prefix requested (2026/2027-XXXX)
     let rawNumber = invoiceNumber.toString();
     let numericMatch = rawNumber.match(/\d+/g);
     let numericPart = numericMatch ? numericMatch[numericMatch.length - 1].padStart(4, '0') : '0001';
-    
+
     let finalInvoiceNumber = `2026/2027-${numericPart}`;
-    
+
 
     // GST Rate to ID Mapping
     const GST_RATE_TO_ID = {
@@ -293,10 +299,10 @@ async function syncToHisaabKitaab(orderId) {
       // Determine the SKU (prioritize Variant SKU, fallback to Product root SKU)
       let productSku = null;
       let fallbackSearchName = null;
-      
+
       if (item.productId) {
          fallbackSearchName = item.productId.productName;
-         
+
          // Priority variant-level SKU identification using all available identifiers
          if (item.productId.variants) {
            const matchingVariant = item.productId.variants.find(v => 
@@ -307,7 +313,7 @@ async function syncToHisaabKitaab(orderId) {
            );
            if (matchingVariant && matchingVariant.sku) productSku = matchingVariant.sku;
          }
-         
+
          // Base product SKU as second priority if variant doesn't have one
          if (!productSku) productSku = item.productId.sku || null;
       }
@@ -320,21 +326,85 @@ async function syncToHisaabKitaab(orderId) {
 
       const brand = item.productId?.brand || '';
       const displayName = `${brand} ${fallbackSearchName}`.trim();
-      
-      // Optimized Lookup: Use the Map we built at the start
+
+      // Attempt to lookup Hisaab Kitab's internal Item ID
       if (productSku) {
-        const productSkuKey = String(productSku).trim();
-        const foundExact = inventoryMap.get(productSkuKey);
-        
-        if (foundExact) {
-          console.log(`[HisabKitab] SUCCESS: Found SKU match for "${productSkuKey}". ID: ${foundExact.id}`);
+        console.log(`[HisabKitab] Searching inventory for SKU ID: "${productSku}"`);
+        let foundExact = null;
+        let allItems = [];
+        const now = Date.now();
+
+        // Use Cache if fresh
+        if (HISAABIB_INVENTORY_CACHE && (now - HISAABIB_CACHE_TIMESTAMP < CACHE_TTL)) {
+          console.log(`[HisabKitab] Using CACHED inventory (${HISAABIB_INVENTORY_CACHE.length} items).`);
+          allItems = HISAABIB_INVENTORY_CACHE;
+        } else {
+          console.log(`[HisabKitab] Fetching fresh inventory...`);
+          let currentPage = 1;
+          const seenIds = new Set();
+          while (true) {
+            const limit = 150;
+            const skip = (currentPage - 1) * limit;
+            try {
+              const skuSearchRes = await axios.get(`https://api.hisabkitab.co/third-party/items?per_page=${limit}&page=${currentPage}&page_no=${currentPage}&skip=${skip}`, {
+                headers: { 'ApiKey': API_KEY }
+              });
+              const pageData = skuSearchRes.data?.data;
+              if (!pageData || !Array.isArray(pageData) || pageData.length === 0) break;
+              
+              for (const i of pageData) {
+                if (i.id && !seenIds.has(String(i.id))) {
+                  seenIds.add(String(i.id));
+                  allItems.push(i);
+                }
+              }
+              if (currentPage >= 60) break; 
+              currentPage++;
+            } catch (skuErr) {
+              console.error(`[HisabKitab] Pagination Error:`, skuErr.message);
+              break;
+            }
+          }
+          HISAABIB_INVENTORY_CACHE = allItems;
+          HISAABIB_CACHE_TIMESTAMP = now;
+          console.log(`[HisabKitab] Cache updated with ${allItems.length} items.`);
+        }
+
+        // Search in loaded items
+        foundExact = allItems.find(i => 
+          (i.sku && String(i.sku).trim() === String(productSku).trim()) || 
+          (i.barcode && String(i.barcode).trim() === String(productSku).trim())
+        );
+
+        if (foundExact && foundExact.id) {
+          console.log(`[HisabKitab] SUCCESS: Found SKU match. ID: ${foundExact.id}`);
           resolvedItemId = foundExact.id;
           resolvedUnitId = foundExact.unit_of_measurement || foundExact.unit_id || 29;
           resolvedLedgerId = foundExact.income_ledger_id || foundExact.ledger_id || resolvedLedgerId;
-          resolvedHsn = foundExact.hsn_sac_code || resolvedHsn;
+          if (foundExact.hsn_sac_code) resolvedHsn = foundExact.hsn_sac_code;
         } else {
-          console.log(`[HisabKitab] WARNING: SKU "${productSkuKey}" not found in inventory. Using default.`);
+          // STRICT MODE: If SKU is missing, save error to Order and stop sync
+          const errorMsg = `SKU Not Found in Master: ${productSku || displayName}`;
+          console.error(`[HisabKitab] ABORTING: ${errorMsg}`);
+          order.hisaabKitaabInvoiceNumber = errorMsg;
+          await order.save();
+          if (io) {
+            io.of('/admin').emit('invoice-number-updated', { orderId: order._id, invoiceNumber: errorMsg });
+            if (order.userId) io.of('/customer').to(order.userId.toString()).emit('invoice-number-updated', { orderId: order._id, invoiceNumber: errorMsg });
+          }
+          return; // Stop the sync process
         }
+      } else {
+        // NO SKU PROVIDED IN SYSTEM
+        const errorMsg = `Product missing SKU in System: ${displayName}`;
+        console.error(`[HisabKitab] ABORTING: ${errorMsg}`);
+        order.hisaabKitaabInvoiceNumber = errorMsg;
+        await order.save();
+        if (io) {
+          io.of('/admin').emit('invoice-number-updated', { orderId: order._id, invoiceNumber: errorMsg });
+          if (order.userId) io.of('/customer').to(order.userId.toString()).emit('invoice-number-updated', { orderId: order._id, invoiceNumber: errorMsg });
+        }
+        return;
       }
 
       items.push({
@@ -373,6 +443,8 @@ async function syncToHisaabKitaab(orderId) {
         ac_type: 1, // 1 = Addition
         ac_value: deliveryBase,
         ac_gst_rate_id: 10, // Hisaab Kitab ID for 18%
+        ac_hsn_sac_code: "996511",
+        hsn_sac_code: "996511",
         ac_taxable_value: deliveryBase,
         ac_total_without_tax: deliveryBase,
         ac_tax_amount: lineTax,
@@ -394,6 +466,8 @@ async function syncToHisaabKitaab(orderId) {
         ac_type: 1,
         ac_value: platformBase,
         ac_gst_rate_id: 10, // Hisaab Kitab ID for 18%
+        ac_hsn_sac_code: "998541",
+        hsn_sac_code: "998541",
         ac_taxable_value: platformBase,
         ac_total_without_tax: platformBase,
         ac_tax_amount: lineTax,
@@ -406,12 +480,12 @@ async function syncToHisaabKitaab(orderId) {
 
     // Mathematical Consistency Logic for ITEM SALE
     // We MUST perfectly sum the taxable base and tax values of BOTH items and additional_charges
-    
+
     // 1. Sum up Items specifically splitting taxes per line for extreme accounting precision
     let items_taxable = 0;
     let items_cgst = 0;
     let items_sgst = 0;
-    
+
     items.forEach((item, index) => {
        const taxRate = order.items[index]?.taxRate || 18;
        const lineTaxable = item.total;
@@ -427,14 +501,14 @@ async function syncToHisaabKitaab(orderId) {
     const total_taxable = Number((items_taxable + active_ac_taxable).toFixed(2));
     const cgst = Number((items_cgst + active_ac_cgst).toFixed(2));
     const sgst = Number((items_sgst + active_ac_sgst).toFixed(2));
-    
+
     // In API Sales Type 2 (Item Sale), "Gross Value" stringently means:
     // The sum of strictly physical products (excluding ANY additional charges AND tax).
     const gross_value = Number(items_taxable.toFixed(2));
-    
+
     // Grand Total is what the customer actually paid
     const grand_total = Number(order.totalAmount.toFixed(2));
-    
+
     // Rounding is strictly Grand Total - (Total Taxable + CGST + SGST)
     const calculation_total = Number((total_taxable + cgst + sgst).toFixed(2));
     const rounding_amount = Number((grand_total - calculation_total).toFixed(2));
@@ -446,7 +520,7 @@ async function syncToHisaabKitaab(orderId) {
       invoice_number: finalInvoiceNumber,
       date: new Date(order.createdAt).toLocaleDateString('en-GB').replace(/\//g, '-'), // DD-MM-YYYY
       customer_ledger_id: parseInt(process.env.HISABKITAB_CASH_LEDGER_ID || '1604700'),
-      
+
       party_name: customerName,
       customer_name: customerName, // Root override for name
       billing_name: customerName,  // Root override for billing
@@ -458,11 +532,11 @@ async function syncToHisaabKitaab(orderId) {
       party_name_same_as_billing_address_name: 1, 
       party_name_same_as_address_name: 1,
       is_party_name_same_as_address_name: 1,
-      
+
       sales_item_type: 2, // ITEM SALE (Forces "Item Name" column header)
       items: items,       // Main main table products
       additional_charges: additional_charges, // Forces bottom-right charges layout
-      
+
       billing_address: {
         name: customerName,
         address_1: deliveryAddressStr,
@@ -479,7 +553,7 @@ async function syncToHisaabKitaab(orderId) {
         city_id: 150110,   // 150110 = Gurugram
         pin_code: order.deliveryAddress?.pincode || '110001'
       },
-      
+
       // Invoice overrides (Bank & Terms)
       term_and_condition: "Subject to jurisdiction in Gurugram.\nOnce delivered, the responsibility of carekeeping of materials is with the receiver.\nGoods once sold will not be taken back, unless manufacturing defect is accepted by Manufacturer.\nPayment delay attracts penalty @5% per day.",
       bank_id: process.env.HISABKITAB_BANK_LEDGER_ID ? parseInt(process.env.HISABKITAB_BANK_LEDGER_ID) : undefined,
@@ -488,7 +562,7 @@ async function syncToHisaabKitaab(orderId) {
       region_iso: 'in',
       region_code: 91,
       main_classification_nature_type: "Intrastate Sales Taxable",
-      
+
       // Item Sale exact constraints
       gross_value: gross_value, 
       taxable_value: total_taxable, 
@@ -498,19 +572,19 @@ async function syncToHisaabKitaab(orderId) {
       cess: 0,
       rounding_amount,
       grand_total: grand_total,
-      
+
       is_gst_enabled: 1,
       is_gst_na: 0,
       is_rcm_applicable: 0,
       is_round_off_not_changed: 1,
       is_cgst_sgst_igst_calculated: 1,
-      
+
       // Configuration overrides: ONLY show Item Name
       is_enabled_item_sku: 0,
       show_item_code: 0,
       is_additional_item_description: 0,
       is_item_description_on_invoice: 0,
-      
+
       submit_button_value: 2 // Save
     };
 
@@ -523,12 +597,25 @@ async function syncToHisaabKitaab(orderId) {
       }
     });
 
-    // Save the generated invoice ID back to the order for display in Admin/User dashboards
+    // 7. Success - Persist the Invoice Number for the UI
     order.hisaabKitaabInvoiceNumber = finalInvoiceNumber;
     order.hisaabKitaabSyncedAt = new Date();
     await order.save();
 
-    console.log(`[HisabKitab] Invoice synced successfully for Order ${order._id} (Invoice: ${finalInvoiceNumber})`);
+    // Real-time Update via Socket
+    if (io) {
+      const socketData = { orderId: order._id.toString(), invoiceNumber: finalInvoiceNumber };
+      console.log(`[Socket] Emitting invoice-number-updated for Order ${socketData.orderId}: ${finalInvoiceNumber}`);
+      
+      io.of('/admin').emit('invoice-number-updated', socketData);
+      if (order.userId) {
+        const userRoom = order.userId.toString();
+        io.of('/customer').to(userRoom).emit('invoice-number-updated', socketData);
+        console.log(`[Socket] Pushed to customer room: ${userRoom}`);
+      }
+    }
+
+    console.log(`[HisabKitab] Invoice matched and saved successfully for Order ${order._id} (Invoice: ${finalInvoiceNumber})`);
   } catch (err) {
     console.error(`[HisabKitab] Sync Failed for Order ${orderId}:`, err.response?.data || err.message);
   }
@@ -542,6 +629,6 @@ module.exports = {
   calculateOrderTotals,
   determineVehicleClass,
   createOrder,
-  getOrderById,
-  syncToHisaabKitaab
+  getOrderById
+
 };

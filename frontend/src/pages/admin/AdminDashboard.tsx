@@ -837,12 +837,18 @@ const AdminDashboard: React.FC = () => {
        fetchData(); // Auto-refresh order list and summary stats
     };
 
+    const onInvoiceNumberUpdated = (data: any) => {
+       console.log('Received invoice-number-updated:', data);
+       setOrders(prev => prev.map(o => String(o._id) === String(data.orderId) ? { ...o, hisaabKitaabInvoiceNumber: data.invoiceNumber } : o));
+    };
+
     adminSocket.on('connect', onConnect);
     adminSocket.on('new-order', onNewOrder);
     adminSocket.on('new-user-request', onNewUserRequest);
     adminSocket.on('new-on-demand-request', onNewOnDemandRequest);
     adminSocket.on('on-demand-status-update', onOnDemandStatusUpdate);
     adminSocket.on('order-updated', onOrderUpdated);
+    adminSocket.on('invoice-number-updated', onInvoiceNumberUpdated);
 
     return () => {
       adminSocket.off('connect', onConnect);
@@ -851,6 +857,7 @@ const AdminDashboard: React.FC = () => {
       adminSocket.off('new-on-demand-request', onNewOnDemandRequest);
       adminSocket.off('on-demand-status-update', onOnDemandStatusUpdate);
       adminSocket.off('order-updated', onOrderUpdated);
+      adminSocket.off('invoice-number-updated', onInvoiceNumberUpdated);
       // NOTE: Removed adminSocket.disconnect() to prevent breaking the singleton connection on quick re-renders
     };
   }, []);
@@ -1308,6 +1315,11 @@ const AdminDashboard: React.FC = () => {
                <span className="row-name">Order #{order._id.slice(-6).toUpperCase()}</span>
                <span className="row-sub">₹{Number(order.totalAmount || 0).toFixed(2)} • {new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</span>
                <span className="row-sub" style={{ fontSize: '0.65rem' }}>{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+               {order.hisaabKitaabInvoiceNumber && (
+                 <span className="row-sub" style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '0.75rem', marginTop: '4px' }}>
+                   {order.hisaabKitaabInvoiceNumber}
+                 </span>
+               )}
             </div>
             <div className="row-status-select">
                <select 

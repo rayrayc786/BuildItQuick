@@ -40,10 +40,17 @@ const Orders: React.FC = () => {
       setOrders(prev => prev.map(o => o._id === data.orderId ? { ...o, status: data.status } : o));
     };
 
+    const handleInvoiceUpdate = (data: any) => {
+      console.log('Received socket invoice-number-updated:', data);
+      setOrders(prev => prev.map(o => String(o._id) === String(data.orderId) ? { ...o, hisaabKitaabInvoiceNumber: data.invoiceNumber } : o));
+    };
+
     customerSocket.on('order-status-update', handleStatusUpdate);
+    customerSocket.on('invoice-number-updated', handleInvoiceUpdate);
 
     return () => {
       customerSocket.off('order-status-update', handleStatusUpdate);
+      customerSocket.off('invoice-number-updated', handleInvoiceUpdate);
     };
   }, []);
 
@@ -100,6 +107,11 @@ const Orders: React.FC = () => {
                       <p className="order-sub-meta">
                         ₹{Number(order.totalAmount || 0).toFixed(2)}, {new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}, {new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </p>
+                      {order.hisaabKitaabInvoiceNumber && (
+                        <p className="order-sub-meta" style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '11px', marginTop: '2px' }}>
+                          Invoice: {order.hisaabKitaabInvoiceNumber}
+                        </p>
+                      )}
                       <div className={`order-status-tag ${order.status?.toLowerCase().replace(/\s+/g, '-')}`}>
                         {order.status || 'Accepted'}
                       </div>
