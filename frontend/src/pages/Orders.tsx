@@ -107,11 +107,16 @@ const Orders: React.FC = () => {
                       <p className="order-sub-meta">
                         ₹{Number(order.totalAmount || 0).toFixed(2)}, {new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}, {new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </p>
-                      {order.hisaabKitaabInvoiceNumber && (
-                        <p className="order-sub-meta" style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '11px', marginTop: '2px' }}>
-                          Invoice: {order.hisaabKitaabInvoiceNumber}
-                        </p>
-                      )}
+                      {order.hisaabKitaabInvoiceNumber && (() => {
+                        const isError = order.hisaabKitaabInvoiceNumber.toLowerCase().includes('error') || 
+                                      order.hisaabKitaabInvoiceNumber.toLowerCase().includes('not found') ||
+                                      order.hisaabKitaabInvoiceNumber.toLowerCase().includes('missing');
+                        return (
+                          <p className="order-sub-meta" style={{ color: isError ? '#dc2626' : '#16a34a', fontWeight: 'bold', fontSize: '11px', marginTop: '2px' }}>
+                            {isError ? 'Sync Status' : 'Invoice'}: {order.hisaabKitaabInvoiceNumber}
+                          </p>
+                        );
+                      })()}
                       <div className={`order-status-tag ${order.status?.toLowerCase().replace(/\s+/g, '-')}`}>
                         {order.status || 'Accepted'}
                       </div>

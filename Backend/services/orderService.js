@@ -617,7 +617,26 @@ const syncToHisaabKitaab = async (orderId, io) => {
 
     console.log(`[HisabKitab] Invoice matched and saved successfully for Order ${order._id} (Invoice: ${finalInvoiceNumber})`);
   } catch (err) {
-    console.error(`[HisabKitab] Sync Failed for Order ${orderId}:`, err.response?.data || err.message);
+    const errorMsg = `Sync Error: ${err.response?.data?.message || err.message}`;
+    console.error(`[HisabKitab] Sync Failed for Order ${orderId}:`, errorMsg);
+    
+    try {
+      const order = await Order.findById(orderId);
+      if (order) {
+        order.hisaabKitaabInvoiceNumber = errorMsg;
+        await order.save();
+        
+        if (io) {
+          const socketData = { orderId: orderId.toString(), invoiceNumber: errorMsg };
+          io.of('/admin').emit('invoice-number-updated', socketData);
+          if (order.userId) {
+            io.of('/customer').to(order.userId.toString()).emit('invoice-number-updated', socketData);
+          }
+        }
+      }
+    } catch (saveErr) {
+      console.error(`[HisabKitab] Failed to save sync error to order:`, saveErr.message);
+    }
   }
 };
 

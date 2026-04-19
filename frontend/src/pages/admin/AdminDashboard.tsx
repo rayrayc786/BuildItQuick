@@ -603,12 +603,19 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
                  <label>Order Time</label>
                  <span>{new Date(order.createdAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
               </div>
-              {order.hisaabKitaabInvoiceNumber && (
-                <div className="meta-item">
-                   <label>Invoice ID</label>
-                   <span style={{ color: '#16a34a', fontWeight: '800' }}>{order.hisaabKitaabInvoiceNumber}</span>
-                </div>
-              )}
+              {order.hisaabKitaabInvoiceNumber && (() => {
+                const isError = order.hisaabKitaabInvoiceNumber.toLowerCase().includes('error') || 
+                              order.hisaabKitaabInvoiceNumber.toLowerCase().includes('not found') ||
+                              order.hisaabKitaabInvoiceNumber.toLowerCase().includes('missing');
+                return (
+                  <div className="meta-item">
+                    <label>{isError ? 'Sync Status' : 'Invoice ID'}</label>
+                    <span style={{ color: isError ? '#dc2626' : '#16a34a', fontWeight: '800' }}>
+                      {order.hisaabKitaabInvoiceNumber}
+                    </span>
+                  </div>
+                );
+              })()}
               <div className="meta-item full-width">
                  <label>Delivery Address</label>
                  <span>{order.deliveryAddress?.fullAddress || order.shippingAddress || 'No address provided'}</span>
