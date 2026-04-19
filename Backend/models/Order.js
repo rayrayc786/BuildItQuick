@@ -68,7 +68,9 @@ const OrderSchema = new mongoose.Schema({
       type: { type: String, enum: ['Point'] },
       coordinates: [Number]
     }
-  }
+  },
+  hisaabKitaabInvoiceNumber: { type: String },
+  hisaabKitaabSyncedAt: { type: Date }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', OrderSchema);

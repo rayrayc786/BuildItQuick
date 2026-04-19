@@ -190,18 +190,73 @@ const createOrder = async (orderData) => {
   return savedOrder;
 };
 
-const syncToHisaabKitaab = async (orderId) => {
-  const API_KEY = process.env.HISAAB_KITAAB_API_KEY;
-  if (!API_KEY) {
-    console.warn('[HisabKitab] API Key missing. Skipping sync.');
-    return;
+// Performance Cache: Store inventory in memory for 30 minutes
+let HISAABIB_INVENTORY_CACHE = null;
+let HISAABIB_CACHE_TIMESTAMP = 0;
+const CACHE_TTL = 30 * 60 * 1000; // 30 Minutes
+
+/**
+ * Ensures inventory is loaded into memory. Returns the Map for lookups.
+ * This can be called proactively ("warmup") to prevent lag during checkout.
+ */
+async function getInventoryMap() {
+  const API_KEY = process.env.HISAAB_KITAAB_API_KEY || '1aa158f2-ee16-46af-a60c-f05555ce07b4';
+  let inventoryMap = new Map();
+  const now = Date.now();
+
+  if (HISAABIB_INVENTORY_CACHE && (now - HISAABIB_CACHE_TIMESTAMP < CACHE_TTL)) {
+    console.log(`[HisabKitab] Using CACHED inventory (${HISAABIB_INVENTORY_CACHE.length} items).`);
+    inventoryMap = new Map(HISAABIB_INVENTORY_CACHE.map(i => [String(i.sku || i.barcode || '').trim(), i]));
+    return inventoryMap;
   }
 
+  console.log(`[HisabKitab] Fetching fresh inventory...`);
+  let allItems = [];
+  let currentPage = 1;
+  const seenIds = new Set();
+
+  while (true) {
+    const limit = 150;
+    const skip = (currentPage - 1) * limit;
+    try {
+      const res = await axios.get(`https://api.hisabkitab.co/third-party/items?per_page=${limit}&page=${currentPage}&page_no=${currentPage}&skip=${skip}`, {
+        headers: { 'ApiKey': API_KEY }
+      });
+      const pageData = res.data?.data;
+      if (!pageData || !Array.isArray(pageData) || pageData.length === 0) break;
+
+      for (const i of pageData) {
+        if (i.id && !seenIds.has(String(i.id))) {
+          seenIds.add(String(i.id));
+          allItems.push(i);
+          if (i.sku) inventoryMap.set(String(i.sku).trim(), i);
+          if (i.barcode) inventoryMap.set(String(i.barcode).trim(), i);
+        }
+      }
+      if (currentPage >= 60) break;
+      currentPage++;
+    } catch (e) {
+      console.error(`[HisabKitab] Inventory Paging Error:`, e.message);
+      break;
+    }
+  }
+
+  HISAABIB_INVENTORY_CACHE = allItems;
+  HISAABIB_CACHE_TIMESTAMP = now;
+  console.log(`[HisabKitab] Inventory indexed: ${allItems.length} items.`);
+  return inventoryMap;
+}
+
+async function syncToHisaabKitaab(orderId) {
   try {
+    const API_KEY = process.env.HISAAB_KITAAB_API_KEY || '1aa158f2-ee16-46af-a60c-f05555ce07b4';
     const order = await Order.findById(orderId).populate('items.productId');
     if (!order) return;
 
-    // 0. Fetch Next Invoice Number
+    console.log(`[HisabKitab] Starting Sync for Order ${order.orderId}...`);
+
+    const inventoryMap = await getInventoryMap();
+
     let invoiceNumber = `0001`; 
     try {
       const nextNumRes = await axios.get('https://api.hisabkitab.co/third-party/sale-transactions/next-invoice-number', {
@@ -266,86 +321,19 @@ const syncToHisaabKitaab = async (orderId) => {
       const brand = item.productId?.brand || '';
       const displayName = `${brand} ${fallbackSearchName}`.trim();
       
-      // Attempt to lookup Hisaab Kitab's internal Item ID by STRICT SKU matching ONLY
+      // Optimized Lookup: Use the Map we built at the start
       if (productSku) {
-        console.log(`[HisabKitab] Searching inventory for SKU ID: "${productSku}"`);
-        let foundExact = null;
-        try {
-          let allItems = [];
-          let currentPage = 1;
-          const seenIds = new Set();
-
-          // HisabKitab pagination fix: Trying page_no alongside page as the API seems to ignore 'page'
-          while (true) {
-            const limit = 150;
-            const skip = (currentPage - 1) * limit;
-            
-            // Shotgun approach: adding every common pagination parameter to ensure the API responds
-            const skuSearchRes = await axios.get(`https://api.hisabkitab.co/third-party/items?per_page=${limit}&limit=${limit}&page=${currentPage}&page_no=${currentPage}&p=${currentPage}&skip=${skip}&offset=${skip}`, {
-              headers: { 'ApiKey': API_KEY }
-            });
-
-            const pageData = skuSearchRes.data?.data;
-            if (!pageData || !Array.isArray(pageData) || pageData.length === 0) break;
-            
-            // Console log the first item to verify if pagination is working
-            console.log(`[HisabKitab] Page ${currentPage} First Item: "${pageData[0].item_name}" (ID: ${pageData[0].id})`);
-
-            let newItemsInThisPage = 0;
-            for (const i of pageData) {
-              const idStr = String(i.id);
-              if (idStr && !seenIds.has(idStr)) {
-                seenIds.add(idStr);
-                allItems.push(i);
-                newItemsInThisPage++;
-              }
-            }
-            
-            console.log(`[HisabKitab] Page ${currentPage} received ${pageData.length} items. (${newItemsInThisPage} were new). Total Unique: ${allItems.length}`);
-            
-            if (newItemsInThisPage === 0) {
-              console.log(`[HisabKitab] STOPPED: No new items on page ${currentPage}.`);
-              break;
-            }
-
-            if (currentPage >= 60) break; 
-            currentPage++;
-          }
-          
-          // Debugging: Save the COMPLETE inventory to JSON
-          try {
-            const fs = require('fs');
-            const path = require('path');
-            const debugPath = path.join(__dirname, '../hisabkitab_inventory_debug.json');
-            fs.writeFileSync(debugPath, JSON.stringify(allItems, null, 2));
-            console.log(`[HisabKitab] DEBUG: Inventory file updated with ${allItems.length} items.`);
-          } catch (err) {
-            console.warn('[HisabKitab] Could not save inventory debug file:', err.message);
-          }
-          
-          if (allItems.length > 0) {
-            // Strict SKU matching against the complete inventory
-            const exactItem = allItems.find(i => 
-               (i.sku && String(i.sku).trim() === String(productSku).trim()) || 
-               (i.barcode && String(i.barcode).trim() === String(productSku).trim())
-            );
-            
-            if (exactItem) {
-              console.log(`[HisabKitab] SUCCESS: Found SKU match. Name: "${exactItem.item_name}", ID: ${exactItem.id}`);
-              foundExact = exactItem;
-            }
-          }
-
-          if (foundExact && foundExact.id) {
-            resolvedItemId = foundExact.id;
-            resolvedUnitId = foundExact.unit_of_measurement || 29;
-            resolvedLedgerId = foundExact.income_ledger_id || resolvedLedgerId;
-            if (foundExact.hsn_sac_code) resolvedHsn = foundExact.hsn_sac_code;
-          } else {
-            console.warn(`[HisabKitab] WARNING: SKU "${productSku}" not found in total inventory of ${allItems.length} items. Using default ID.`);
-          }
-        } catch (skuErr) {
-          console.error(`[HisabKitab] Error during inventory lookup:`, skuErr.message);
+        const productSkuKey = String(productSku).trim();
+        const foundExact = inventoryMap.get(productSkuKey);
+        
+        if (foundExact) {
+          console.log(`[HisabKitab] SUCCESS: Found SKU match for "${productSkuKey}". ID: ${foundExact.id}`);
+          resolvedItemId = foundExact.id;
+          resolvedUnitId = foundExact.unit_of_measurement || foundExact.unit_id || 29;
+          resolvedLedgerId = foundExact.income_ledger_id || foundExact.ledger_id || resolvedLedgerId;
+          resolvedHsn = foundExact.hsn_sac_code || resolvedHsn;
+        } else {
+          console.log(`[HisabKitab] WARNING: SKU "${productSkuKey}" not found in inventory. Using default.`);
         }
       }
 
@@ -535,7 +523,12 @@ const syncToHisaabKitaab = async (orderId) => {
       }
     });
 
-    console.log(`[HisabKitab] Invoice synced successfully for Order ${order._id} (Invoice: ${invoiceNumber})`);
+    // Save the generated invoice ID back to the order for display in Admin/User dashboards
+    order.hisaabKitaabInvoiceNumber = finalInvoiceNumber;
+    order.hisaabKitaabSyncedAt = new Date();
+    await order.save();
+
+    console.log(`[HisabKitab] Invoice synced successfully for Order ${order._id} (Invoice: ${finalInvoiceNumber})`);
   } catch (err) {
     console.error(`[HisabKitab] Sync Failed for Order ${orderId}:`, err.response?.data || err.message);
   }
@@ -549,5 +542,6 @@ module.exports = {
   calculateOrderTotals,
   determineVehicleClass,
   createOrder,
-  getOrderById
+  getOrderById,
+  syncToHisaabKitaab
 };

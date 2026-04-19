@@ -88,11 +88,11 @@ const InvoicingReports: React.FC = () => {
               <tbody>
                 {orders.map(order => (
                   <tr key={order._id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '12px' }}>INV-{order._id.slice(-6).toUpperCase()}</td>
+                    <td style={{ padding: '12px' }}>{order.hisaabKitaabInvoiceNumber || `MOCK-${order._id.slice(-6).toUpperCase()}`}</td>
                     <td style={{ padding: '12px' }}>{order.deliveryAddress?.name || 'Standard Delivery'}</td>
-                    <td style={{ padding: '12px' }}>₹{order.totalAmount.toFixed(2)}</td>
-                    <td style={{ padding: '12px' }}>₹{(order.totalAmount * 0.18).toFixed(2)}</td>
-                    <td style={{ padding: '12px' }}><strong>₹{(order.totalAmount * 1.18).toFixed(2)}</strong></td>
+                    <td style={{ padding: '12px' }}>₹{(order.totalBaseAmount || order.totalAmount / 1.18).toFixed(2)}</td>
+                    <td style={{ padding: '12px' }}>₹{(order.totalTaxAmount || order.totalAmount - (order.totalAmount / 1.18)).toFixed(2)}</td>
+                    <td style={{ padding: '12px' }}><strong>₹{order.totalAmount.toFixed(2)}</strong></td>
                     <td style={{ padding: '12px' }}>
                       <span className={`badge-status ${order.status}`} style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '11px', background: '#e0f2fe', color: '#0369a1' }}>
                         {order.status.toUpperCase()}

@@ -242,16 +242,7 @@ exports.getAllProducts = async (req, res) => {
       }
     }
 
-    let productsQuery = Product.find(query);
-    
-    // Pagination
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 2000; // Large default to keep backward compatibility if needed, but we will change frontend to request 8.
-    const skip = (page - 1) * limit;
-
-    const totalProducts = await Product.countDocuments(query);
-    
-    let products = await productsQuery.lean();
+    let products = await Product.find(query).lean();
     
     // Log the search (same as before)
     if (search) {
@@ -313,20 +304,7 @@ exports.getAllProducts = async (req, res) => {
       return 0;
     });
 
-    // Apply pagination after hydration/sorting if specific order is needed, 
-    // but usually better to do filter at DB level.
-    // However, the current code sorts by image presence in JS.
-    // If I want to paginate properly, I should either sort in DB or paginate in JS.
-    // Given the sorting is based on 'imageUrl' (which is resolved in JS), I have to paginate in JS.
-    
-    const paginatedProducts = hydrated.slice(skip, skip + limit);
-
-    res.json({
-      products: paginatedProducts,
-      totalProducts,
-      totalPages: Math.ceil(totalProducts / limit),
-      currentPage: page
-    });
+    res.json(hydrated);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

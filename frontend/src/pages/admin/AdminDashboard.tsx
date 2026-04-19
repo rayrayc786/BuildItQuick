@@ -603,6 +603,12 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
                  <label>Order Time</label>
                  <span>{new Date(order.createdAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
               </div>
+              {order.hisaabKitaabInvoiceNumber && (
+                <div className="meta-item">
+                   <label>Invoice ID</label>
+                   <span style={{ color: '#16a34a', fontWeight: '800' }}>{order.hisaabKitaabInvoiceNumber}</span>
+                </div>
+              )}
               <div className="meta-item full-width">
                  <label>Delivery Address</label>
                  <span>{order.deliveryAddress?.fullAddress || order.shippingAddress || 'No address provided'}</span>

@@ -22,10 +22,7 @@ const ProductList: React.FC = () => {
   const resultsAreaRef = useRef<HTMLDivElement>(null);
   const [sortBy, setSortBy] = useState<string>('default'); // 'price-low', 'price-high'
   const [showFilters, setShowFilters] = useState(false);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalProducts, setTotalProducts] = useState(0);
-  const limit = 8;
+
 
   
   const [similarProducts, setSimilarProducts] = useState<any[]>([]);
@@ -76,20 +73,11 @@ const ProductList: React.FC = () => {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const searchParams = new URLSearchParams(location.search);
-        searchParams.set('page', page.toString());
-        searchParams.set('limit', limit.toString());
-        
-        const searchUrl = `${import.meta.env.VITE_API_BASE_URL}/api/products?${searchParams.toString()}`;
-        const { data } = await axios.get(searchUrl);
-        
-        const fetchedProducts = data.products || [];
-        setProducts(fetchedProducts);
-        setTotalPages(data.totalPages || 1);
-        setTotalProducts(data.totalProducts || 0);
+        const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products${location.search}`);
+        setProducts(data);
 
         // If it's a search query and results are empty, report to backend
-        if (searchTerm && fetchedProducts.length === 0) {
+        if (searchTerm && data.length === 0) {
           const userStr = localStorage.getItem('user');
           let userData = {
             searchTerm,
@@ -124,7 +112,7 @@ const ProductList: React.FC = () => {
       }
     };
     fetchProducts();
-  }, [location.search, searchTerm, page]);
+  }, [location.search, searchTerm]);
 
 
   // Scroll results area back to top when brand changes
@@ -372,86 +360,7 @@ const ProductList: React.FC = () => {
             </div>
           )}
 
-          {/* Pagination UI */}
-          {!loading && totalPages > 1 && (
-            <div className="pagination-container">
-              <div className="pagination-info">
-                Showing {products.length} of {totalProducts} products
-              </div>
-              <div className="pagination-controls">
-                <button 
-                  className="pagination-btn" 
-                  disabled={page === 1}
-                  onClick={() => {
-                    setPage(prev => prev - 1);
-                    resultsAreaRef.current?.scrollTo(0, 0);
-                  }}
-                >
-                  Previous
-                </button>
-                
-                <div className="pagination-pages">
-                  {(() => {
-                    const range = [];
-                    const delta = 1; // pages around current
-                    
-                    for (let i = 1; i <= totalPages; i++) {
-                      if (
-                        i <= 3 || // First 3
-                        i >= totalPages - 2 || // Last 3
-                        (i >= page - delta && i <= page + delta) // Around current
-                      ) {
-                        range.push(i);
-                      }
-                    }
 
-                    const rangeWithEllipsis: (number | string)[] = [];
-                    let l: number | undefined;
-
-                    for (let i of range) {
-                      if (l) {
-                        if (i - l === 2) {
-                          rangeWithEllipsis.push(l + 1);
-                        } else if (i - l !== 1) {
-                          rangeWithEllipsis.push('...');
-                        }
-                      }
-                      rangeWithEllipsis.push(i);
-                      l = i;
-                    }
-
-                    return rangeWithEllipsis.map((p, idx) => (
-                      p === '...' ? (
-                        <span key={`ell-${idx}`} className="pagination-ellipsis">...</span>
-                      ) : (
-                        <button
-                          key={p}
-                          className={`page-number ${page === p ? 'active' : ''}`}
-                          onClick={() => {
-                            setPage(p as number);
-                            resultsAreaRef.current?.scrollTo(0, 0);
-                          }}
-                        >
-                          {p}
-                        </button>
-                      )
-                    ));
-                  })()}
-                </div>
-
-                <button 
-                  className="pagination-btn" 
-                  disabled={page === totalPages}
-                  onClick={() => {
-                    setPage(prev => prev + 1);
-                    resultsAreaRef.current?.scrollTo(0, 0);
-                  }}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
 
 
           {/* Blog Space */}
