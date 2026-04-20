@@ -200,7 +200,7 @@ const Tracking: React.FC = () => {
 
   return (
     <div className="matall-tracking-page">
-      <SEO title={`Track Order #${id?.slice(-8).toUpperCase()}`} description="Track your MatAll order status in real-time. See delivery timeline and details." />
+      <SEO title={`Track Order #${id?.toUpperCase()}`} description="Track your MatAll order status in real-time. See delivery timeline and details." />
       <header className="tracking-header-sticky">
         <div className="header-nav-tracking main-content-responsive">
            <button className="back-btn" onClick={() => navigate(-1)}>
@@ -220,7 +220,7 @@ const Tracking: React.FC = () => {
               <Package size={32} color="#16a34a" />
            </div>
            <h2>{getStatusText(order.status)}</h2>
-           <span className="order-id-label">Order ID: #{order._id.slice(-8).toUpperCase()}</span>
+           <span className="order-id-label">Order ID: #{order._id.toUpperCase()}</span>
         </div>
 
         {/* Shipment Details */}

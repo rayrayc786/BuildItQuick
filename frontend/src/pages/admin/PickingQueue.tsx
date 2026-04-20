@@ -58,7 +58,7 @@ const PickingQueue: React.FC = () => {
             {getLaneOrders(['pending', 'picking']).map(order => (
               <div key={order._id} className="order-pick-card">
                 <div className="card-header">
-                  <strong>#BID-{order._id.slice(-6).toUpperCase()}</strong>
+                  <strong>#BID-{order._id.toUpperCase()}</strong>
                   <span className={`status-badge ${order.status}`}>{order.status}</span>
                 </div>
                 <div className="card-body">
@@ -79,7 +79,7 @@ const PickingQueue: React.FC = () => {
             {getLaneOrders(['packing']).map(order => (
               <div key={order._id} className="order-pick-card packing">
                 <div className="card-header">
-                  <strong>#BID-{order._id.slice(-6).toUpperCase()}</strong>
+                  <strong>#BID-{order._id.toUpperCase()}</strong>
                 </div>
                 <div className="card-body">
                   <p><Box size={14} /> Packing in progress...</p>
@@ -98,7 +98,7 @@ const PickingQueue: React.FC = () => {
             {getLaneOrders(['handover-ready']).map(order => (
               <div key={order._id} className="order-pick-card ready">
                 <div className="card-header">
-                  <strong>#BID-{order._id.slice(-6).toUpperCase()}</strong>
+                  <strong>#BID-{order._id.toUpperCase()}</strong>
                 </div>
                 <div className="card-body">
                   <p><CheckCircle2 size={14} /> Waiting for dispatch</p>
@@ -117,7 +117,7 @@ const PickingQueue: React.FC = () => {
             {getLaneOrders(['dispatched']).map(order => (
               <div key={order._id} className="order-pick-card dispatched">
                 <div className="card-header">
-                  <strong>#BID-{order._id.slice(-6).toUpperCase()}</strong>
+                  <strong>#BID-{order._id.toUpperCase()}</strong>
                 </div>
                 <div className="card-body">
                   <p><Truck size={14} /> In Transit ({order.vehicleClass})</p>

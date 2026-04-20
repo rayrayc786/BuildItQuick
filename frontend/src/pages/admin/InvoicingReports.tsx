@@ -57,8 +57,8 @@ const InvoicingReports: React.FC = () => {
             {orders.filter(o => o.status === 'delivered').slice(0, 3).map(order => (
               <div key={order._id} className="payout-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #eee' }}>
                 <div className="driver-info">
-                  <strong>Driver ID: {order._id.slice(-4)}</strong>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>Order #BID-{order._id.slice(-6).toUpperCase()}</div>
+                  <strong>Driver ID: {order._id}</strong>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>Order #BID-{order._id.toUpperCase()}</div>
                 </div>
                 <div className="amount" style={{ fontWeight: 'bold' }}>₹50.00</div>
                 <button className="status-btn" style={{ padding: '4px 12px' }}>Settle</button>
@@ -88,7 +88,7 @@ const InvoicingReports: React.FC = () => {
               <tbody>
                 {orders.map(order => (
                   <tr key={order._id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '12px' }}>{order.hisaabKitaabInvoiceNumber || `MOCK-${order._id.slice(-6).toUpperCase()}`}</td>
+                    <td style={{ padding: '12px' }}>{order.hisaabKitaabInvoiceNumber || `MOCK-${order._id.toUpperCase()}`}</td>
                     <td style={{ padding: '12px' }}>{order.deliveryAddress?.name || 'Standard Delivery'}</td>
                     <td style={{ padding: '12px' }}>₹{(order.totalBaseAmount || order.totalAmount / 1.18).toFixed(2)}</td>
                     <td style={{ padding: '12px' }}>₹{(order.totalTaxAmount || order.totalAmount - (order.totalAmount / 1.18)).toFixed(2)}</td>

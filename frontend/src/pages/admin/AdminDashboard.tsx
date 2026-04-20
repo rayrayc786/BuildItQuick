@@ -427,7 +427,7 @@ function ManagementModal({
                   {userOrders.length === 0 ? <p className="empty-msg">No orders found for this user.</p> : userOrders.map((o: any) => (
                     <div key={o._id} className="user-order-item">
                       <div className="order-main">
-                         <strong>Order #{o._id.slice(-6).toUpperCase()}</strong>
+                         <strong>Order #{o._id.toUpperCase()}</strong>
                          <span>{new Date(o.createdAt).toLocaleDateString()}</span>
                       </div>
                       <div className="order-status">
@@ -559,7 +559,7 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
     <div className="admin-modal-overlay" onClick={() => setViewingOrder(null)}>
       <div className="admin-modal-content order-details-modal animate-slide-up" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Order Details #{order?._id.slice(-6).toUpperCase()}</h3>
+          <h3>Order Details #{order?._id.toUpperCase()}</h3>
           <button type="button" className="close-btn" onClick={() => setViewingOrder(null)}><X size={20} /></button>
         </div>
         
@@ -1326,7 +1326,7 @@ const AdminDashboard: React.FC = () => {
                <span className="row-sub">{order.userId?.phoneNumber || 'No Contact'}</span>
             </div>
             <div className="row-mid-info" onClick={() => setViewingOrder(order)}>
-               <span className="row-name">Order #{order._id.slice(-6).toUpperCase()}</span>
+               <span className="row-name">Order #{order._id.toUpperCase()}</span>
                <span className="row-sub">₹{Number(order.totalAmount || 0).toFixed(2)} • {new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</span>
                <span className="row-sub" style={{ fontSize: '0.65rem' }}>{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                {order.hisaabKitaabInvoiceNumber && (

@@ -167,7 +167,7 @@ const SupplierDashboard: React.FC = () => {
                     <div key={order._id} className="order-request-card card" style={{ borderLeft: '6px solid #FFEA00', padding: '2rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                         <div>
-                          <h3 style={{ margin: 0 }}>#REQ-{order._id.slice(-6).toUpperCase()}</h3>
+                          <h3 style={{ margin: 0 }}>#REQ-{order._id.toUpperCase()}</h3>
                           <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{new Date(order.createdAt).toLocaleString()}</span>
                         </div>
                         <div style={{ textAlign: 'right' }}>
@@ -229,7 +229,7 @@ const SupplierDashboard: React.FC = () => {
                   {fulfillmentOrders.map(order => (
                     <div key={order._id} className="active-order-item card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid #2563eb' }}>
                       <div>
-                        <h4 style={{ margin: 0 }}>#BID-{order._id.slice(-6).toUpperCase()}</h4>
+                        <h4 style={{ margin: 0 }}>#BID-{order._id.toUpperCase()}</h4>
                         <span style={{ fontSize: '0.7rem', fontWeight: 800, background: '#eff6ff', color: '#2563eb', padding: '2px 6px', borderRadius: '4px' }}>{order.status.toUpperCase()}</span>
                       </div>
                       <div>
@@ -258,7 +258,7 @@ const SupplierDashboard: React.FC = () => {
                 <tbody>
                   {filteredOrders.map(order => (
                     <tr key={order._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '1rem', fontWeight: 700 }}>#BID-{order._id.slice(-6).toUpperCase()}</td>
+                      <td style={{ padding: '1rem', fontWeight: 700 }}>#BID-{order._id.toUpperCase()}</td>
                       <td style={{ padding: '1rem', color: '#64748b' }}>{new Date(order.createdAt).toLocaleDateString()}</td>
                       <td style={{ padding: '1rem' }}>
                         <span style={{ 

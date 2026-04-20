@@ -79,7 +79,7 @@ const DeliveryNavigation: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
           <div>
             <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>{order.deliveryAddress?.name || 'Project Alpha Site'}</h2>
-            <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px' }}>Standard Delivery | #BID-{id?.slice(-6).toUpperCase()}</p>
+            <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px' }}>Standard Delivery | #BID-{id?.toUpperCase()}</p>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="icon-btn" style={{ background: '#eff6ff', color: '#2563eb' }}><Phone size={20} /></button>
@@ -111,7 +111,7 @@ const DeliveryNavigation: React.FC = () => {
               <button onClick={() => setShowChat(false)} style={{ background: 'none', border: 'none', fontWeight: 800 }}>CLOSE</button>
             </div>
             <div className="chat-messages" style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
-              <div className="msg system" style={{ textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', margin: '1rem 0' }}>Chat started for Order #BID-{id?.slice(-6).toUpperCase()}</div>
+              <div className="msg system" style={{ textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', margin: '1rem 0' }}>Chat started for Order #BID-{id?.toUpperCase()}</div>
               <div className="msg received" style={{ background: '#f1f5f9', padding: '10px 15px', borderRadius: '12px 12px 12px 0', maxWidth: '80%', marginBottom: '1rem' }}>
                 Hey, are you near the gate? The crane is ready for the steel.
               </div>

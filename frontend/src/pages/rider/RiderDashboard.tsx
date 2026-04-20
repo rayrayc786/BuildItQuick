@@ -125,7 +125,7 @@ const RiderDashboard: React.FC = () => {
                   <span style={{ background: '#eff6ff', color: '#2563eb', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800 }}>{task.vehicleClass} REQUIRED</span>
                   <span style={{ fontWeight: 900, color: '#16a34a' }}>+ ₹45.00</span>
                 </div>
-                <h3 style={{ margin: '0 0 1rem 0' }}>#BID-{task._id.slice(-6).toUpperCase()}</h3>
+                <h3 style={{ margin: '0 0 1rem 0' }}>#BID-{task._id.toUpperCase()}</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', color: '#475569', fontSize: '0.9rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Package size={16} /> <span>{task.totalWeight}kg Materials</span>
