@@ -54,7 +54,7 @@ export default defineConfig(({ mode }) => ({
             purpose: 'any'
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'maskable-icon.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
