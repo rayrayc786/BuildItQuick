@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { CartProvider } from './contexts/CartContext';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { LocationProvider } from './contexts/LocationContext';
 import { Toaster } from 'react-hot-toast';
-import { Menu, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { APIProvider } from '@vis.gl/react-google-maps';
 import axios from 'axios';
@@ -38,87 +38,55 @@ axios.interceptors.response.use(
 );
 
 // User Pages
-import Home from './pages/Home';
-import Login from './pages/Login';
-import ProductList from './pages/ProductList';
-import ProductDetail from './pages/ProductDetail';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import Tracking from './pages/Tracking';
-import SupplierStore from './pages/SupplierStore';
-import BrandStore from './pages/BrandStore';
-import Orders from './pages/Orders';
-import Profile from './pages/Profile';
-import Favorites from './pages/Favorites';
-import SearchFilter from './pages/SearchFilter';
-import SubCategoryPage from './pages/SubCategoryPage';
-import Support from './pages/Support';
-import PaymentMethod from './pages/PaymentMethod';
+import Home from './features/home/pages/Home';
+import Login from './features/auth/pages/Login';
+import ProductList from './features/products/pages/ProductList';
+import ProductDetail from './features/products/pages/ProductDetail';
+import Cart from './features/cart/pages/Cart';
+import Checkout from './features/cart/pages/Checkout';
+import Tracking from './features/tracking/pages/Tracking';
+import SupplierStore from './features/supplier/pages/SupplierStore';
+import BrandStore from './features/products/pages/BrandStore';
+import Orders from './features/orders/pages/Orders';
+import Profile from './features/auth/pages/Profile';
+import Favorites from './features/orders/pages/Favorites';
+import SearchFilter from './features/products/pages/SearchFilter';
+import SubCategoryPage from './features/products/pages/SubCategoryPage';
+import Support from './features/support/pages/Support';
+import PaymentMethod from './features/cart/pages/PaymentMethod';
 
 // Admin Pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import SKUManager from './pages/admin/SKUManager';
-import SupplierManager from './pages/admin/SupplierManager';
-import CategoryManager from './pages/admin/CategoryManager';
-import SubCategoryManager from './pages/admin/SubCategoryManager';
-import UnitManager from './pages/admin/UnitManager';
-import BrandManager from './pages/admin/BrandManager';
-import SubVariantTitleManager from './pages/admin/SubVariantTitleManager';
-import DeliveryTimeManager from './pages/admin/DeliveryTimeManager';
-import PickingQueue from './pages/admin/PickingQueue';
-import RiderManager from './pages/admin/RiderManager';
-import InvoicingReports from './pages/admin/InvoicingReports';
-import OfferManager from './pages/admin/OfferManager';
-import LocationManager from './pages/admin/LocationManager';
-
+import AdminDashboard from './features/admin/pages/AdminDashboard';
+import SKUManager from './features/admin/pages/SKUManager';
+import SupplierManager from './features/admin/pages/SupplierManager';
+import CategoryManager from './features/admin/pages/CategoryManager';
+import SubCategoryManager from './features/admin/pages/SubCategoryManager';
+import UnitManager from './features/admin/pages/UnitManager';
+import BrandManager from './features/admin/pages/BrandManager';
+import SubVariantTitleManager from './features/admin/pages/SubVariantTitleManager';
+import DeliveryTimeManager from './features/admin/pages/DeliveryTimeManager';
+import PickingQueue from './features/admin/pages/PickingQueue';
+import RiderManager from './features/admin/pages/RiderManager';
+import InvoicingReports from './features/admin/pages/InvoicingReports';
+import OfferManager from './features/admin/pages/OfferManager';
+import LocationManager from './features/admin/pages/LocationManager';
 
 // Rider Pages
-import RiderDashboard from './pages/rider/RiderDashboard';
-import TaskVerification from './pages/rider/TaskVerification';
-import DeliveryNavigation from './pages/rider/DeliveryNavigation';
-import ProofOfDelivery from './pages/rider/ProofOfDelivery';
+import RiderDashboard from './features/rider/pages/RiderDashboard';
+import TaskVerification from './features/rider/pages/TaskVerification';
+import DeliveryNavigation from './features/rider/pages/DeliveryNavigation';
+import ProofOfDelivery from './features/rider/pages/ProofOfDelivery';
 
 // Other
-import Reports from './pages/Reports';
-import SupplierDashboard from './pages/SupplierDashboard';
+import Reports from './features/admin/pages/Reports';
+import SupplierDashboard from './features/supplier/pages/SupplierDashboard';
 import Navbar from './components/Navbar';
-import AdminSidebar from './components/admin/AdminSidebar';
+import AdminLayout from './layouts/AdminLayout';
 import ScrollToTop from './components/ScrollToTop';
 import ReloadPrompt from './components/ReloadPrompt';
-// import FloatingCart from './components/FloatingCart';
 import { customerSocket, supplierSocket, adminSocket, connectSocket } from './socket';
 import './App.css';
 import './responsive.css';
-
-const AdminLayout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const location = useLocation();
-  const isDashboard = location.pathname === '/admin';
-
-  useEffect(() => {
-    const handleToggle = () => setIsSidebarOpen(prev => !prev);
-    window.addEventListener('toggle-admin-sidebar', handleToggle);
-    return () => window.removeEventListener('toggle-admin-sidebar', handleToggle);
-  }, []);
-
-  return (
-    <div className={`admin-layout ${isSidebarOpen ? 'sidebar-open' : ''} ${isDashboard ? 'on-dashboard' : ''}`}>
-      {!isDashboard && (
-        <button 
-          className="admin-sidebar-toggle" 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        >
-          <Menu size={20} />
-        </button>
-      )}
-      <AdminSidebar onClose={() => setIsSidebarOpen(false)} />
-      {isSidebarOpen && <div className="admin-sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
-      <div className="admin-content-area">
-        <Outlet />
-      </div>
-    </div>
-  );
-};
 
 const SocketManager = () => {
   
