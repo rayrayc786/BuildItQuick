@@ -73,9 +73,6 @@ const Home: React.FC = () => {
                     </div>
                     <div className="category-card-info">
                       <h4 className="cat-card-title">{cat.name}</h4>
-                      <div className="cat-card-meta">
-                        <span className="cat-brand-count">Explore Quality</span>
-                      </div>
                       <span className="cat-explore-btn">
                         Shop Now <ChevronRight size={14} />
                       </span>

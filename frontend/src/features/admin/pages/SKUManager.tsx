@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Plus, Search, FileUp, Download, FileSpreadsheet, Edit3, Trash2, X, CheckCircle2, AlertCircle, Star, Menu, Eye, EyeOff, Truck } from 'lucide-react';
+import { Plus, Search, FileUp, Download, FileSpreadsheet, Edit3, Trash2, X, CheckCircle2, AlertCircle, Star, Menu, Eye, EyeOff, ImagePlus } from 'lucide-react';
 import { getFullImageUrl } from '../../../utils/imageUrl';
 import './sku.css';
 
 const SKUManager: React.FC = () => {
-  const navigate = useNavigate();
   const [skus, setSkus] = useState<any[]>([]);
   const [masterCategories, setMasterCategories] = useState<any[]>([]);
   const [masterSubCategories, setMasterSubCategories] = useState<any[]>([]);
@@ -21,6 +19,7 @@ const SKUManager: React.FC = () => {
   const [uploadProgress, setUploadProgress] = useState<{ active: boolean; percentage: number }>({ active: false, percentage: 0 });
   const [uploadResult, setUploadResult] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageBulkInputRef = useRef<HTMLInputElement>(null);
   const [productTab, setProductTab] = useState<'general' | 'variants' | 'images'>('general');
   const [savedExcels, setSavedExcels] = useState<any[]>([]);
   const [showExcelPanel, setShowExcelPanel] = useState(false);
@@ -160,6 +159,34 @@ const SKUManager: React.FC = () => {
     } finally {
       setUploadProgress({ active: false, percentage: 0 });
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleBulkImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('images', files[i]);
+    }
+
+    try {
+      setUploadProgress({ active: true, percentage: 0 });
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/admin/products/bulk-upload-images`, formData, {
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
+          setUploadProgress({ active: true, percentage: percentCompleted });
+        }
+      });
+      toast.success(`${files.length} images uploaded successfully!`);
+      fetchSKUs();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to upload images');
+    } finally {
+      setUploadProgress({ active: false, percentage: 0 });
+      if (imageBulkInputRef.current) imageBulkInputRef.current.value = '';
     }
   };
 
@@ -406,91 +433,108 @@ const SKUManager: React.FC = () => {
 
   return (
     <main className="admin-content">
-      <header className="admin-header space-between sku-header">
-        <div className="title-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button className="mobile-menu-trigger" onClick={toggleSidebar}>
-            <Menu size={24} />
-          </button>
-          <div className="header-text">
-            <h1>SKU & Inventory Manager</h1>
-            <p>Master database for industrial materials & Smart Units</p>
-          </div>
-        </div>
-        <div className="action-group sku-action-group">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden-file-input" 
-            accept=".xlsx, .xls"
-            onChange={handleFileUpload}
-          />
-          <button className="secondary-btn" onClick={() => fileInputRef.current?.click()}>
-            <FileUp size={18} /> Bulk Upload (Excel)
-          </button>
-
-          {/* Saved Excels panel */}
-          <div style={{ position: 'relative' }}>
-            <button
-              className="secondary-btn"
-              onClick={() => { fetchSavedExcels(); setShowExcelPanel(p => !p); }}
-              title="View / Download saved Excel uploads"
-            >
-              <FileSpreadsheet size={18} /> Saved Excels ({savedExcels.length})
+      <header className="sku-header">
+        <div className="sku-header-top">
+          <div className="title-group">
+            <button className="mobile-menu-trigger" onClick={toggleSidebar}>
+              <Menu size={24} />
             </button>
+            <div className="header-text">
+              <h1>SKU & Inventory Manager</h1>
+              <p>Master database for industrial materials & Smart Units</p>
+            </div>
+          </div>
+          
+          <div className="action-group sku-action-group">
+            <div className="bulk-actions">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden-file-input" 
+                accept=".xlsx, .xls"
+                onChange={handleFileUpload}
+              />
+              <button className="secondary-btn" onClick={() => fileInputRef.current?.click()}>
+                <FileUp size={18} /> Bulk Upload (Excel)
+              </button>
 
-            {showExcelPanel && (
-              <div style={{
-                position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200,
-                background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: '340px', maxHeight: '340px',
-                overflowY: 'auto', padding: '0.75rem'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1e293b' }}>📂 Uploaded Excels</span>
-                  <button className="icon-btn" onClick={() => setShowExcelPanel(false)}><X size={14} /></button>
-                </div>
-                {savedExcels.length === 0 ? (
-                  <p style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', padding: '1rem 0' }}>No Excel files uploaded yet.</p>
-                ) : (
-                  savedExcels.map((f: any) => (
-                    <div key={f.filename} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '0.5rem 0.6rem', borderRadius: '8px', marginBottom: '4px',
-                      background: '#f8fafc', border: '1px solid #e2e8f0'
-                    }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {f.originalName}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                          {new Date(f.uploadedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          {' · '}{(f.size / 1024).toFixed(0)} KB
-                        </div>
-                      </div>
-                      <button
-                        className="icon-btn"
-                        onClick={() => handleDownloadExcel(f.filename)}
-                        title="Download this Excel"
-                        style={{ marginLeft: '8px', flexShrink: 0 }}
-                      >
-                        <Download size={15} />
-                      </button>
+              <input 
+                type="file" 
+                ref={imageBulkInputRef} 
+                className="hidden-file-input" 
+                accept="image/*"
+                multiple
+                onChange={handleBulkImageUpload}
+              />
+              <button className="secondary-btn" onClick={() => imageBulkInputRef.current?.click()}>
+                <ImagePlus size={18} /> Bulk Upload Images
+              </button>
+            </div>
+
+            <div className="utility-actions">
+              {/* Saved Excels panel */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  className="secondary-btn"
+                  onClick={() => { fetchSavedExcels(); setShowExcelPanel(p => !p); }}
+                  title="View / Download saved Excel uploads"
+                >
+                  <FileSpreadsheet size={18} /> Saved Excels ({savedExcels.length})
+                </button>
+
+                {showExcelPanel && (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200,
+                    background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: '340px', maxHeight: '340px',
+                    overflowY: 'auto', padding: '0.75rem'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1e293b' }}>📂 Uploaded Excels</span>
+                      <button className="icon-btn" onClick={() => setShowExcelPanel(false)}><X size={14} /></button>
                     </div>
-                  ))
+                    {savedExcels.length === 0 ? (
+                      <p style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', padding: '1rem 0' }}>No Excel files uploaded yet.</p>
+                    ) : (
+                      savedExcels.map((f: any) => (
+                        <div key={f.filename} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '0.5rem 0.6rem', borderRadius: '8px', marginBottom: '4px',
+                          background: '#f8fafc', border: '1px solid #e2e8f0'
+                        }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {f.originalName}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                              {new Date(f.uploadedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              {' · '}{(f.size / 1024).toFixed(0)} KB
+                            </div>
+                          </div>
+                          <button
+                            className="icon-btn"
+                            onClick={() => handleDownloadExcel(f.filename)}
+                            title="Download this Excel"
+                            style={{ marginLeft: '8px', flexShrink: 0 }}
+                          >
+                            <Download size={15} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
 
-          <button className="secondary-btn sku-clear-all-btn" onClick={handleClearAll}>
-            <Trash2 size={18} /> Clear All
-          </button>
-          <button className="secondary-btn" onClick={() => navigate('/admin?tab=actions&sub=settings')}>
-             <Truck size={18} /> Global Fees
-           </button>
-           <button className="add-sku-btn" onClick={resetForm}>
-             <Plus size={18} /> New Product SKU
-           </button>
+              <button className="secondary-btn sku-clear-all-btn" onClick={handleClearAll}>
+                <Trash2 size={18} /> Clear All
+              </button>
+            </div>
+
+            <button className="add-sku-btn" onClick={resetForm}>
+              <Plus size={18} /> New Product SKU
+            </button>
+          </div>
         </div>
       </header>
 
