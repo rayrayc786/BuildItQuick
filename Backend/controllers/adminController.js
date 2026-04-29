@@ -774,6 +774,36 @@ exports.uploadProductImage = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.bulkUploadImages = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No images uploaded' });
+    }
+
+    const dir = path.join(__dirname, '..', 'public', 'images');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+    const results = [];
+    for (const file of req.files) {
+      const filename = file.originalname;
+      const filepath = path.join(dir, filename);
+      fs.writeFileSync(filepath, file.buffer);
+      results.push({
+        originalName: file.originalname,
+        filename: filename,
+        imageUrl: `/images/${filename}`
+      });
+    }
+
+    res.json({
+      message: `${req.files.length} images uploaded successfully`,
+      images: results
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 const gstH = createHandlers(GSTClassification, 'GST Classification');
 exports.getAllGstClassifications = gstH.getAll; 
 exports.createGstClassification = gstH.create; 

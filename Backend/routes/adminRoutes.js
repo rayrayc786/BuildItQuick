@@ -22,6 +22,7 @@ router.patch('/orders/:id/status', adminController.updateOrderStatus);
 router.get('/products', adminController.getAllProductsAdmin);
 router.post('/products/bulk-upload', upload.single('file'), adminController.bulkUploadProducts);
 router.post('/products/upload-image', upload.single('image'), adminController.uploadProductImage);
+router.post('/products/bulk-upload-images', upload.array('images'), adminController.bulkUploadImages);
 router.post('/products', adminController.createProduct);
 router.put('/products/:id', adminController.updateProduct);
 router.delete('/products/clear-all', adminController.clearAllProducts);
