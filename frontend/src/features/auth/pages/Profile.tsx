@@ -208,7 +208,26 @@ const Profile: React.FC = () => {
     navigate('/login');
   };
 
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Are you sure you want to delete your account? This action cannot be undone and will permanently remove your profile and personal data.')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/auth/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      localStorage.clear();
+      toast.success(data.message || 'Account deleted successfully');
+      navigate('/login');
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || 'Failed to delete account. Please try again later.';
+      toast.error(errorMsg);
+    }
+  };
+
   const handleShare = async () => {
+
     const shareData = {
       title: 'MatAll - Home Repair Supplies',
       text: 'Order construction and home repair supplies in 60 minutes with MatAll!',
@@ -603,10 +622,18 @@ const Profile: React.FC = () => {
                   <ChevronRight size={20} />
                </div>
                
-                <div className="list-option-row logout-action" onClick={handleLogout}>
+                 <div className="list-option-row logout-action" onClick={handleLogout}>
                   <div className="opt-label-box">
                     <LogOut size={20} />
                     <span>Logout</span>
+                  </div>
+                  <ChevronRight size={18} />
+                </div>
+
+                <div className="list-option-row logout-action" onClick={handleDeleteAccount}>
+                  <div className="opt-label-box">
+                    <Trash2 size={20} />
+                    <span>Delete Account</span>
                   </div>
                   <ChevronRight size={18} />
                 </div>

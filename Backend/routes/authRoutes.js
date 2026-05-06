@@ -15,4 +15,7 @@ router.get('/favorites', auth(['End User', 'Admin', 'Supplier']), authController
 router.post('/toggle-duty', auth(['Rider']), authController.toggleDuty);
 router.get('/rider-stats', auth(['Rider']), authController.getDriverStats);
 
+router.delete('/profile', auth(['End User', 'Rider', 'Supplier']), authController.deleteAccount);
+
 module.exports = router;
+

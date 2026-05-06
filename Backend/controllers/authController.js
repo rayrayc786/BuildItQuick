@@ -1,4 +1,7 @@
 const User = require('../models/User');
+const Order = require('../models/Order');
+const OnDemandRequest = require('../models/OnDemandRequest');
+
 const jwt = require('jsonwebtoken');
 const msg91Service = require('../services/msg91Service');
 
@@ -40,8 +43,12 @@ exports.verifyOTP = async (req, res) => {
       user = new User({
         phoneNumber,
         fullName: 'New User', // Default name since we only have phone
-        isVerified: true
+        isVerified: true,
+        status: 'Active'
       });
+      await user.save();
+    } else if (user.status !== 'Active') {
+      user.status = 'Active';
       await user.save();
     }
 
@@ -156,3 +163,42 @@ exports.addJobsite = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Check for pending orders (End User)
+    const pendingOrders = await Order.findOne({
+      userId,
+      status: { $nin: ['Order Delivered', 'Payment Received', 'Cancelled'] }
+    });
+
+    if (pendingOrders) {
+      return res.status(400).json({ 
+        message: 'Cannot delete account with pending orders. Please wait for them to be delivered or cancel them.' 
+      });
+    }
+
+    // Check for pending on-demand requests
+    const pendingOnDemand = await OnDemandRequest.findOne({
+      userId,
+      status: { $nin: ['Fulfilled', 'Cancelled'] }
+    });
+
+    if (pendingOnDemand) {
+      return res.status(400).json({ 
+        message: 'Cannot delete account with pending on-demand requests.' 
+      });
+    }
+
+    // If no pending, soft delete user by setting status to Inactive
+    const user = await User.findByIdAndUpdate(userId, { status: 'Inactive' }, { new: true });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json({ message: 'Account deactivated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+

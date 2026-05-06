@@ -191,6 +191,7 @@ exports.getDashboardStats = async (req, res) => {
     
     const activeSuppliers = await Supplier.countDocuments({ isActive: true });
     const activeCategories = await Category.countDocuments({ isActive: true });
+    const activeUsers = await User.countDocuments({ status: 'Active' });
     
     // Mock delivery time for now, or calculate from delivered orders
     const avgDeliveryTime = '25 mins';
@@ -231,7 +232,7 @@ exports.getDashboardStats = async (req, res) => {
 
     res.json({ 
       gmv, activeDeliveries, lateOrders, totalOrders, hourlyGMV,
-      activeOrders, deliveredOrders, activeSuppliers, activeCategories, avgDeliveryTime,
+      activeOrders, deliveredOrders, activeSuppliers, activeCategories, activeUsers, avgDeliveryTime,
       revenueData, ordersStatsData, recentOrders
     });
   } catch (err) {
@@ -271,7 +272,7 @@ exports.updateOrderStatus = async (req, res) => {
 
 exports.getFleetStatus = async (req, res) => {
   try {
-    res.json(await User.find({ role: 'Rider' }));
+    res.json(await User.find({ role: 'Rider', status: 'Active' }));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -660,7 +661,15 @@ const uh = createHandlers(User, 'User');
 exports.getAllUsers = uh.getAll;
 exports.createUser = uh.create;
 exports.updateUser = uh.update;
-exports.deleteUser = uh.delete;
+exports.deleteUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, { status: 'Inactive' }, { new: true });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User Deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 exports.getUserOrders = async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.params.id }).populate('items.productId');

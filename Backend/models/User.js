@@ -59,7 +59,12 @@ const UserSchema = new mongoose.Schema({
   availableCredit: { type: Number, default: 0 },
 
   // Multiple jobsites with geospatial support
-  jobsites: [JobsiteSchema]
+  jobsites: [JobsiteSchema],
+  status: { 
+    type: String, 
+    enum: ['Active', 'Inactive'], 
+    default: 'Active' 
+  }
 }, { timestamps: true });
 
 // Index for geospatial queries
