@@ -22,4 +22,22 @@ const auth = (allowedRoles = []) => {
   };
 };
 
+const optionalAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return next();
+  }
+
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    next();
+  }
+};
+
+auth.optionalAuth = optionalAuth;
 module.exports = auth;

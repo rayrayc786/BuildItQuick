@@ -359,22 +359,48 @@ const Tracking: React.FC = () => {
                  <span>₹{Number(order.totalTaxAmount || 0).toFixed(2)}</span>
               </div>
               
-              {(order.deliveryCharge || 0) > 0 && (
-                <div className="bill-row">
-                   <div className="label-with-icon"><span>Delivery Charge (incl GST)</span></div>
-                   <span>₹{Number(order.deliveryCharge || 0).toFixed(2)}</span>
+              <div className="bill-row">
+                 <div className="label-with-icon"><span>Delivery Charge (incl GST)</span></div>
+                 {order.deliveryCharge > 0 ? (
+                   <div style={{ textAlign: 'right' }}>
+                     <span>₹{Number(order.deliveryCharge).toFixed(2)}</span>
+                     {order.deliveryChargeGST > 0 && (
+                       <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 'normal' }}>
+                         (₹{(order.deliveryCharge - order.deliveryChargeGST).toFixed(2)} + ₹{Number(order.deliveryChargeGST).toFixed(2)} GST)
+                       </div>
+                     )}
+                   </div>
+                 ) : (
+                   <span style={{ color: '#16a34a', fontWeight: 600 }}>FREE</span>
+                 )}
+              </div>
+              <div className="bill-row">
+                 <div className="label-with-icon"><span>Handling Charge (incl GST)</span></div>
+                 <span>₹{Number(order.platformFee || 9).toFixed(2)}</span>
+              </div>
+              {(order.appliedDiscount || 0) > 0 && (
+                <div className="bill-row" style={{ color: '#16a34a', fontWeight: 600 }}>
+                   <div className="label-with-icon"><span>Offer Discount</span></div>
+                   <span>-₹{Number(order.appliedDiscount || 0).toFixed(2)}</span>
                 </div>
               )}
-              {(order.platformFee || 0) > 0 && (
-                <div className="bill-row">
-                   <div className="label-with-icon"><span>Handling Charge (incl GST)</span></div>
-                   <span>₹{Number(order.platformFee || 0).toFixed(2)}</span>
+              {order.rewardItems && order.rewardItems.length > 0 && (
+                <div className="reward-summary-box-tracking" style={{ margin: '10px 0', padding: '10px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                  <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#166534', marginBottom: '4px', textTransform: 'uppercase' }}>Free Rewards Unlocked:</p>
+                  <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.85rem', color: '#15803d' }}>
+                    {order.rewardItems.map((item: string, i: number) => <li key={i}>{item}</li>)}
+                  </ul>
                 </div>
               )}
               <div className="bill-row grand-total-row">
                  <strong>Grand Total</strong>
                  <strong>₹{Number(order.totalAmount || 0).toFixed(2)}</strong>
               </div>
+              {order.totalSavings > 0 && (
+                <div className="savings-badge-tracking" style={{ background: '#fefce8', color: '#854d0e', padding: '8px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, marginTop: '8px', textAlign: 'center', border: '1px solid #fef08a' }}>
+                  🥳 You saved ₹{Number(order.totalSavings).toFixed(2)} on this order!
+                </div>
+              )}
               <div className="bill-row-footer">
                  <span className="payment-tag">PAID VIA {order.paymentMethod?.toUpperCase() || 'COD'}</span>
               </div>

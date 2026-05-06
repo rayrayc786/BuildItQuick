@@ -10,6 +10,7 @@ const userRequestRoutes = require('./userRequestRoutes');
 const onDemandRoutes = require('./onDemandRoutes');
 const reviewRoutes = require('./reviewRoutes');
 const locationRoutes = require('./locationRoutes');
+const cartRoutes = require('./cartRoutes');
 
 // API Routes
 router.use('/auth', authRoutes);
@@ -21,6 +22,7 @@ router.use('/user-requests', userRequestRoutes);
 router.use('/on-demand', onDemandRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/location', locationRoutes);
+router.use('/cart', cartRoutes);
 
 // Root route
 router.get('/', (req, res) => {

@@ -15,6 +15,10 @@ const OrderItemSchema = new mongoose.Schema({
   selectedVariant: { type: String }, // Human readable name of the variant selected
   variantAttributes: { type: Map, of: String }, // Snapshot of selected variant attributes
   variantImage: { type: String }, // Snapshot of selected variant's primary image
+  unitMrp: { type: Number }, // Snapshot of MRP at time of order
+  lineTotalInclGST: { type: Number }, // Authoritative pre-calculated total for this item
+  lineBaseTotal: { type: Number }, // Total excluding GST
+  lineTaxTotal: { type: Number }, // Total tax for this line
   selectedVariantData: { type: Object } // Full snapshot of the selected variant (logistics, price, etc.)
 });
 
@@ -70,7 +74,13 @@ const OrderSchema = new mongoose.Schema({
     }
   },
   hisaabKitaabInvoiceNumber: { type: String },
-  hisaabKitaabSyncedAt: { type: Date }
+  hisaabKitaabSyncedAt: { type: Date },
+
+  // Offer Related Fields
+  appliedDiscount: { type: Number, default: 0 },
+  totalSavings: { type: Number, default: 0 },
+  appliedOffers: [{ type: String }], // Titles of applied offers
+  rewardItems: [{ type: String }] // Free gifts like "Paint starter kit", "Chimney", etc.
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', OrderSchema);

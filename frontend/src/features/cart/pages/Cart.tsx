@@ -12,7 +12,7 @@ import {
   ArrowLeft,
   Home
 } from 'lucide-react';
-import { useCart } from '../../../contexts/CartContext';
+import { useCart, Product } from '../../../contexts/CartContext';
 import ProductCard from '../../../components/ProductCard';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -22,22 +22,20 @@ import './cart.css';
 import SEO from '../../../components/SEO';
 
 const Cart: React.FC = () => {
-  const { cart, addToCart, removeFromCart, totalAmount, totalGst, maxLogisticsCategory } = useCart();
+  const { 
+    cart, addToCart, removeFromCart,
+    appliedDiscount, rewardItems,
+    platformFee, deliveryCharge, grandTotal, vehicleClass,
+    totalSavings, totalBaseAmount, totalTaxAmount, enrichedItems,
+    deliveryChargeBreakup
+  } = useCart();
   const { settings } = useSettings();
   const navigate = useNavigate();
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [maxDeliveryTime, setMaxDeliveryTime] = useState('15 mins');
   const [displayAddress, setDisplayAddress] = useState('Select delivery location');
 
-  const logisticsInfo = settings.logisticsRates[maxLogisticsCategory as keyof typeof settings.logisticsRates] || settings.logisticsRates.light;
-  
-  const deliveryCharge = totalAmount > settings.freeDeliveryThreshold ? 0 : logisticsInfo.rate;
-  const deliveryMode = logisticsInfo.mode;
-  const handlingCharge = settings.platformFee;
-  const grandTotal = totalAmount + deliveryCharge + handlingCharge;
-
-  const mrpTotal = cart.reduce((acc, item) => acc + (item.product.mrp || item.product.price || 0) * item.quantity, 0);
-  const savings = mrpTotal - totalAmount;
+  const handlingCharge = platformFee;
 
   useEffect(() => {
     if (cart.length > 0) {
@@ -74,7 +72,7 @@ const Cart: React.FC = () => {
         
         // Filter out items already in cart
         const cartIds = cart.map(item => item.product._id);
-        const filtered = fetchedProducts.filter((p: any) => !cartIds.includes(p._id));
+        const filtered = fetchedProducts.filter((p: Product) => !cartIds.includes(p._id));
         
         setRecommendations(filtered.slice(0, 10));
       } catch (err) {
@@ -98,7 +96,7 @@ const Cart: React.FC = () => {
     }
   }, [cart.length]);
 
-  const handleMoveToWishlist = async (product: any, variant?: string) => {
+  const handleMoveToWishlist = async (product: Product, variant?: string) => {
     const token = localStorage.getItem('token');
     if (!token) {
       toast.error('Please login to use wishlist');
@@ -178,24 +176,27 @@ const Cart: React.FC = () => {
               </div>
 
               <div className="cart-list-vertical">
-                {cart.map((item, idx) => (
+                {enrichedItems.map((item, idx) => (
                   <div key={idx} className="cart-item-row-matall">
                     <div className="c-item-img">
                       <img 
-                        src={getFullImageUrl(item.product.imageUrl || (item.product.images && item.product.images[0]))} 
-                        alt={item.product.name} 
+                        src={getFullImageUrl(item.variantImage)} 
+                        alt={item.productName} 
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?auto=format&fit=crop&q=80&w=400';
                         }}
                       />
                     </div>
                     <div className="c-item-info">
-                      <h5>{item.product.brand} {item.product.name}</h5>
+                      <h5>{item.brand} {item.productName}</h5>
                       <div className="c-item-meta-row">
-                        <span className="c-item-unit">{item.selectedVariant || item.product.unitLabel || 'Standard'}</span>
+                        <span className="c-item-unit">{item.selectedVariant || 'Standard'}</span>
                         <button 
                            className="c-item-wishlist"
-                           onClick={() => handleMoveToWishlist(item.product, item.selectedVariant)}
+                           onClick={() => {
+                             const originalItem = cart.find(c => String(c.product._id) === String(item.productId) && c.selectedVariant === item.selectedVariant);
+                             if (originalItem) handleMoveToWishlist(originalItem.product, item.selectedVariant);
+                           }}
                         >
                           Move to wishlist
                         </button>
@@ -203,15 +204,18 @@ const Cart: React.FC = () => {
                       
                       <div className="c-item-qty-price-row">
                         <div className="c-qty-box">
-                          <button onClick={() => addToCart(item.product, -1, item.selectedVariant)}><Minus size={14} /></button>
+                          <button onClick={() => {
+                            const originalItem = cart.find(c => String(c.product._id) === String(item.productId) && c.selectedVariant === item.selectedVariant);
+                            if (originalItem) addToCart(originalItem.product, -1, item.selectedVariant);
+                          }}><Minus size={14} /></button>
                           <span className="c-qty-val">{item.quantity}</span>
-                          <button onClick={() => addToCart(item.product, 1, item.selectedVariant)}><Plus size={14} /></button>
+                          <button onClick={() => {
+                            const originalItem = cart.find(c => String(c.product._id) === String(item.productId) && c.selectedVariant === item.selectedVariant);
+                            if (originalItem) addToCart(originalItem.product, 1, item.selectedVariant);
+                          }}><Plus size={14} /></button>
                         </div>
                          <span className="c-item-price">
-                           {(() => {
-                             const salePrice = item.product.variants?.find((v: any) => v.name === item.selectedVariant)?.pricing?.salePrice || item.product.salePrice || item.product.price || 0;
-                             return `₹${(salePrice * item.quantity).toFixed(2)}`;
-                           })()}
+                           ₹{(item.lineTotalInclGST ?? 0).toFixed(2)}
                          </span>
                       </div>
                     </div>
@@ -224,26 +228,51 @@ const Cart: React.FC = () => {
               <h3>Bill Summary</h3>
               <div className="bill-row-item">
                 <span>Item Total (Excl. GST)</span>
-                <span>₹{(totalAmount - totalGst).toFixed(2)}</span>
+                <span>₹{(totalBaseAmount ?? 0).toFixed(2)}</span>
               </div>
               <div className="bill-row-item" style={{ fontSize: '0.8rem', color: '#64748b' }}>
                 <span>GST Amount</span>
-                <span>₹{totalGst.toFixed(2)}</span>
+                <span>₹{(totalTaxAmount ?? 0).toFixed(2)}</span>
               </div>
               <div className="bill-row-item">
                 <div className="bill-label-group">
                   <span>Delivery Charge (incl GST)</span>
-                  <span className="delivery-mode-tag">(Mode: {deliveryMode})</span>
+                  <span className="delivery-mode-tag">(Mode: {vehicleClass})</span>
                 </div>
-                {deliveryCharge > 0 ? <span>₹{deliveryCharge.toFixed(2)}</span> : <span style={{ color: '#16a34a' }}>FREE</span>}
+                {deliveryCharge > 0 ? (
+                  <div style={{ textAlign: 'right' }}>
+                    <span>₹{(deliveryCharge ?? 0).toFixed(2)}</span>
+                    {deliveryChargeBreakup && (
+                      <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                        (₹{(deliveryChargeBreakup.base ?? 0).toFixed(2)} + ₹{(deliveryChargeBreakup.gst ?? (deliveryChargeBreakup as any).tax ?? 0).toFixed(2)} GST)
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <span style={{ color: '#16a34a' }}>FREE</span>
+                )}
               </div>
               <div className="bill-row-item">
                 <span>Handling Charge (incl GST)</span>
-                <span>₹{handlingCharge.toFixed(2)}</span>
+                <span>₹{(handlingCharge ?? 0).toFixed(2)}</span>
               </div>
+              {appliedDiscount > 0 && (
+                <div className="bill-row-item" style={{ color: '#16a34a', fontWeight: 600 }}>
+                  <span>Offer Discount</span>
+                  <span>-₹{(appliedDiscount ?? 0).toFixed(2)}</span>
+                </div>
+              )}
+              {rewardItems.length > 0 && (
+                <div className="reward-summary-box">
+                  <p className="reward-head">Free Rewards Unlocked:</p>
+                  <ul className="reward-list">
+                    {rewardItems.map((item, i) => <li key={i}>{item}</li>)}
+                  </ul>
+                </div>
+              )}
               <div className="bill-row-total">
                 <span>Grand Total</span>
-                <span>₹{grandTotal.toFixed(2)}</span>
+                <span>₹{(grandTotal ?? 0).toFixed(2)}</span>
               </div>
             </div>
 
@@ -267,36 +296,59 @@ const Cart: React.FC = () => {
               <div className="bill-card">
                 <div className="bill-row-checkout">
                   <span>Item Total (Excl. GST)</span>
-                  <span className="bill-val">₹{(totalAmount - totalGst).toFixed(2)}</span>
+                  <span className="bill-val">₹{(totalBaseAmount ?? 0).toFixed(2)}</span>
                 </div>
                 <div className="bill-row-checkout" style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '8px' }}>
                   <span>GST Amount</span>
-                  <span className="bill-val">₹{totalGst.toFixed(2)}</span>
+                  <span className="bill-val">₹{(totalTaxAmount ?? 0).toFixed(2)}</span>
                 </div>
                 <div className="bill-row-checkout">
                   <div className="bill-label-group">
                     <span>Delivery Charge (incl GST)</span>
-                    <span className="delivery-mode-tag">(Mode: {deliveryMode})</span>
+                    <span className="delivery-mode-tag">(Mode: {vehicleClass})</span>
                   </div>
                   <span className="bill-val">
-                    {deliveryCharge > 0 ? `₹${deliveryCharge.toFixed(2)}` : <span className="free">FREE</span>}
+                    {deliveryCharge > 0 ? (
+                      <div style={{ textAlign: 'right' }}>
+                        <span>₹{(deliveryCharge ?? 0).toFixed(2)}</span>
+                        {deliveryChargeBreakup && (
+                          <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 'normal' }}>
+                            (₹{(deliveryChargeBreakup.base ?? 0).toFixed(2)} + ₹{(deliveryChargeBreakup.gst ?? 0).toFixed(2)} GST)
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="free">FREE</span>
+                    )}
                   </span>
                 </div>
                 <div className="bill-row-checkout">
                   <span>Handling Charge (incl GST)</span>
-                  <span className="bill-val">₹{handlingCharge.toFixed(2)}</span>
+                  <span className="bill-val">₹{(platformFee ?? 0).toFixed(2)}</span>
                 </div>
+                {appliedDiscount > 0 && (
+                  <div className="bill-row-checkout" style={{ color: '#16a34a' }}>
+                    <span>Offer Discount</span>
+                    <span className="bill-val">-₹{(appliedDiscount ?? 0).toFixed(2)}</span>
+                  </div>
+                )}
+                {rewardItems.length > 0 && (
+                  <div className="bill-rewards-pod">
+                    <p>Free Rewards Unlocked:</p>
+                    {rewardItems.map((item, i) => <div key={i} className="reward-tag">{item}</div>)}
+                  </div>
+                )}
                 <div className="bill-row-checkout grand-total-row">
                   <span className="total-label">Grand Total</span>
-                  <span className="total-val">₹{grandTotal.toFixed(2)}</span>
+                  <span className="total-val">₹{(grandTotal ?? 0).toFixed(2)}</span>
                 </div>
               </div>
             </section>
 
-            {savings > 0 && (
+            {totalSavings > 0 && (
               <div className="savings-tile">
                 <span className="savings-text">Your total savings</span>
-                <span className="savings-amount">₹{savings.toFixed(2)}</span>
+                <span className="savings-amount">₹{(totalSavings ?? 0).toFixed(2)}</span>
               </div>
             )}
 
@@ -313,7 +365,7 @@ const Cart: React.FC = () => {
                   }
                 }}
               >
-                {settings.isServiceEnabled ? `Place Order • ₹${grandTotal.toFixed(2)}` : 'Service Offline'}
+                {settings.isServiceEnabled ? `Place Order • ₹${(grandTotal ?? 0).toFixed(2)}` : 'Service Offline'}
               </button>
             </div>
           </div>
@@ -341,7 +393,7 @@ const Cart: React.FC = () => {
         }}>
           <div className="pay-info-left">
             <div className="pay-total-row">
-              <span>₹{grandTotal.toFixed(2)}</span>
+              <span>₹{(grandTotal ?? 0).toFixed(2)}</span>
               <span style={{ fontSize: '0.6rem', opacity: 0.8 }}>NEXT STEP</span>
             </div>
           </div>

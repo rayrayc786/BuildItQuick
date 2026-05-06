@@ -670,7 +670,7 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
                        <span className="item-sub">Qty: {item.quantity} × ₹{Number(item.unitPrice).toFixed(2)}</span>
                     </div>
                     <div className="item-total">
-                       ₹{Number(item.quantity * item.unitPrice).toFixed(2)}
+                       ₹{Number(item.lineTotalInclGST || (item.quantity * item.unitPrice)).toFixed(2)}
                     </div>
                  </div>
               ))}
@@ -679,7 +679,7 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
            <div className="order-summary-box">
               <div className="summary-row">
                  <span>Items Subtotal</span>
-                 <span>₹{Number((order.totalAmount || 0) - (order.deliveryCharge || 0) - (order.platformFee || 0)).toFixed(2)}</span>
+                 <span>₹{Number(order.subTotal || ((order.totalAmount || 0) - (order.deliveryCharge || 0) - (order.platformFee || 0))).toFixed(2)}</span>
               </div>
               {order.totalTaxAmount > 0 && (
                 <div className="summary-row">
@@ -689,7 +689,14 @@ function OrderDetailsModal({ viewingOrder, setViewingOrder }: any) {
               )}
               <div className="summary-row">
                  <span>Delivery Fee ({order.vehicleClass || 'Standard'})</span>
-                 <span>₹{Number(order.deliveryCharge || 0).toFixed(2)}</span>
+                 <div style={{ textAlign: 'right' }}>
+                   <span>₹{Number(order.deliveryCharge || 0).toFixed(2)}</span>
+                   {order.deliveryChargeGST > 0 && (
+                     <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 'normal' }}>
+                       (₹{(order.deliveryCharge - order.deliveryChargeGST).toFixed(2)} + ₹{Number(order.deliveryChargeGST).toFixed(2)} GST)
+                     </div>
+                   )}
+                 </div>
               </div>
               {order.platformFee > 0 && (
                 <div className="summary-row">

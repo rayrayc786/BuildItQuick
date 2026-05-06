@@ -12,28 +12,41 @@ const OfferManager: React.FC = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    discount: '',
+    discount: '', // This is the badge text
     imageUrl: '',
     isActive: true,
     link: '',
     categories: [] as string[],
-    subCategories: [] as string[]
+    subCategories: [] as string[],
+    // Rule-based fields
+    offerType: 'BannerOnly',
+    minAmount: 0,
+    brandName: '',
+    categoryName: '',
+    productName: '',
+    discountAmount: 0,
+    freeDelivery: false,
+    rewardItem: '',
+    validityDays: 0
   });
 
   const [allCategories, setAllCategories] = useState<any[]>([]);
   const [allSubCategories, setAllSubCategories] = useState<any[]>([]);
+  const [allBrands, setAllBrands] = useState<any[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [{ data: offersData }, { data: catsData }, { data: subCatsData }] = await Promise.all([
+      const [{ data: offersData }, { data: catsData }, { data: subCatsData }, { data: brandsData }] = await Promise.all([
         axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/offers`),
         axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/categories`),
-        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/sub-categories`)
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/sub-categories`),
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/brands`)
       ]);
       setOffers(offersData);
       setAllCategories(catsData);
       setAllSubCategories(subCatsData);
+      setAllBrands(brandsData);
     } catch (err) {
       console.error('Fetch failed:', err);
     } finally {
@@ -98,14 +111,23 @@ const OfferManager: React.FC = () => {
     setEditingItem(item);
     if (item) {
       setFormData({
-        title: item.title,
+        title: item.title || '',
         description: item.description || '',
         discount: item.discount || '',
         imageUrl: item.imageUrl || '',
         isActive: item.isActive,
         link: item.link || '',
         categories: item.categories || [],
-        subCategories: item.subCategories || []
+        subCategories: item.subCategories || [],
+        offerType: item.offerType || 'BannerOnly',
+        minAmount: item.minAmount || 0,
+        brandName: item.brandName || '',
+        categoryName: item.categoryName || '',
+        productName: item.productName || '',
+        discountAmount: item.discountAmount || 0,
+        freeDelivery: item.freeDelivery || false,
+        rewardItem: item.rewardItem || '',
+        validityDays: item.validityDays || 0
       });
     } else {
       setFormData({
@@ -116,7 +138,16 @@ const OfferManager: React.FC = () => {
         isActive: true,
         link: '',
         categories: [],
-        subCategories: []
+        subCategories: [],
+        offerType: 'BannerOnly',
+        minAmount: 0,
+        brandName: '',
+        categoryName: '',
+        productName: '',
+        discountAmount: 0,
+        freeDelivery: false,
+        rewardItem: '',
+        validityDays: 0
       });
     }
     setShowModal(true);
@@ -160,16 +191,20 @@ const OfferManager: React.FC = () => {
                   {offer.discount && <div style={{ position: 'absolute', top: '12px', right: '12px', background: '#FFEA00', color: 'black', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold' }}>{offer.discount}</div>}
                 </div>
                 <div className="card-body" style={{ padding: '1.25rem' }}>
-                  <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>{offer.title}</h3>
+                  <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem', fontWeight: 'bold' }}>{offer.title}</h3>
+                  <div style={{ fontSize: '0.7rem', color: '#ff5722', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.5rem' }}>{offer.offerType}</div>
                   <p style={{ fontSize: '0.85rem', color: '#64748b', minHeight: '40px' }}>{offer.description}</p>
                   
-                  {offer.categories?.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px' }}>
-                      {offer.categories.map((catId: string) => (
-                        <span key={catId} style={{ fontSize: '10px', background: '#f8fafc', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                          {allCategories.find(c => c._id === catId)?.name || 'Cat'}
-                        </span>
-                      ))}
+                  {offer.offerType !== 'BannerOnly' && (
+                    <div style={{ marginTop: '10px', padding: '8px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.8rem' }}>
+                      {offer.brandName && <div><strong>Brand:</strong> {offer.brandName}</div>}
+                      {offer.categoryName && <div><strong>Category:</strong> {offer.categoryName}</div>}
+                      {offer.productName && <div><strong>Product:</strong> {offer.productName}</div>}
+                      {offer.minAmount > 0 && <div><strong>Min Spend:</strong> ₹{offer.minAmount.toLocaleString()}</div>}
+                      {offer.discountAmount > 0 && <div style={{ color: '#059669' }}><strong>Discount:</strong> ₹{offer.discountAmount.toLocaleString()}</div>}
+                      {offer.freeDelivery && <div style={{ color: '#2563eb' }}><strong>Free Delivery:</strong> Yes</div>}
+                      {offer.rewardItem && <div style={{ color: '#d97706' }}><strong>Reward:</strong> {offer.rewardItem}</div>}
+                      {offer.validityDays > 0 && <div><strong>Validity:</strong> {offer.validityDays} Days</div>}
                     </div>
                   )}
 
@@ -192,92 +227,155 @@ const OfferManager: React.FC = () => {
 
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content animate-slide-up" style={{ maxWidth: '500px' }}>
+          <div className="modal-content animate-slide-up" style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="modal-header">
               <h2>{editingItem ? 'Edit Offer' : 'New Offer'}</h2>
               <button className="close-btn" onClick={() => setShowModal(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleSave}>
-              <div className="form-group">
-                <label>Offer Title / Headline</label>
-                <input 
-                  type="text" 
-                  value={formData.title} 
-                  onChange={e => setFormData({...formData, title: e.target.value})} 
-                  placeholder="e.g. Plyboard + Modular Hardware"
-                  required
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div className="form-group">
+                  <label>Offer Title / Headline</label>
+                  <input 
+                    type="text" 
+                    value={formData.title} 
+                    onChange={e => setFormData({...formData, title: e.target.value})} 
+                    placeholder="e.g. Plyboard + Modular Hardware"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Discount Badge (Text)</label>
+                  <input 
+                    type="text" 
+                    value={formData.discount} 
+                    onChange={e => setFormData({...formData, discount: e.target.value})} 
+                    placeholder="e.g. Flat 20% OFF or Combo Deal"
+                  />
+                </div>
               </div>
+
               <div className="form-group">
-                <label>Discount Badge (Text)</label>
-                <input 
-                  type="text" 
-                  value={formData.discount} 
-                  onChange={e => setFormData({...formData, discount: e.target.value})} 
-                  placeholder="e.g. Flat 20% OFF or Combo Deal"
-                />
+                <label>Offer Type (Rule Engine)</label>
+                <select 
+                  value={formData.offerType} 
+                  onChange={e => setFormData({...formData, offerType: e.target.value})}
+                  style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px' }}
+                >
+                  <option value="BannerOnly">Banner Only (Promotional)</option>
+                  <option value="standard">Discount on Minimum Order Amount</option>
+                  <option value="category">Category Specific Discount</option>
+                  <option value="brand">Brand Specific Discount</option>
+                  <option value="product">Product Reward (Freebie)</option>
+                  <option value="accumulated">Accumulated Loyalty Reward</option>
+                </select>
               </div>
+
+              {formData.offerType !== 'BannerOnly' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', padding: '15px', background: '#f0f9ff', borderRadius: '12px', marginBottom: '15px' }}>
+                  {formData.offerType === 'brand' && (
+                    <div className="form-group">
+                      <label>Select Brand</label>
+                      <select 
+                        value={formData.brandName} 
+                        onChange={e => setFormData({...formData, brandName: e.target.value})}
+                        style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px' }}
+                      >
+                        <option value="">Select Brand</option>
+                        {allBrands.map(b => <option key={b._id} value={b.name}>{b.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+
+                  {formData.offerType === 'category' && (
+                    <div className="form-group">
+                      <label>Select Category</label>
+                      <select 
+                        value={formData.categoryName} 
+                        onChange={e => setFormData({...formData, categoryName: e.target.value})}
+                        style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px' }}
+                      >
+                        <option value="">Select Category</option>
+                        {allCategories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+
+                  {formData.offerType === 'product' && (
+                    <div className="form-group">
+                      <label>Target Product Name (Exact or Keyword)</label>
+                      <input 
+                        type="text" 
+                        value={formData.productName} 
+                        onChange={e => setFormData({...formData, productName: e.target.value})}
+                        placeholder="e.g. 5 ltr Paint Bucket"
+                      />
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label>Min Amount Required (₹)</label>
+                    <input 
+                      type="number" 
+                      value={formData.minAmount} 
+                      onChange={e => setFormData({...formData, minAmount: Number(e.target.value)})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Discount Amount (₹)</label>
+                    <input 
+                      type="number" 
+                      value={formData.discountAmount} 
+                      onChange={e => setFormData({...formData, discountAmount: Number(e.target.value)})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Reward Item Name (Freebie)</label>
+                    <input 
+                      type="text" 
+                      value={formData.rewardItem} 
+                      onChange={e => setFormData({...formData, rewardItem: e.target.value})}
+                      placeholder="e.g. Paint starter kit"
+                    />
+                  </div>
+
+                  {formData.offerType === 'accumulated' && (
+                    <div className="form-group">
+                      <label>Validity Window (Days)</label>
+                      <input 
+                        type="number" 
+                        value={formData.validityDays} 
+                        onChange={e => setFormData({...formData, validityDays: Number(e.target.value)})}
+                        placeholder="e.g. 45"
+                      />
+                    </div>
+                  )}
+
+                  <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
+                    <input 
+                      type="checkbox" 
+                      id="free-delivery"
+                      checked={formData.freeDelivery} 
+                      onChange={e => setFormData({...formData, freeDelivery: e.target.checked})} 
+                    />
+                    <label htmlFor="free-delivery" style={{ marginBottom: 0 }}>Include Free Delivery</label>
+                  </div>
+                </div>
+              )}
+
               <div className="form-group">
-                <label>Description</label>
+                <label>Description (Short summary of the offer)</label>
                 <textarea 
                   value={formData.description} 
                   onChange={e => setFormData({...formData, description: e.target.value})} 
                   placeholder="Details about this offer..."
                 />
               </div>
-              <div className="form-group">
-                <label>Dynamic Filtering (Club Categories/Subcategories)</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '15px', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
-                  <div>
-                    <p style={{ fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '8px', color: '#64748b' }}>SELECT CATEGORIES</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {allCategories.map(cat => (
-                        <label key={cat._id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', padding: '4px 10px', border: formData.categories.includes(cat._id) ? '1px solid #FFEA00' : '1px solid #eee', background: formData.categories.includes(cat._id) ? '#ffea0010' : 'white', borderRadius: '20px', cursor: 'pointer' }}>
-                          <input 
-                            type="checkbox" 
-                            checked={formData.categories.includes(cat._id)}
-                            onChange={(e) => {
-                              const newCats = e.target.checked 
-                                ? [...formData.categories, cat._id]
-                                : formData.categories.filter(id => id !== cat._id);
-                              setFormData({ ...formData, categories: newCats });
-                            }}
-                            style={{ display: 'none' }}
-                          />
-                          {cat.name}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p style={{ fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '8px', color: '#64748b' }}>SELECT SUBCATEGORIES (Optional)</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '120px', overflowY: 'auto', padding: '4px' }}>
-                      {allSubCategories
-                        .filter(sc => formData.categories.length === 0 || formData.categories.includes(sc.categoryId?._id || sc.categoryId))
-                        .map(sc => (
-                        <label key={sc._id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', padding: '4px 10px', border: formData.subCategories.includes(sc._id) ? '1px solid #FFEA00' : '1px solid #eee', background: formData.subCategories.includes(sc._id) ? '#ffea0010' : 'white', borderRadius: '20px', cursor: 'pointer' }}>
-                          <input 
-                            type="checkbox" 
-                            checked={formData.subCategories.includes(sc._id)}
-                            onChange={(e) => {
-                              const newSubs = e.target.checked 
-                                ? [...formData.subCategories, sc._id]
-                                : formData.subCategories.filter(id => id !== sc._id);
-                              setFormData({ ...formData, subCategories: newSubs });
-                            }}
-                            style={{ display: 'none' }}
-                          />
-                          {sc.name}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               <div className="form-group">
-                <label>Target Link (Auto-generated from combo)</label>
+                <label>Target Link (Auto-generated or Custom)</label>
                 <input 
                   type="text" 
                   value={formData.link} 

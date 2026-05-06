@@ -30,7 +30,13 @@ interface Address {
 
 const Checkout: React.FC = () => {
   
-  const { cart, clearCart, totalAmount, totalGst, totalWeight: cartWeight, totalVolume: cartVolume, maxLogisticsCategory } = useCart();
+  const { 
+    cart, grandTotal, vehicleClass, totalBaseAmount, totalTaxAmount, totalSavings,
+    platformFee, totalWeight, totalVolume, enrichedItems,
+    appliedDiscount, appliedOffers, rewardItems, deliveryCharge,
+    deliveryChargeBreakup,
+    splitPaymentAmount, partPaymentPercentage, clearCart
+  } = useCart();
   const { settings } = useSettings();
   const { location: globalLocation, setLocation: setGlobalLocation } = useLocationContext();
   const navigate = useNavigate();
@@ -47,15 +53,8 @@ const Checkout: React.FC = () => {
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  const logisticsInfo = settings.logisticsRates[maxLogisticsCategory as keyof typeof settings.logisticsRates] || settings.logisticsRates.light;
+  // const logisticsInfo = settings.logisticsRates[maxLogisticsCategory as keyof typeof settings.logisticsRates] || settings.logisticsRates.light;
 
-  const itemsTotal = totalAmount;
-  const mrpTotal = cart.reduce((acc, item) => acc + (item.product.mrp || item.product.price) * item.quantity, 0);
-  const savings = mrpTotal - itemsTotal;
-  const deliveryCharge = itemsTotal > settings.freeDeliveryThreshold ? 0 : logisticsInfo.rate;
-  const deliveryMode = logisticsInfo.mode;
-  const handlingCharge = settings.platformFee;
-  const grandTotal = itemsTotal + deliveryCharge + handlingCharge;
   // const appliedGstRates = Array.from(new Set(cart.map(item => {
   //   let rate = (item.product as any).gst || 18;
   //   if (item.selectedVariant && item.product.variants) {
@@ -90,7 +89,7 @@ const Checkout: React.FC = () => {
     if (freshUser.jobsites && freshUser.jobsites.length > 0) {
       setAddresses(freshUser.jobsites);
       
-      const matched = freshUser.jobsites.find((s: any) => 
+      const matched = freshUser.jobsites.find((s: Address) => 
         globalLocation?.matchingJobsite?._id && String(s._id) === String(globalLocation.matchingJobsite._id)
       );
 
@@ -153,7 +152,7 @@ const Checkout: React.FC = () => {
       return;
     }
 
-    const payAmount = mode === 'partial' ? Math.round(grandTotal * (settings.partPaymentPercentage / 100)) : grandTotal;
+    const payAmount = mode === 'partial' ? splitPaymentAmount : grandTotal;
 
     try {
       const { data: orderData } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/orders/razorpay/create-order`, {
@@ -167,7 +166,7 @@ const Checkout: React.FC = () => {
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'MatAll',
-        description: mode === 'partial' ? `Advance Payment (${settings.partPaymentPercentage}%)` : 'Full Payment',
+        description: mode === 'partial' ? `Advance Payment (${partPaymentPercentage}%)` : 'Full Payment',
         order_id: orderData.id,
         handler: async function (response: any) {
           try {
@@ -178,7 +177,7 @@ const Checkout: React.FC = () => {
              }, { headers: { Authorization: `Bearer ${token}` } });
              
               toast.success('Payment Verified!');
-             const finalPaymentMethod = mode === 'partial' ? `Partial Payment (${settings.partPaymentPercentage}%)` : 'Online Payment';
+              const finalPaymentMethod = mode === 'partial' ? `Partial Payment (${partPaymentPercentage}%)` : 'Online Payment';
              
              await finalizeOrder(
                finalPaymentMethod, 
@@ -220,6 +219,11 @@ const Checkout: React.FC = () => {
   };
 
   const finalizeOrder = async (paymentMethod: string, paymentRef: string | null, paidAmount: number) => {
+    if (!settings.isServiceEnabled || (globalLocation && !globalLocation.isServiceable)) {
+      toast.error(settings.offlineMessage || "Service is currently unavailable in this location.");
+      return;
+    }
+
     const hasOnDemand = cart.some(item => item.product.deliveryTime === 'On Demand');
     if (hasOnDemand) {
       toast.error('Some items in your cart are only available on demand. Please remove them to proceed.');
@@ -235,28 +239,26 @@ const Checkout: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const orderData = {
-        items: cart.map(item => {
-          const variant = item.product.variants?.find((v: any) => v.name === item.selectedVariant);
-          const rawWeight = variant?.inventory?.unitWeight || (variant as any)?.unitWeightGm || item.product.weightPerUnit || 0;
-          const iWeightKg = rawWeight / 1000;
-          return {
-            productId: item.product._id,
-            quantity: item.quantity,
-            price: variant?.pricing?.salePrice || item.product.salePrice || item.product.price || 0,
-            taxRate: variant?.pricing?.gst || (item.product as any).gst || (item.product.variants?.[0]?.pricing?.gst) || 18,
-            selectedVariant: item.selectedVariant,
-            totalWeight: iWeightKg * item.quantity,
-            totalVolume: (item.product.volumePerUnit || 0) * item.quantity
-          };
-        }),
+        items: enrichedItems.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.unitPrice,
+          taxRate: item.taxRate,
+          selectedVariant: item.selectedVariant,
+          totalWeight: item.totalWeight,
+          totalVolume: item.totalVolume
+        })),
         totalAmount: grandTotal,
-        totalTaxAmount: totalGst,
-        totalBaseAmount: totalAmount - totalGst,
-        totalWeight: cartWeight,
-        totalVolume: cartVolume,
+        totalTaxAmount: totalTaxAmount,
+        totalBaseAmount: totalBaseAmount,
+        totalWeight: totalWeight,
+        totalVolume: totalVolume,
         paidAmount: paidAmount,
         paymentMethod: paymentMethod,
         paymentReference: paymentRef,
+        appliedDiscount,
+        appliedOffers,
+        rewardItems,
         deliveryAddress: {
           name: selectedAddress.name || 'Site',
           fullAddress: selectedAddress.addressText || 'N/A',
@@ -310,7 +312,7 @@ const Checkout: React.FC = () => {
       setAddresses(updatedUser.jobsites);
       
       // Find the site that matches this addressText or coordinate
-      const match = updatedUser.jobsites.find((s: any) => s.addressText === addressText);
+      const match = updatedUser.jobsites.find((s: Address) => s.addressText === addressText);
       if (match) {
         setSelectedAddress(match);
         setGlobalLocation({
@@ -404,35 +406,62 @@ const Checkout: React.FC = () => {
               <div className="bill-card">
                 <div className="bill-row-checkout">
                   <span>Item Total (Excl. GST)</span>
-                  <span className="bill-val">₹{(totalAmount - totalGst).toFixed(2)}</span>
+                  <span className="bill-val">₹{(totalBaseAmount ?? 0).toFixed(2)}</span>
                 </div>
                 <div className="bill-row-checkout bill-row-secondary">
                   <span>GST Amount </span>
-                  <span className="bill-val">₹{totalGst.toFixed(2)}</span>
+                  <span className="bill-val">₹{(totalTaxAmount ?? 0).toFixed(2)}</span>
                 </div>
                 <div className="bill-row-checkout">
                   <div className="bill-label-group">
                     <span>Delivery Charge (incl GST)</span>
-                    <span className="delivery-mode-tag">(Mode: {deliveryMode})</span>
+                    <span className="delivery-mode-tag">(Mode: {vehicleClass})</span>
                   </div>
-                  <span className="bill-val">{deliveryCharge > 0 ? `₹${deliveryCharge.toFixed(2)}` : <span className="free">FREE</span>}</span>
+                  <span className="bill-val">
+                    {deliveryCharge > 0 ? (
+                      <div style={{ textAlign: 'right' }}>
+                        <span>₹{(deliveryCharge ?? 0).toFixed(2)}</span>
+                        {deliveryChargeBreakup && (
+                          <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 'normal' }}>
+                            (₹{(deliveryChargeBreakup.base ?? 0).toFixed(2)} + ₹{(deliveryChargeBreakup.gst ?? (deliveryChargeBreakup as any).tax ?? 0).toFixed(2)} GST)
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="free">FREE</span>
+                    )}
+                  </span>
                 </div>
                 <div className="bill-row-checkout">
                   <span>Handling Charge (incl GST)</span>
-                  <span className="bill-val">₹{handlingCharge.toFixed(2)}</span>
+                  <span className="bill-val">₹{(platformFee ?? 0).toFixed(2)}</span>
                 </div>
+                {appliedDiscount > 0 && (
+                  <div className="bill-row-checkout" style={{ color: '#16a34a', fontWeight: 600 }}>
+                    <span>Offer Discount</span>
+                    <span className="bill-val">-₹{(appliedDiscount ?? 0).toFixed(2)}</span>
+                  </div>
+                )}
+                {rewardItems.length > 0 && (
+                  <div className="reward-summary-box-checkout">
+                    <p className="reward-head">Free Rewards Unlocked:</p>
+                    <ul className="reward-list">
+                      {rewardItems.map((item, i) => <li key={i}>{item}</li>)}
+                    </ul>
+                  </div>
+                )}
 
                 <div className="bill-row-checkout grand-total-row">
                   <span className="total-label">Grand Total</span>
-                  <span className="total-val">₹{grandTotal.toFixed(2)}</span>
+                  <span className="total-val">₹{(grandTotal ?? 0).toFixed(2)}</span>
                 </div>
               </div>
             </section>
 
-            {savings > 0 && (
+            {totalSavings > 0 && (
               <div className="savings-tile">
                 <span className="savings-text">Your total savings</span>
-                <span className="savings-amount">₹{savings.toFixed(2)}</span>
+                <span className="savings-amount">₹{(totalSavings ?? 0).toFixed(2)}</span>
               </div>
             )}
 
@@ -445,19 +474,19 @@ const Checkout: React.FC = () => {
                 
                 {settings.isFullPaymentEnabled && (
                   <button className={`final-place-btn-desktop ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('full')} disabled={loading || !settings.isServiceEnabled}>
-                      {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Pay online - Full 100% now • ₹${grandTotal.toFixed(2)}`}
+                      {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Pay online - Full 100% now • ₹${(grandTotal ?? 0).toFixed(2)}`}
                   </button>
                 )}
 
                 {settings.isPartPaymentEnabled && (
                   <button className={`final-place-btn-desktop ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('partial')} disabled={loading || !settings.isServiceEnabled} style={{ background: !settings.isServiceEnabled ? '#f1f5f9' : '#DEDEDE', color: '#000' }}>
-                      {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Split Payment – ${settings.partPaymentPercentage}% now and ${100 - settings.partPaymentPercentage}% on delivery • ₹${Math.round(grandTotal * (settings.partPaymentPercentage / 100)).toFixed(2)}`}
+                      {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Split Payment – ${partPaymentPercentage}% now and ${100 - partPaymentPercentage}% on delivery • ₹${(splitPaymentAmount ?? 0).toFixed(2)}`}
                   </button>
                 )}
 
                 {settings.isCodEnabled && (
                   <button className={`final-place-btn-desktop ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => finalizeOrder('COD', null, 0)} disabled={loading || !settings.isServiceEnabled} style={{ background: '#000', color: '#FFEA00' }}>
-                      {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Cash on Delivery (COD) – Pay ₹${grandTotal.toFixed(2)} at home`}
+                      {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Service Offline' : `Cash on Delivery (COD) – Pay ₹${(grandTotal ?? 0).toFixed(2)} at home`}
                   </button>
                 )}
              </div>
@@ -470,7 +499,7 @@ const Checkout: React.FC = () => {
           {settings.isFullPaymentEnabled && (
             <button className={`checkout-place-btn full-pay ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('full')} disabled={loading || !settings.isServiceEnabled}>
               <div className="btn-p-info">
-                  <span className="p-val">₹{grandTotal.toFixed(2)}</span>
+                  <span className="p-val">₹{(grandTotal ?? 0).toFixed(2)}</span>
                   <span className="p-lbl">100% NOW</span>
               </div>
               <div className="btn-p-main">
@@ -482,8 +511,8 @@ const Checkout: React.FC = () => {
           {settings.isPartPaymentEnabled && (
             <button className={`checkout-place-btn partial-pay ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => handlePlaceOrder('partial')} disabled={loading || !settings.isServiceEnabled}>
               <div className="btn-p-info">
-                  <span className="p-val">₹{Math.round(grandTotal * (settings.partPaymentPercentage / 100)).toFixed(2)}</span>
-                  <span className="p-lbl">{settings.partPaymentPercentage}% SPLIT</span>
+                  <span className="p-val">₹{(splitPaymentAmount ?? 0).toFixed(2)}</span>
+                  <span className="p-lbl">{partPaymentPercentage}% SPLIT</span>
               </div>
               <div className="btn-p-main">
                   {loading ? 'Processing...' : !settings.isServiceEnabled ? 'Offline' : 'Split Payment'}
@@ -494,7 +523,7 @@ const Checkout: React.FC = () => {
           {settings.isCodEnabled && (
             <button className={`checkout-place-btn cod-pay ${!settings.isServiceEnabled ? 'disabled' : ''}`} onClick={() => finalizeOrder('COD', null, 0)} disabled={loading || !settings.isServiceEnabled} style={{ background: '#000', color: '#fff' }}>
               <div className="btn-p-info">
-                  <span className="p-val">₹{grandTotal.toFixed(2)}</span>
+                  <span className="p-val">₹{(grandTotal ?? 0).toFixed(2)}</span>
                   <span className="p-lbl">ON DELIVERY</span>
               </div>
               <div className="btn-p-main">

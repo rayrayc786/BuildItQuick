@@ -27,6 +27,26 @@ interface Settings {
     medium: LogisticsRate;
     heavy: LogisticsRate;
   };
+  deliveryWaiverRules: {
+    firstOrder: {
+      enabled: boolean;
+      minOrderValue: number;
+      maxWeightCategory: string;
+    };
+    lightOnly: {
+      enabled: boolean;
+      minOrderValue: number;
+    };
+    mediumLight: {
+      enabled: boolean;
+      minOrderValue: number;
+    };
+    smallOrderCap: {
+      enabled: boolean;
+      maxValue: number;
+      cappedCharge: number;
+    };
+  };
 }
 
 const ServiceSettings: React.FC = () => {
@@ -50,6 +70,12 @@ const ServiceSettings: React.FC = () => {
       light: { rate: 50, mode: "Bike" },
       medium: { rate: 150, mode: "Three Wheeler" },
       heavy: { rate: 500, mode: "Truck" }
+    },
+    deliveryWaiverRules: {
+      firstOrder: { enabled: false, minOrderValue: 500, maxWeightCategory: 'light' },
+      lightOnly: { enabled: false, minOrderValue: 1000 },
+      mediumLight: { enabled: false, minOrderValue: 5000 },
+      smallOrderCap: { enabled: false, maxValue: 150, cappedCharge: 29 }
     }
   });
 
@@ -76,6 +102,12 @@ const ServiceSettings: React.FC = () => {
             light: { rate: 50, mode: "Bike" },
             medium: { rate: 150, mode: "Three Wheeler" },
             heavy: { rate: 500, mode: "Truck" }
+          },
+          deliveryWaiverRules: data.deliveryWaiverRules ?? {
+            firstOrder: { enabled: false, minOrderValue: 500, maxWeightCategory: 'light' },
+            lightOnly: { enabled: false, minOrderValue: 1000 },
+            mediumLight: { enabled: false, minOrderValue: 5000 },
+            smallOrderCap: { enabled: false, maxValue: 150, cappedCharge: 29 }
           }
         });
       } catch (err) {
@@ -528,6 +560,190 @@ const ServiceSettings: React.FC = () => {
 
         <hr style={{ border: '0', borderTop: '1px solid #f1f5f9', margin: '2rem 0' }} />
 
+        {/* Delivery Waiver Rules Section */}
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <CheckCircle size={24} color="#22c55e" /> Delivery Waiver Rules
+        </h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+          {/* Rule 1: First Order */}
+          <div style={{ background: '#f0fdf4', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid #bbf7d0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <span style={{ fontWeight: 900, color: '#166534' }}>FIRST ORDER WAIVER</span>
+              <label className="switch-admin">
+                <input 
+                  type="checkbox" 
+                  checked={settings.deliveryWaiverRules.firstOrder.enabled}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    deliveryWaiverRules: {
+                      ...settings.deliveryWaiverRules,
+                      firstOrder: { ...settings.deliveryWaiverRules.firstOrder, enabled: e.target.checked }
+                    }
+                  })}
+                />
+                <span className="slider-admin"></span>
+              </label>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+              <div className="input-group-admin">
+                <label>Min Order Value (₹)</label>
+                <input 
+                  type="number"
+                  value={settings.deliveryWaiverRules.firstOrder.minOrderValue}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    deliveryWaiverRules: {
+                      ...settings.deliveryWaiverRules,
+                      firstOrder: { ...settings.deliveryWaiverRules.firstOrder, minOrderValue: Number(e.target.value) }
+                    }
+                  })}
+                />
+              </div>
+              <div className="input-group-admin">
+                <label>Max Item Weight allowed</label>
+                <select 
+                  value={settings.deliveryWaiverRules.firstOrder.maxWeightCategory}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    deliveryWaiverRules: {
+                      ...settings.deliveryWaiverRules,
+                      firstOrder: { ...settings.deliveryWaiverRules.firstOrder, maxWeightCategory: e.target.value }
+                    }
+                  })}
+                >
+                  <option value="light">Light Only</option>
+                  <option value="medium">Up to Medium</option>
+                  <option value="heavy">Any Weight</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Rule 2: Light Weight Threshold */}
+          <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <span style={{ fontWeight: 900, color: '#1e293b' }}>LIGHT WEIGHT THRESHOLD</span>
+              <label className="switch-admin">
+                <input 
+                  type="checkbox" 
+                  checked={settings.deliveryWaiverRules.lightOnly.enabled}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    deliveryWaiverRules: {
+                      ...settings.deliveryWaiverRules,
+                      lightOnly: { ...settings.deliveryWaiverRules.lightOnly, enabled: e.target.checked }
+                    }
+                  })}
+                />
+                <span className="slider-admin"></span>
+              </label>
+            </div>
+            <div className="input-group-admin">
+              <label>Min Order Value for free delivery (Light items only)</label>
+              <input 
+                type="number"
+                value={settings.deliveryWaiverRules.lightOnly.minOrderValue}
+                onChange={(e) => setSettings({
+                  ...settings,
+                  deliveryWaiverRules: {
+                    ...settings.deliveryWaiverRules,
+                    lightOnly: { ...settings.deliveryWaiverRules.lightOnly, minOrderValue: Number(e.target.value) }
+                  }
+                })}
+              />
+            </div>
+          </div>
+
+          {/* Rule 3: Medium & Light Threshold */}
+          <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <span style={{ fontWeight: 900, color: '#1e293b' }}>MEDIUM & LIGHT THRESHOLD</span>
+              <label className="switch-admin">
+                <input 
+                  type="checkbox" 
+                  checked={settings.deliveryWaiverRules.mediumLight.enabled}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    deliveryWaiverRules: {
+                      ...settings.deliveryWaiverRules,
+                      mediumLight: { ...settings.deliveryWaiverRules.mediumLight, enabled: e.target.checked }
+                    }
+                  })}
+                />
+                <span className="slider-admin"></span>
+              </label>
+            </div>
+            <div className="input-group-admin">
+              <label>Min Order Value for free delivery (Medium/Light items)</label>
+              <input 
+                type="number"
+                value={settings.deliveryWaiverRules.mediumLight.minOrderValue}
+                onChange={(e) => setSettings({
+                  ...settings,
+                  deliveryWaiverRules: {
+                    ...settings.deliveryWaiverRules,
+                    mediumLight: { ...settings.deliveryWaiverRules.mediumLight, minOrderValue: Number(e.target.value) }
+                  }
+                })}
+              />
+            </div>
+          </div>
+
+          {/* Rule 4: Small Order Cap */}
+          <div style={{ background: '#fff7ed', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid #ffedd5' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <span style={{ fontWeight: 900, color: '#9a3412' }}>SMALL ORDER DELIVERY CAP</span>
+              <label className="switch-admin">
+                <input 
+                  type="checkbox" 
+                  checked={settings.deliveryWaiverRules.smallOrderCap.enabled}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    deliveryWaiverRules: {
+                      ...settings.deliveryWaiverRules,
+                      smallOrderCap: { ...settings.deliveryWaiverRules.smallOrderCap, enabled: e.target.checked }
+                    }
+                  })}
+                />
+                <span className="slider-admin"></span>
+              </label>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+              <div className="input-group-admin">
+                <label>Order Value below (₹)</label>
+                <input 
+                  type="number"
+                  value={settings.deliveryWaiverRules.smallOrderCap.maxValue}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    deliveryWaiverRules: {
+                      ...settings.deliveryWaiverRules,
+                      smallOrderCap: { ...settings.deliveryWaiverRules.smallOrderCap, maxValue: Number(e.target.value) }
+                    }
+                  })}
+                />
+              </div>
+              <div className="input-group-admin">
+                <label>Cap Delivery Charge at (₹)</label>
+                <input 
+                  type="number"
+                  value={settings.deliveryWaiverRules.smallOrderCap.cappedCharge}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    deliveryWaiverRules: {
+                      ...settings.deliveryWaiverRules,
+                      smallOrderCap: { ...settings.deliveryWaiverRules.smallOrderCap, cappedCharge: Number(e.target.value) }
+                    }
+                  })}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr style={{ border: '0', borderTop: '1px solid #f1f5f9', margin: '2rem 0' }} />
+
         {/* Save Button */}
         <div style={{ marginTop: '2.5rem' }}>
           <button 
@@ -580,6 +796,57 @@ const ServiceSettings: React.FC = () => {
         }
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+        .switch-admin {
+          position: relative;
+          display: inline-block;
+          width: 50px;
+          height: 26px;
+        }
+        .switch-admin input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+        .slider-admin {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #cbd5e1;
+          transition: .4s;
+          border-radius: 34px;
+        }
+        .slider-admin:before {
+          position: absolute;
+          content: "";
+          height: 18px;
+          width: 18px;
+          left: 4px;
+          bottom: 4px;
+          background-color: white;
+          transition: .4s;
+          border-radius: 50%;
+        }
+        input:checked + .slider-admin {
+          background-color: #22c55e;
+        }
+        input:focus + .slider-admin {
+          box-shadow: 0 0 1px #22c55e;
+        }
+        input:checked + .slider-admin:before {
+          transform: translateX(24px);
+        }
+        .input-group-admin select {
+          width: 100%;
+          padding: 0.75rem;
+          border-radius: 0.75rem;
+          border: 1px solid #e2e8f0;
+          font-weight: 700;
+          background: white;
+          outline: none;
         }
       `}</style>
     </div>

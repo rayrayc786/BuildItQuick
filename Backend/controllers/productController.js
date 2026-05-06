@@ -29,6 +29,29 @@ const CATEGORY_MAP = {
 
 const getCategoryIdFromName = (name) => CATEGORY_MAP[name] || null;
 
+const f2 = (n) => parseFloat(Number(n).toFixed(2));
+
+const calculatePricing = (item) => {
+  const pricing = item.pricing || {};
+  const salePrice = pricing.salePrice || item.salePrice || item.price || 0;
+  const mrp = pricing.mrp || item.mrp || salePrice;
+  const gstRate = pricing.gst || 18;
+  const basePrice = salePrice / (1 + gstRate / 100);
+  const gstAmount = salePrice - basePrice;
+  const discountRate = mrp > 0 ? ((mrp - salePrice) / mrp) * 100 : 0;
+  
+  if (item.pricing) {
+    item.pricing.basePrice = f2(basePrice);
+    item.pricing.gstAmount = f2(gstAmount);
+    item.pricing.discountRate = Math.round(discountRate);
+  } else {
+    item.basePrice = f2(basePrice);
+    item.gstAmount = f2(gstAmount);
+    item.discountRate = Math.round(discountRate);
+  }
+  return item;
+};
+
 // Helper to resolve image names to actual file paths from Image Master
 const resolveProductImages = (product) => {
   const imageMasterPath = path.join(__dirname, '..', 'public', 'images');
@@ -159,7 +182,12 @@ const groupProductsByVariants = (products) => {
 
 // Shared Hydration utility
 const hydrateProduct = (product) => {
-  return resolveProductImages(product);
+  const resolved = resolveProductImages(product);
+  calculatePricing(resolved);
+  if (resolved.variants && Array.isArray(resolved.variants)) {
+    resolved.variants.forEach(v => calculatePricing(v));
+  }
+  return resolved;
 };
 
 exports.getAllProducts = async (req, res) => {

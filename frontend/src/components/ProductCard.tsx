@@ -3,14 +3,14 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Plus, Minus, Heart, Star, X, Clock, ChevronDown } from 'lucide-react';
-import { useCart } from '../contexts/CartContext';
+import { useCart, Product } from '../contexts/CartContext';
 import toast from 'react-hot-toast';
 import { getFullImageUrl } from '../utils/imageUrl';
 import OnDemandModal from './OnDemandModal';
 import './product-card.css';
 
 interface ProductCardProps {
-  product: any;
+  product: Product;
 }
 
 const ProductCard: React.FC<ProductCardProps> = React.memo(({ product }) => {
@@ -19,7 +19,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const [isFavorite, setIsFavorite] = useState(user.favorites?.includes(product._id));
+  const [isFavorite, setIsFavorite] = useState(user.favorites ? user.favorites.includes(product._id) : false);
 
   const [selectedVariant, setSelectedVariant] = useState<any>(
     product.variants && product.variants.length > 0 ? product.variants[0] : null
@@ -154,9 +154,9 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product }) => {
         <div className="list-variant-info-wrapper">
           <div className="list-action-row">
             <div
-              className={`list-unit-info ${product.variants?.length > 1 ? 'is-clickable' : ''}`}
+              className={`list-unit-info ${(product.variants?.length || 0) > 1 ? 'is-clickable' : ''}`}
               onClick={(e) => {
-                if (product.variants?.length > 1) {
+                if ((product.variants?.length || 0) > 1) {
                   e.stopPropagation();
                   e.preventDefault();
                   setShowVariantModal(true);
@@ -170,7 +170,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product }) => {
                     ? selectedVariant.name.split(',')[0].trim()
                     : product.unitLabel || 'Standard')}
               </span>
-              {product.variants?.length > 1 && <ChevronDown size={14} className="unit-arrow" />}
+              {(product.variants?.length || 0) > 1 && <ChevronDown size={14} className="unit-arrow" />}
             </div>
 
             <div className="list-add-container">
@@ -263,7 +263,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product }) => {
             </div>
 
             <div className="variants-list">
-              {product.variants.map((v: any, idx: number) => {
+              {product.variants?.map((v: any, idx: number) => {
                 const isSelected = selectedVariant?.name === v.name;
                 const vCartItem = cart.find(
                   (item) => item.product._id === product._id && item.selectedVariant === v.name

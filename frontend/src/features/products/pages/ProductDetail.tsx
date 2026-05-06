@@ -16,7 +16,7 @@ import {
   Clock,
   Home
 } from 'lucide-react';
-import { useCart } from '../../../contexts/CartContext';
+import { useCart, Product } from '../../../contexts/CartContext';
 import ProductCard from '../../../components/ProductCard';
 import './product-detail.css';
 import toast from 'react-hot-toast';
@@ -29,8 +29,8 @@ const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
   const { cart, addToCart } = useCart();
   
-  const [product, setProduct] = useState<any>(null);
-  const [similarProducts, setSimilarProducts] = useState<any[]>([]);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
@@ -144,9 +144,8 @@ const ProductDetail: React.FC = () => {
   };
 
   const currentPrice = selectedVariant?.pricing?.salePrice || product?.price || 0;
-  const gstRate = selectedVariant?.pricing?.gst || (product?.variants?.[0]?.pricing?.gst) || 0;
-  const basePrice = currentPrice / (1 + gstRate / 100);
-  const gstAmount = currentPrice - basePrice;
+  const basePrice = selectedVariant?.pricing?.basePrice || product?.basePrice || 0;
+  const gstAmount = selectedVariant?.pricing?.gstAmount || product?.gstAmount || 0;
   const currentMrp = selectedVariant?.pricing?.mrp || product?.mrp || 0;
   const currentUnit = selectedVariant && selectedVariant.attributes 
     ? Object.values(selectedVariant.attributes).join(', ') 

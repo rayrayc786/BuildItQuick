@@ -18,6 +18,26 @@ const settingsSchema = new mongoose.Schema({
     medium: { rate: { type: Number, default: 150 }, mode: { type: String, default: "Three Wheeler" } },
     heavy: { rate: { type: Number, default: 500 }, mode: { type: String, default: "Truck" } }
   },
+  deliveryWaiverRules: {
+    firstOrder: {
+      enabled: { type: Boolean, default: false },
+      minOrderValue: { type: Number, default: 500 },
+      maxWeightCategory: { type: String, default: 'light' }
+    },
+    lightOnly: {
+      enabled: { type: Boolean, default: false },
+      minOrderValue: { type: Number, default: 1000 }
+    },
+    mediumLight: {
+      enabled: { type: Boolean, default: false },
+      minOrderValue: { type: Number, default: 5000 }
+    },
+    smallOrderCap: {
+      enabled: { type: Boolean, default: false },
+      maxValue: { type: Number, default: 150 },
+      cappedCharge: { type: Number, default: 29 }
+    }
+  },
   lastUpdatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 

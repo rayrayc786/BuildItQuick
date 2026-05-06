@@ -26,6 +26,12 @@ interface Settings {
     medium: LogisticsRate;
     heavy: LogisticsRate;
   };
+  deliveryWaiverRules: {
+    firstOrder: { enabled: boolean; minOrderValue: number };
+    lightOnly: { enabled: boolean; minOrderValue: number };
+    mediumLight: { enabled: boolean; minOrderValue: number };
+    smallOrderCap: { enabled: boolean; maxOrderValue: number; cappedCharge: number };
+  };
 }
 
 interface SettingsContextType {
@@ -55,6 +61,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       light: { rate: 50, mode: "Bike" },
       medium: { rate: 150, mode: "Three Wheeler" },
       heavy: { rate: 500, mode: "Truck" }
+    },
+    deliveryWaiverRules: {
+      firstOrder: { enabled: true, minOrderValue: 500 },
+      lightOnly: { enabled: true, minOrderValue: 1000 },
+      mediumLight: { enabled: true, minOrderValue: 5000 },
+      smallOrderCap: { enabled: true, maxOrderValue: 150, cappedCharge: 29 }
     }
   });
   const [loading, setLoading] = useState(true);
@@ -109,6 +121,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           light: { rate: 50, mode: "Bike" },
           medium: { rate: 150, mode: "Three Wheeler" },
           heavy: { rate: 500, mode: "Truck" }
+        },
+        deliveryWaiverRules: data.deliveryWaiverRules ?? {
+          firstOrder: { enabled: true, minOrderValue: 500 },
+          lightOnly: { enabled: true, minOrderValue: 1000 },
+          mediumLight: { enabled: true, minOrderValue: 5000 },
+          smallOrderCap: { enabled: true, maxOrderValue: 150, cappedCharge: 29 }
         }
       };
       setSettings(updated);

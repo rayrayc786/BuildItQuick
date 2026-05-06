@@ -8,7 +8,7 @@ let HISAABIB_CACHE_TIMESTAMP = 0;
 const CACHE_TTL = 30 * 60 * 1000;
 
 
-const calculateOrderTotals = (items, settings = null) => {
+const calculateOrderTotals = (items, settings = null, offers = [], extraContext = {}) => {
   let totalWeight = 0;
   let totalVolume = 0;
   let totalBaseAmount = 0; // Cumulative base amount for all items
@@ -39,7 +39,11 @@ const calculateOrderTotals = (items, settings = null) => {
   };
 
   const selectedLogistics = logisticsRates[maxCat] || { rate: 50, mode: "Bike" };
-  const fee_delivery = selectedLogistics.rate;
+  let fee_delivery = selectedLogistics.rate;
+
+  const f2 = (n) => parseFloat(Number(n).toFixed(2));
+
+  let totalSavings = 0;
 
   const mappedItems = items.map(item => {
     // unitPrice is considered INCLUSIVE of GST (matches salePrice)
@@ -48,6 +52,10 @@ const calculateOrderTotals = (items, settings = null) => {
     const productId = hydratedProduct?._id || item.productId || item.product;
     const quantity = item.quantity || 1;
 
+    // Get MRP for savings calculation
+    const matchedVariant = hydratedProduct?.variants?.find(v => v.name === item.selectedVariant) || hydratedProduct?.variants?.[0];
+    const unitMrp = matchedVariant?.pricing?.mrp || hydratedProduct?.mrp || unitPrice;
+    
     // Fallback to product metadata for weight/volume if not in item
     const weight = item.totalWeight || (hydratedProduct?.inventory?.unitWeight ? (hydratedProduct.inventory.unitWeight * quantity) / 1000 : 0);
     const volume = item.totalVolume || 0;
@@ -63,10 +71,10 @@ const calculateOrderTotals = (items, settings = null) => {
     totalVolume += volume;
     totalBaseAmount += rowBaseTotal;
     totalTaxAmount += rowTaxTotal;
+    totalSavings += (unitMrp - unitPrice) * quantity;
 
     // Look up the selected variant to snapshot its attributes and image
     const selectedVariantName = item.selectedVariant || '';
-    const matchedVariant = hydratedProduct?.variants?.find(v => v.name === selectedVariantName) || hydratedProduct?.variants?.[0];
     const variantAttrs = matchedVariant?.attributes;
     // Convert Mongoose Map to plain object if needed
     const variantAttributes = variantAttrs instanceof Map ? Object.fromEntries(variantAttrs) : (variantAttrs || {});
@@ -74,42 +82,143 @@ const calculateOrderTotals = (items, settings = null) => {
 
     return {
       productId,
+      productName: hydratedProduct?.name || item.productName || '',
       selectedVariant: selectedVariantName,
       variantAttributes,
       variantImage,
       selectedVariantData: matchedVariant ? (matchedVariant.toObject ? matchedVariant.toObject() : matchedVariant) : null,
       quantity,
-      unitPrice,
-      basePrice: unitPrice / (1 + totalTaxRate / 100), // Store the per-unit base price (Excl GST)
+      unitPrice: f2(unitPrice),
+      unitMrp: f2(unitMrp),
+      lineTotalInclGST: f2(rowTotalInclGST),
+      lineBaseTotal: f2(rowBaseTotal),
+      lineTaxTotal: f2(rowTaxTotal),
+      basePrice: f2(unitPrice / (1 + totalTaxRate / 100)), // Store the per-unit base price (Excl GST)
       taxRate: totalTaxRate,
-      igstAmount: rowTaxTotal,
-      cgstAmount: rowTaxTotal / 2,
-      sgstAmount: rowTaxTotal / 2,
-      totalWeight: weight,
-      totalVolume: volume,
-      category: item.category || hydratedProduct?.category || 'General'
+      igstAmount: f2(rowTaxTotal),
+      cgstAmount: f2(rowTaxTotal / 2),
+      sgstAmount: f2(rowTaxTotal / 2),
+      totalWeight: f2(weight),
+      totalVolume: f2(volume),
+      category: item.category || hydratedProduct?.category || 'General',
+      brand: hydratedProduct?.brand || ''
     };
+  });
+
+  // --- NEW OFFER LOGIC ---
+  let appliedDiscount = 0;
+  let forceFreeDelivery = false;
+  let appliedOfferTitles = [];
+  let rewardItems = [];
+
+  const subTotalInclGST = totalBaseAmount + totalTaxAmount;
+
+  offers.forEach(offer => {
+    let isQualified = false;
+
+    if (offer.offerType === 'category') {
+      const categoryTotal = mappedItems
+        .filter(item => item.category?.toLowerCase().trim() === offer.categoryName?.toLowerCase().trim())
+        .reduce((sum, item) => sum + (item.lineTotalInclGST || 0), 0);
+      if (categoryTotal >= (offer.minAmount || 0)) isQualified = true;
+    } 
+    else if (offer.offerType === 'brand') {
+      const brandTotal = mappedItems
+        .filter(item => item.brand?.toLowerCase().trim() === offer.brandName?.toLowerCase().trim())
+        .reduce((sum, item) => sum + (item.lineTotalInclGST || 0), 0);
+      if (brandTotal >= (offer.minAmount || 0)) isQualified = true;
+    }
+    else if (offer.offerType === 'product') {
+      // Special logic for Paint Starter Kit: "5 ltr (or more) Paint Bucket"
+      if (offer.rewardItem === 'Paint starter kit') {
+        const hasLargePaint = mappedItems.some(item => {
+          const isPaint = item.category === 'Paint' || item.category === '06';
+          const isFiveLtr = item.selectedVariant?.includes('5 ltr') || 
+                           item.selectedVariant?.includes('5L') ||
+                           item.variantAttributes?.['Volume']?.includes('5 ltr') ||
+                           item.variantAttributes?.['Size']?.includes('5 ltr');
+          return isPaint && isFiveLtr;
+        });
+        if (hasLargePaint) isQualified = true;
+      }
+    }
+    else if (offer.offerType === 'standard') {
+      if (subTotalInclGST >= offer.minAmount) isQualified = true;
+    }
+
+    if (isQualified) {
+      if (offer.discountAmount) appliedDiscount += offer.discountAmount;
+      if (offer.freeDelivery) forceFreeDelivery = true;
+      if (offer.rewardItem) rewardItems.push(offer.rewardItem);
+      appliedOfferTitles.push(offer.title);
+    }
   });
 
   // Additional Fees logic: treating them as INCLUSIVE of GST (matches Frontend display)
   const platformFeeTotal = fee_platform; 
 
-  const subTotalInclGST = totalBaseAmount + totalTaxAmount;
-  const deliveryChargeInclGST = subTotalInclGST > threshold_free ? 0 : fee_delivery;
+  // Delivery Waiver Rules
+  const rules = settings?.deliveryWaiverRules;
+  const { isFirstOrder = false } = extraContext;
 
-  const grandTotal = subTotalInclGST + platformFeeTotal + deliveryChargeInclGST;
+  if (rules) {
+    // 1. First Order Waiver
+    if (rules.firstOrder?.enabled && isFirstOrder) {
+      if (subTotalInclGST >= (rules.firstOrder.minOrderValue || 500) && maxCat === 'light') {
+        forceFreeDelivery = true;
+      }
+    }
+    // 2. Light Only Waiver
+    if (rules.lightOnly?.enabled && maxCat === 'light') {
+      if (subTotalInclGST >= (rules.lightOnly.minOrderValue || 1000)) {
+        forceFreeDelivery = true;
+      }
+    }
+    // 3. Medium & Light Waiver
+    if (rules.mediumLight?.enabled && (maxCat === 'medium' || maxCat === 'light')) {
+      if (subTotalInclGST >= (rules.mediumLight.minOrderValue || 5000)) {
+        forceFreeDelivery = true;
+      }
+    }
+    // 4. Small Order Cap
+    if (rules.smallOrderCap?.enabled && maxCat === 'light') {
+      if (subTotalInclGST < (rules.smallOrderCap.maxValue || 150)) {
+        fee_delivery = Math.min(fee_delivery, rules.smallOrderCap.cappedCharge || 29);
+      }
+    }
+  }
+
+  const deliveryChargeInclGST = (subTotalInclGST >= threshold_free || forceFreeDelivery) ? 0 : fee_delivery;
+
+  // Delivery Breakup (for Rs. 29 cap or others)
+  const deliveryBase = deliveryChargeInclGST / 1.18;
+  const deliveryTax = deliveryChargeInclGST - deliveryBase;
+
+  const grandTotal = Math.max(0, subTotalInclGST + platformFeeTotal + deliveryChargeInclGST - appliedDiscount);
+  const partPaymentPercentage = settings?.partPaymentPercentage || 25;
+  const splitPaymentAmount = Math.round(grandTotal * (partPaymentPercentage / 100));
 
   return { 
-    totalAmount: grandTotal, 
-    subTotal: subTotalInclGST, // Total of items incl GST
-    totalBaseAmount: totalBaseAmount,
-    totalTaxAmount: totalTaxAmount,
-    platformFee: platformFeeTotal,
-    deliveryCharge: deliveryChargeInclGST,
-    totalWeight, 
-    totalVolume, 
+    totalAmount: f2(grandTotal), 
+    subTotal: f2(subTotalInclGST), // Total of items incl GST
+    totalBaseAmount: f2(totalBaseAmount),
+    totalTaxAmount: f2(totalTaxAmount),
+    platformFee: f2(platformFeeTotal),
+    deliveryCharge: f2(deliveryChargeInclGST),
+    deliveryChargeBreakup: {
+      base: f2(deliveryBase),
+      gst: f2(deliveryTax)
+    },
+    totalWeight: f2(totalWeight), 
+    totalVolume: f2(totalVolume), 
     vehicleClass: selectedLogistics.mode,
-    mappedItems 
+    mappedItems,
+    appliedDiscount: f2(appliedDiscount),
+    appliedOffers: appliedOfferTitles,
+    rewardItems,
+    totalSavings: f2(totalSavings),
+    splitPaymentAmount: f2(splitPaymentAmount),
+    partPaymentPercentage
   };
 };
 
@@ -122,10 +231,12 @@ const determineVehicleClass = (weight) => {
 
 const Product = require('../models/Product');
 const Settings = require('../models/Settings');
+const Offer = require('../models/Offer');
 
 const createOrder = async (orderData, io) => {
   const { items, userId } = orderData;
   const settings = await Settings.findOne();
+  const offers = await Offer.find({ isActive: true });
 
   // 1. Populate products to get weights/volumes for logistics calculation
   const hydratedItems = await Promise.all(items.map(async (item) => {
@@ -133,11 +244,54 @@ const createOrder = async (orderData, io) => {
     return { ...item, product };
   }));
 
+  // Check for accumulated loyalty rewards
+  if (userId) {
+    const loyaltyOffer = offers.find(o => o.offerType === 'accumulated');
+    if (loyaltyOffer) {
+      const fortyFiveDaysAgo = new Date();
+      fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - (loyaltyOffer.validityDays || 45));
+      
+      const pastOrders = await Order.find({
+        userId,
+        status: { $nin: ['Cancelled'] },
+        createdAt: { $gte: fortyFiveDaysAgo }
+      });
+
+      const totalPastAmount = pastOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+      // Note: This logic checks if the user *already* qualified before this order, 
+      // or if this order *makes* them qualify.
+      // For simplicity, we'll check if they qualify with this order's subtotal included.
+    }
+  }
+
+  // 1.5 Check if it's the first order for delivery waiver
+  const pastOrdersCount = userId ? await Order.countDocuments({ userId, status: { $nin: ['Cancelled'] } }) : 0;
+  const isFirstOrder = userId ? (pastOrdersCount === 0) : false;
+
   // 2. Calculate totals using the full product details
   const { 
     subTotal, totalAmount, totalBaseAmount, totalTaxAmount, 
-    platformFee, deliveryCharge, totalWeight, totalVolume, mappedItems 
-  } = calculateOrderTotals(hydratedItems, settings);
+    platformFee, deliveryCharge, deliveryChargeBreakup, totalWeight, totalVolume, mappedItems,
+    appliedDiscount, appliedOffers, rewardItems, totalSavings
+  } = calculateOrderTotals(hydratedItems, settings, offers, { isFirstOrder });
+
+  // Additional accumulated reward check (after current order calculation)
+  let finalRewardItems = [...rewardItems];
+  if (userId) {
+    const loyaltyOffer = offers.find(o => o.offerType === 'accumulated');
+    if (loyaltyOffer) {
+      const fortyFiveDaysAgo = new Date();
+      fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - (loyaltyOffer.validityDays || 45));
+      const pastOrders = await Order.find({ userId, status: { $nin: ['Cancelled'] }, createdAt: { $gte: fortyFiveDaysAgo } });
+      const totalAccumulated = pastOrders.reduce((sum, o) => sum + o.totalAmount, 0) + totalAmount;
+      if (totalAccumulated >= loyaltyOffer.minAmount) {
+        if (loyaltyOffer.rewardItem && !finalRewardItems.includes(loyaltyOffer.rewardItem)) {
+          finalRewardItems.push(loyaltyOffer.rewardItem);
+          if (!appliedOffers.includes(loyaltyOffer.title)) appliedOffers.push(loyaltyOffer.title);
+        }
+      }
+    }
+  }
 
   const vehicleClass = determineVehicleClass(totalWeight, totalVolume);
 
@@ -160,16 +314,21 @@ const createOrder = async (orderData, io) => {
     ...orderData,
     userId: orderData.userId,
     items: mappedItems,
-    totalAmount,
-    subTotal,
-    totalBaseAmount,
-    totalTaxAmount,
-    platformFee,
-    deliveryCharge,
-    totalWeight,
+    // EXPLICITLY OVERRIDE TOTALS FROM BACKEND CALCULATION
+    totalAmount: totalAmount,
+    totalBaseAmount: totalBaseAmount,
+    totalTaxAmount: totalTaxAmount,
+    subTotal: subTotal,
+    deliveryCharge: deliveryCharge,
+    deliveryChargeGST: deliveryChargeBreakup?.gst || 0,
+    platformFee: platformFee,
     totalVolume,
     vehicleClass,
     darkStoreId,
+    appliedDiscount,
+    totalSavings,
+    appliedOffers,
+    rewardItems: finalRewardItems,
     deliveryAddress: {
       name: orderData.deliveryAddress?.name || 'Home',
       area: orderData.deliveryAddress?.area || '',
@@ -520,6 +679,7 @@ const syncToHisaabKitaab = async (orderId, io) => {
 
     const payload = {
       invoice_number: finalInvoiceNumber,
+      series_id: 42132,
       date: new Date(order.createdAt).toLocaleDateString('en-GB').replace(/\//g, '-'), // DD-MM-YYYY
       customer_ledger_id: parseInt(process.env.HISABKITAB_CASH_LEDGER_ID || '1604700'),
 

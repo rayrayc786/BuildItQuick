@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
+import axios from 'axios';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
-interface Product {
+export interface Product {
   _id: string;
   name: string;
   sku: string;
@@ -21,6 +22,16 @@ interface Product {
   volumePerUnit: number;
   imageUrl?: string;
   price: number;
+  basePrice?: number;
+  gstAmount?: number;
+  discountRate?: number;
+  productName?: string;
+  avgRating?: number;
+  numReviews?: number;
+  description?: string;
+  infoPara?: string;
+  productId?: string;
+  hsnCode?: string;
   subVariants?: {
     title: string;
     value: string;
@@ -35,22 +46,69 @@ interface Product {
       salePrice?: number;
       gst?: number;
       mrp?: number;
+      basePrice?: number;
+      gstAmount?: number;
+      discountRate?: number;
     };
     inventory?: {
       unitWeight?: number;
       stock?: number;
     };
     unitWeightGm?: number;
+    variantId?: string;
+    meta?: {
+      suppliedWith?: string;
+    };
+    measure?: {
+      term?: string;
+      value?: string;
+      unit?: string;
+    };
     logisticsCategory?: string;
   }[];
   bulkPricing?: { minQty: number, discount: number }[];
   logisticsCategory?: string;
 }
 
-interface CartItem {
+export interface Offer {
+  _id: string;
+  title: string;
+  description: string;
+  discount: string;
+  discountAmount: number;
+  offerType: 'standard' | 'brand' | 'category' | 'product' | 'accumulated';
+  minAmount: number;
+  brandName?: string;
+  categoryName?: string;
+  freeDelivery: boolean;
+  rewardItem?: string;
+  validityDays?: number;
+}
+
+export interface CartItem {
   product: Product;
   quantity: number;
   selectedVariant?: string; // Name of the variant
+}
+
+export interface EnrichedCartItem {
+  productId: string;
+  productName: string;
+  brand: string;
+  category: string;
+  selectedVariant: string;
+  variantAttributes: Record<string, string>;
+  variantImage: string;
+  quantity: number;
+  unitPrice: number;
+  unitMrp: number;
+  lineTotalInclGST: number;
+  lineBaseTotal: number;
+  lineTaxTotal: number;
+  basePrice: number;
+  taxRate: number;
+  totalWeight: number;
+  totalVolume: number;
 }
 
 interface CartContextType {
@@ -64,11 +122,31 @@ interface CartContextType {
   totalGst: number;
   maxLogisticsCategory: 'light' | 'medium' | 'heavy';
   vehicleClass: string;
+  appliedDiscount: number;
+  appliedOffers: string[];
+  rewardItems: string[];
+  isFreeDelivery: boolean;
+  platformFee: number;
+  deliveryCharge: number;
+  deliveryChargeBreakup: {
+    base: number;
+    gst: number;
+  } | null;
+  grandTotal: number;
+  totalSavings: number;
+  totalBaseAmount: number;
+  totalTaxAmount: number;
+  splitPaymentAmount: number;
+  partPaymentPercentage: number;
+  enrichedItems: EnrichedCartItem[];
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+
+  
+
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const savedCart = localStorage.getItem('cart');
@@ -129,77 +207,127 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearCart = () => setCart([]);
 
-  const { totalAmount, totalWeight, totalVolume, totalGst, maxLogisticsCategory } = useMemo(() => {
-    let amount = 0;
-    let weight = 0;
-    let volume = 0;
-    let gstSum = 0;
-    let maxCat: 'light' | 'medium' | 'heavy' = 'light';
+  const [summary, setSummary] = useState({
+    totalAmount: 0,
+    totalWeight: 0,
+    totalVolume: 0,
+    totalGst: 0,
+    maxLogisticsCategory: 'light' as 'light' | 'medium' | 'heavy',
+    appliedDiscount: 0,
+    appliedOffers: [] as string[],
+    rewardItems: [] as string[],
+    isFreeDelivery: false,
+    vehicleClass: 'Bike',
+    platformFee: 0,
+    deliveryCharge: 0,
+    deliveryChargeBreakup: null as { base: number; gst: number } | null,
+    grandTotal: 0,
+    totalSavings: 0,
+    totalBaseAmount: 0,
+    totalTaxAmount: 0,
+    splitPaymentAmount: 0,
+    partPaymentPercentage: 25,
+    enrichedItems: [] as any[]
+  });
 
-    cart.forEach(item => {
-      let itemPrice = item.product.price; // We treat this as BASE price
-      let itemWeight = (item.product.weightPerUnit || 0);
-      let itemVolume = (item.product.volumePerUnit || 0);
-      let itemGstRate = (item.product as any).gst || 18; // Default to 18% GST
-
-      // Use variant values if selected
-      if (item.selectedVariant && item.product.variants) {
-        const variant: any = item.product.variants.find(v => v.name === item.selectedVariant);
-        if (variant) {
-          // pricing.salePrice is also treated as BASE price
-          itemPrice = variant.pricing?.salePrice || variant.price || item.product.price;
-          itemWeight = variant.inventory?.unitWeight || (variant.unitWeightGm ? variant.unitWeightGm / 1000 : 0) || (item.product.weightPerUnit || 0);
-          itemGstRate = variant.pricing?.gst || (item.product as any).gst || 18;
-        }
+  useEffect(() => {
+    const fetchCartSummary = async () => {
+      if (cart.length === 0) {
+        setSummary({
+          totalAmount: 0,
+          totalWeight: 0,
+          totalVolume: 0,
+          totalGst: 0,
+          maxLogisticsCategory: 'light',
+          appliedDiscount: 0,
+          appliedOffers: [],
+          rewardItems: [],
+          isFreeDelivery: false,
+          vehicleClass: 'Bike',
+          platformFee: 0,
+          deliveryCharge: 0,
+          deliveryChargeBreakup: null,
+          grandTotal: 0,
+          totalSavings: 0,
+          totalBaseAmount: 0,
+          totalTaxAmount: 0,
+          splitPaymentAmount: 0,
+          partPaymentPercentage: 25,
+          enrichedItems: []
+        });
+        return;
       }
-      
-      // Bulk Pricing Logic (applied on base price)
-      if (item.product.bulkPricing) {
-        const applicableTier = [...item.product.bulkPricing]
-          .sort((a, b) => b.minQty - a.minQty)
-          .find(tier => item.quantity >= tier.minQty);
-        
-        if (applicableTier) {
-          itemPrice *= (1 - applicableTier.discount / 100);
+
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/cart/calculate`, {
+          items: cart.map(item => ({
+            productId: item.product._id,
+            quantity: item.quantity,
+            selectedVariant: item.selectedVariant
+          }))
+        }, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+
+        if (res.data.success) {
+          const s = res.data.data;
+          setSummary({
+            totalAmount: s.subTotal, // Use subTotal as totalAmount for gross display
+            totalGst: s.totalTaxAmount,
+            totalWeight: s.totalWeight,
+            totalVolume: s.totalVolume,
+            appliedDiscount: s.appliedDiscount,
+            appliedOffers: s.appliedOffers,
+            rewardItems: s.rewardItems,
+            isFreeDelivery: s.deliveryCharge === 0,
+            vehicleClass: s.vehicleClass || 'Bike',
+            maxLogisticsCategory: s.vehicleClass?.toLowerCase() === 'truck' ? 'heavy' : 
+                                  s.vehicleClass?.toLowerCase() === 'three wheeler' ? 'medium' : 'light',
+            platformFee: s.platformFee,
+            deliveryCharge: s.deliveryCharge,
+            deliveryChargeBreakup: s.deliveryChargeBreakup || null,
+            grandTotal: s.totalAmount,
+            totalSavings: s.totalSavings,
+            totalBaseAmount: s.totalBaseAmount,
+            totalTaxAmount: s.totalTaxAmount,
+            splitPaymentAmount: s.splitPaymentAmount,
+            partPaymentPercentage: s.partPaymentPercentage,
+            enrichedItems: s.mappedItems
+          });
         }
+      } catch (err) {
+        console.error('Backend cart calculation failed:', err);
       }
-
-      // Calculate totals
-      const variant: any = item.product.variants?.find(v => v.name === item.selectedVariant);
-      const logisticsCat = String(variant?.logisticsCategory || item.product.logisticsCategory || 'Light').toLowerCase();
-      
-      if (logisticsCat === 'heavy') maxCat = 'heavy';
-      else if (logisticsCat === 'medium' && maxCat !== 'heavy') maxCat = 'medium';
-
-      const rowTotalInclGST = itemPrice * item.quantity;
-      const rowBase = rowTotalInclGST / (1 + itemGstRate / 100);
-      const rowGst = rowTotalInclGST - rowBase;
-
-      amount += rowBase;
-      weight += itemWeight * item.quantity;
-      volume += itemVolume * item.quantity;
-      gstSum += rowGst;
-    });
-
-    return { 
-      totalAmount: (Math.round((amount + gstSum) * 100) / 100), 
-      totalWeight: weight, 
-      totalVolume: volume, 
-      totalGst: (Math.round(gstSum * 100) / 100), 
-      maxLogisticsCategory: maxCat 
     };
+
+    fetchCartSummary();
   }, [cart]);
 
-  const vehicleClass = useMemo(() => {
-    if (totalWeight === 0) return 'None';
-    if (totalWeight < 50) return 'Bike';
-    if (totalWeight < 500) return 'Pickup Truck';
-    if (totalWeight < 2000) return 'Flatbed Truck';
-    return 'Heavy Trailer';
-  }, [totalWeight]);
-
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, totalAmount, totalWeight, totalVolume, totalGst, vehicleClass, maxLogisticsCategory }}>
+    <CartContext.Provider value={{ 
+      cart, addToCart, removeFromCart, clearCart, 
+      totalAmount: summary.totalAmount,
+      totalWeight: summary.totalWeight, 
+      totalVolume: summary.totalVolume, 
+      totalGst: summary.totalGst, 
+      vehicleClass: summary.vehicleClass, 
+      maxLogisticsCategory: summary.maxLogisticsCategory,
+      appliedDiscount: summary.appliedDiscount, 
+      appliedOffers: summary.appliedOffers, 
+      rewardItems: summary.rewardItems, 
+      isFreeDelivery: summary.isFreeDelivery,
+      platformFee: summary.platformFee,
+      deliveryCharge: summary.deliveryCharge,
+      deliveryChargeBreakup: summary.deliveryChargeBreakup,
+      grandTotal: summary.grandTotal,
+      totalSavings: summary.totalSavings,
+      totalBaseAmount: summary.totalBaseAmount,
+      totalTaxAmount: summary.totalTaxAmount,
+      splitPaymentAmount: summary.splitPaymentAmount,
+      partPaymentPercentage: summary.partPaymentPercentage,
+      enrichedItems: summary.enrichedItems
+    }}>
       {children}
     </CartContext.Provider>
   );
