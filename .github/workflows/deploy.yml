@@ -7,63 +7,87 @@ on:
       - newUI
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v5 # Updated to v5 for Node 24 support
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
-
-      - name: Build Frontend
-        working-directory: ./frontend
-        run: |
-          npm install --legacy-peer-deps
-          npm run build
-
-      - name: Copy Build to Server
-        uses: appleboy/scp-action@master
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0 # Updated to v1.2.0 to resolve Node 20 deprecation
         with:
           host: 195.35.21.157
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 2222
-          source: "frontend/dist/*"
-          target: "/var/www/MatAll/frontend_new"
-          strip_components: 2
-
-      - name: Update Backend and Finalize
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: 195.35.21.157
-          username: root
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 2222
+          port: 2222 # Updated to 2222 as requested
+          timeout: 60s
+          command_timeout: 15m
+          debug: true
           script: |
             set -e
-            mkdir -p /var/www/MatAll
+            echo "Checking deployment directory..."
+            if [ ! -d "/var/www/MatAll" ]; then
+              echo "Error: Directory /var/www/MatAll not found. Attempting to create it..."
+              mkdir -p /var/www/MatAll
+            fi
             cd /var/www/MatAll
             
-            # Update backend code
+            echo "Loading environment..."
+            # Load NVM and Profile to ensure npm/node/pm2 are in PATH
+            export NVM_DIR="$HOME/.nvm"
+            if [ -s "$NVM_DIR/nvm.sh" ]; then
+              . "$NVM_DIR/nvm.sh"
+            fi
+            
+            # Use specific node version if possible or just ensure npm is available
+            nvm use stable || nvm use default || echo "Proceeding with system node"
+            
+            source ~/.bashrc || source ~/.profile || true
+            
+            echo "Environment check:"
+            node -v
+            npm -v
+            pm2 -v || echo "pm2 not found in PATH"
+
+            # Reset to origin to avoid local conflict issues
+            echo "Updating code from git..."
             git fetch --all
             git reset --hard origin/${{ github.ref_name }}
-            
-            # Backend Setup
+
+            # Backend
             echo "Setting up Backend..."
             cd Backend
+            # Using --legacy-peer-deps to avoid potential conflicts during build
             npm install --legacy-peer-deps
+            
+            # Use reload for zero-downtime; it will fall back to start if process isn't running
+            echo "Restarting Backend with PM2..."
             pm2 reload matall-backend --update-env || pm2 start server.js --name "matall-backend"
             pm2 save
             
-            # Deploy Frontend (moving from temp to live)
-            echo "Updating live frontend..."
-            sudo rm -rf /var/www/html/*
-            sudo cp -r /var/www/MatAll/frontend_new/* /var/www/html/
-            sudo rm -rf /var/www/MatAll/frontend_new
+            # Frontend
+            echo "Setting up Frontend..."
+            cd ../frontend
+            # Fresh install to avoid dependency issues with the new PWA plugin
+            echo "Cleaning frontend node_modules..."
+            rm -rf node_modules package-lock.json
+            echo "Installing frontend dependencies..."
+            npm install --include=dev --legacy-peer-deps
             
-            sudo systemctl restart nginx
-            echo "Deployment successful!"
+            # Build the PWA
+            echo "Building frontend production bundle..."
+            npm run build
+
+            # Only update live folder if build succeeded
+            if [ -d "dist" ]; then
+              echo "Deploying dist to /var/www/html..."
+              sudo rm -rf /var/www/html/*
+              sudo cp -r dist/* /var/www/html/
+              echo "Restarting Nginx..."
+              sudo systemctl restart nginx
+              echo "Deployment successful!"
+            else
+              echo "Build failed - dist folder not found. Skipping copy."
+              exit 1
+            fi
