@@ -10,8 +10,8 @@ const OrderItemSchema = new mongoose.Schema({
   igstAmount: { type: Number },
   cgstAmount: { type: Number },
   sgstAmount: { type: Number },
-  totalWeight: { type: Number, required: true }, // Pre-calculated weight
-  totalVolume: { type: Number, required: true },  // Pre-calculated volume
+  totalWeight: { type: Number }, // Pre-calculated weight
+  totalVolume: { type: Number },  // Pre-calculated volume
   selectedVariant: { type: String }, // Human readable name of the variant selected
   variantAttributes: { type: Map, of: String }, // Snapshot of selected variant attributes
   variantImage: { type: String }, // Snapshot of selected variant's primary image
@@ -42,7 +42,7 @@ const OrderSchema = new mongoose.Schema({
 
   // VehicleClass requirement based on total cart weight
   // Examples: 'Bike', 'Pickup Truck', 'Flatbed', 'Heavy Trailer'
-  vehicleClass: { type: String, required: true },
+  vehicleClass: { type: String },
   
   totalAmount: { type: Number, required: true }, // Grand Total (incl all fees & taxes)
   paidAmount: { type: Number }, // Amount paid via Gateway (for partial/full tracking)
@@ -56,8 +56,8 @@ const OrderSchema = new mongoose.Schema({
   deliveryCharge: { type: Number },
   deliveryChargeGST: { type: Number },
 
-  totalWeight: { type: Number, required: true },
-  totalVolume: { type: Number, required: true },
+  totalWeight: { type: Number },
+  totalVolume: { type: Number },
   
   deliveryAddress: {
     name: String,

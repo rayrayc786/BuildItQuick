@@ -168,9 +168,10 @@ const calculateOrderTotals = (items, settings = null, offers = [], extraContext 
         forceFreeDelivery = true;
       }
     }
-    // 2. Light Only Waiver
-    if (rules.lightOnly?.enabled && maxCat === 'light') {
-      if (subTotalInclGST >= (rules.lightOnly.minOrderValue || 1000)) {
+    // 2. Light Only Waiver (Rule: Free delivery for Light category > 500)
+    if (maxCat === 'light') {
+      const lightThreshold = rules.lightOnly?.enabled ? (rules.lightOnly.minOrderValue || 500) : 500;
+      if (subTotalInclGST >= lightThreshold) {
         forceFreeDelivery = true;
       }
     }
@@ -272,7 +273,7 @@ const createOrder = async (orderData, io) => {
   const { 
     subTotal, totalAmount, totalBaseAmount, totalTaxAmount, 
     platformFee, deliveryCharge, deliveryChargeBreakup, totalWeight, totalVolume, mappedItems,
-    appliedDiscount, appliedOffers, rewardItems, totalSavings
+    appliedDiscount, appliedOffers, rewardItems, totalSavings, vehicleClass
   } = calculateOrderTotals(hydratedItems, settings, offers, { isFirstOrder });
 
   // Additional accumulated reward check (after current order calculation)
@@ -293,7 +294,8 @@ const createOrder = async (orderData, io) => {
     }
   }
 
-  const vehicleClass = determineVehicleClass(totalWeight, totalVolume);
+  // vehicleClass is now determined by category in calculateOrderTotals
+  // const vehicleClass = determineVehicleClass(totalWeight, totalVolume);
 
   // Auto-assign to nearest hub if darkStoreId not provided
   let darkStoreId = orderData.darkStoreId;
